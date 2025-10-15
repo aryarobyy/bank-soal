@@ -1,39 +1,43 @@
+
 <template>
-  <div class="flex items-center justify-center min-h-screen font-sans bg-background">
-    <div class="relative w-full max-w-md p-10 text-center bg-white rounded-2xl shadow-xl">
-      
-      <router-link to="/login" class="absolute text-3xl no-underline text-primary top-6 left-6">&#8592;</router-link>
+  <div class="page-container">
+    <div class="forgot-password-card">
+      <router-link to="/login" class="back-arrow">&#8592;</router-link>
 
-      <h2 class="mt-10 mb-10 text-3xl font-bold tracking-wider text-dark-text">FORGOT PASSWORD</h2>
+      <h2 class="title">FORGOT PASSWORD</h2>
 
-      <form @submit.prevent="handleConfirm" class="w-full">
-        <div class="mb-6 text-left">
-          <label for="email" class="block mb-2 text-sm font-semibold text-medium-text">Email</label>
+      <form @submit.prevent="handleConfirm" class="form-wrapper">
+        <div class="form-group">
+          <label for="email">Email</label>
           <input
             id="email"
             v-model="email"
             type="email"
             placeholder="Email"
             required
-            class="w-full px-4 py-3 text-base bg-white border border-gray-200 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
-        <button type="submit" class="w-full py-3 font-bold text-white transition-opacity rounded-lg bg-primary hover:opacity-90">Confirm</button>
+        <button type="submit" class="btn-confirm">Confirm</button>
       </form>
     </div>
   </div>
 </template>
-
 <script>
-// Bagian script Anda tidak diubah
 export default {
   name: 'ForgotPassword',
-  data() { return { email: '' }; },
+  data() {
+    return {
+      email: '',
+    };
+  },
   methods: {
     handleConfirm() {
+      // Logika untuk mengirim email reset password
+      // Untuk sekarang, kita hanya menampilkan alert
       if (this.email) {
         alert(`Tautan reset password telah dikirim ke: ${this.email}`);
+        // Di aplikasi nyata, di sini Anda akan memanggil API backend
       } else {
         alert('Silakan masukkan email Anda.');
       }
@@ -41,3 +45,97 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* Menggunakan font dari Google Fonts untuk tampilan yang lebih modern */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+.page-container {
+  font-family: 'Poppins', sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #e3e8ff;
+  width: 100%;
+}
+
+/* KODE DI BAWAH INI SUDAH DISAMAKAN DENGAN HALAMAN LOGIN */
+.forgot-password-card {
+  position: relative;
+  background: #ffffff;
+  padding: 40px 50px; /* <-- Diubah agar sama dengan login */
+  border-radius: 15px; /* <-- Diubah agar sama dengan login */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* <-- Diubah agar sama dengan login */
+  width: 400px; /* <-- Diubah agar sama dengan login */
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.back-arrow {
+  position: absolute;
+  top: 25px;
+  left: 25px;
+  font-size: 24px;
+  color: #333;
+  text-decoration: none;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-top: 20px;
+  margin-bottom: 35px;
+  letter-spacing: 1px;
+}
+
+.form-wrapper {
+  width: 100%;
+}
+
+.form-group {
+  text-align: left;
+  margin-bottom: 30px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  box-sizing: border-box;
+  transition: border-color 0.3s;
+}
+
+input:focus {
+  outline: none;
+  border-color: #7b68ee;
+}
+
+.btn-confirm {
+  width: 100%;
+  padding: 14px;
+  background-color: #7b68ee;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-confirm:hover {
+  background-color: #6a5acd;
+}
+</style>
