@@ -32,10 +32,6 @@ func NewQuestionService(repo repository.QuestionRepository) QuestionService {
 }
 
 func (s *questionService) Create(ctx context.Context, data model.Question) error {
-	if data.CreatorId == 0 {
-		return fmt.Errorf("creatorId is required")
-	}
-
 	err := s.repo.Create(ctx, data)
 	if err != nil {
 		return fmt.Errorf("failed to create question: %w", err)
@@ -90,14 +86,8 @@ func (s *questionService) Delete(ctx context.Context, id int, userId int) error 
 }
 
 func (s *questionService) CreateWithOptions(ctx context.Context, data model.Question) error {
-	if data.QuestionText == "" {
-		return fmt.Errorf("question_text is required")
-	}
 	if data.Difficulty != "easy" && data.Difficulty != "medium" && data.Difficulty != "hard" {
 		return fmt.Errorf("invalid difficulty")
-	}
-	if len(data.Options) == 0 {
-		return fmt.Errorf("options are required")
 	}
 
 	valid := false

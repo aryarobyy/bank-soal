@@ -27,10 +27,6 @@ func NewOptionService(repo repository.OptionRepository) OptionService {
 }
 
 func (s *optionService) Create(ctx context.Context, data model.Option) error {
-	if data.QuestionId == 0 {
-		return fmt.Errorf("questionId is required")
-	}
-
 	err := s.repo.Create(ctx, data)
 	if err != nil {
 		return fmt.Errorf("failed to create option: %w", err)

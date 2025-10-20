@@ -14,7 +14,7 @@ func QuestionRoutes(r *gin.Engine, question *controller.QuestionController) {
 		questions.GET("/id/:id", question.GetById)
 		questions.PUT("/:id", question.Update)
 		questions.DELETE("/:id/:userId", question.Delete)
-		questions.POST("/options", question.CreateWithOptions)
+		questions.POST("/options", middleware.InputValidate([]string{"exam_id", "creator_id", "question_text", "options"}), question.CreateWithOptions)
 		questions.POST("/json", question.CreateFromJson)
 	}
 }
