@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"latih.in-be/controller"
+	"latih.in-be/middleware"
 	"latih.in-be/repository"
 	"latih.in-be/route"
 	"latih.in-be/service"
@@ -61,6 +62,16 @@ func NewApp(db *gorm.DB) *App {
 		MaxAge:           12 * time.Hour,
 	}
 	router.Use(cors.New(corsConfig))
+
+	store := middleware.InMemoryStore(&middleware.InMemoryOptions{
+		Rate:  10 * time.Second, // 10s
+		Limit: 5,                // maks 5 request
+		// Skip: func(c *gin.Context) bool { //skip rate limit
+		// 	return c.FullPath() == "/"
+		// },
+	})
+
+	router.Use(middleware.RateLimiter(store, nil))
 
 	setupRoutes(router, controllers)
 
