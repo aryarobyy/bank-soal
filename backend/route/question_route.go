@@ -3,12 +3,13 @@ package route
 import (
 	"github.com/gin-gonic/gin"
 	"latih.in-be/controller"
+	"latih.in-be/middleware"
 )
 
 func QuestionRoutes(r *gin.Engine, question *controller.QuestionController) {
 	questions := r.Group("/question")
 	{
-		questions.POST("/", question.Create)
+		questions.POST("/", middleware.InputValidate([]string{"exam_id", "creator_id", "question_text"}), question.Create)
 		questions.GET("/", question.GetAll)
 		questions.GET("/id/:id", question.GetById)
 		questions.PUT("/:id", question.Update)
