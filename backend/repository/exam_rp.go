@@ -34,7 +34,7 @@ func (r *examRepository) Create(ctx context.Context, e model.Exam) error {
 func (r *examRepository) GetById(ctx context.Context, id int) (*model.Exam, error) {
 	e := model.Exam{}
 
-	if err := r.db.WithContext(ctx).Model(model.Exam{}).First(e, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(model.Exam{}).First(&e, id).Error; err != nil {
 		return nil, err
 	}
 	return &e, nil
