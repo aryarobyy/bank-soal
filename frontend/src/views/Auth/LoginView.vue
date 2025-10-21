@@ -1,8 +1,12 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+  <div
+    class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4"
+  >
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
       <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full mb-4">
+        <div
+          class="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full mb-4"
+        >
           <GraduationCap class="w-8 h-8 text-white" />
         </div>
         <h1 class="text-3xl font-bold text-gray-800 mb-2">Login</h1>
@@ -11,12 +15,23 @@
 
       <form @submit.prevent="handleSubmit" class="space-y-5">
         <div v-for="field in fields" :key="field.name">
-          <label class="block text-sm font-medium text-gray-700 mb-2">{{ field.label }}</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">{{
+            field.label
+          }}</label>
           <div class="relative">
-            <Input v-model="formData[field.name]" :title="field.title" :place-holder="field.placeholder"
-              :required="true" :id="field.id" :icon="field.icon" :type="field.type" />
+            <Input
+              v-model="formData[field.name]"
+              :title="field.title"
+              :place-holder="field.placeholder"
+              :required="true"
+              :id="field.id"
+              :icon="field.icon"
+              :type="field.type"
+            />
           </div>
-          <p v-if="errors[field.name]" class="text-red-500 text-sm mt-1">{{ errors[field.name] }}</p>
+          <p v-if="errors[field.name]" class="text-red-500 text-sm mt-1">
+            {{ errors[field.name] }}
+          </p>
         </div>
 
         <Button :text="isSubmitting ? 'Masuk...' : 'Masuk'" :disabled="isSubmitting" variant="modern" size="medium"
@@ -48,29 +63,42 @@ import { useLocalStorage } from '../../hooks/useLocalStorage'
 import Toast from '../../components/utils/Toast.vue'
 import { useGetCurrentUser } from '../../hooks/useGetCurrentUser'
 
-const { setValue: setToken, value: token } = useLocalStorage('token')
-const { setValue: setUser, value  } = useLocalStorage('user')
-const { user } = useGetCurrentUser()
+const { setValue: setToken, value: token } = useLocalStorage("token");
+const { setValue: setUser, value } = useLocalStorage("user");
+const { user } = useGetCurrentUser();
 
-const toastRef = ref(null)
+const toastRef = ref(null);
 const formData = ref({
-  email: '',
-  password: '',
-})
-const errors = ref({})
-const isSubmitting = ref(false)
+  email: "",
+  password: "",
+});
+const errors = ref({});
+const isSubmitting = ref(false);
 
 const fields = [
-  { id: 1, name: 'email', title: 'Email', type: 'email', placeholder: 'email@example.com', icon: Mail },
-  { id: 2, name: 'password', title: 'Password', type: 'password', placeholder: 'Minimal 6 karakter', icon: Lock },
-]
-
+  {
+    id: 1,
+    name: "email",
+    title: "Email",
+    type: "email",
+    placeholder: "email@example.com",
+    icon: Mail,
+  },
+  {
+    id: 2,
+    name: "password",
+    title: "Password",
+    type: "password",
+    placeholder: "Minimal 6 karakter",
+    icon: Lock,
+  },
+];
 
 const handleSubmit = async () => {
   try {
-    isSubmitting.value = true
-    const data = await login(formData.value)
-    console.log(data.data.data)
+    isSubmitting.value = true;
+    const data = await login(formData.value);
+    console.log(data.data.data);
     if (data.data.token) {
       setToken(data.data.token)
       setUser(data.data.data)
@@ -97,9 +125,8 @@ const handleSubmit = async () => {
 
     toastRef.value.showToast('error', 'Login Gagal', errorMessage)
 
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
-}
-console.log(user.value)
-
+};
+console.log(user.value);
 </script>

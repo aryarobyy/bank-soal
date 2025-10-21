@@ -29,10 +29,6 @@ func NewExamScoreService(repo repository.ExamScoreRepository) ExamScoreService {
 }
 
 func (s *examScoreService) Create(ctx context.Context, data model.ExamScore) error {
-	if data.UserId == 0 {
-		return fmt.Errorf("userId is required")
-	}
-
 	err := s.repo.Create(ctx, data)
 	if err != nil {
 		if strings.Contains(err.Error(), "Unknown column") {

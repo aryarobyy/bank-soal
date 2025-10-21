@@ -18,6 +18,9 @@ type QuestionService interface {
 	GetAll(ctx context.Context) ([]model.Question, error)
 	CreateWithOptions(ctx context.Context, data model.Question) error
 	CreateFromJson(ctx context.Context, file *multipart.FileHeader) error
+	GetByExam(ctx context.Context, examId int) ([]model.Question, error)
+	GetByCreatorId(ctx context.Context, creatorId int) ([]model.Question, error)
+	GetByDifficult(ctx context.Context, diff string) ([]model.Question, error)
 }
 
 type questionService struct {
@@ -32,10 +35,6 @@ func NewQuestionService(repo repository.QuestionRepository) QuestionService {
 }
 
 func (s *questionService) Create(ctx context.Context, data model.Question) error {
-	if data.CreatorId == 0 {
-		return fmt.Errorf("creatorId is required")
-	}
-
 	err := s.repo.Create(ctx, data)
 	if err != nil {
 		return fmt.Errorf("failed to create question: %w", err)
@@ -90,14 +89,8 @@ func (s *questionService) Delete(ctx context.Context, id int, userId int) error 
 }
 
 func (s *questionService) CreateWithOptions(ctx context.Context, data model.Question) error {
-	if data.QuestionText == "" {
-		return fmt.Errorf("question_text is required")
-	}
 	if data.Difficulty != "easy" && data.Difficulty != "medium" && data.Difficulty != "hard" {
 		return fmt.Errorf("invalid difficulty")
-	}
-	if len(data.Options) == 0 {
-		return fmt.Errorf("options are required")
 	}
 
 	valid := false
@@ -151,4 +144,28 @@ func (s *questionService) CreateFromJson(ctx context.Context, file *multipart.Fi
 		return fmt.Errorf("failed to save to database: %w", err)
 	}
 	return nil
+}
+
+func (s *questionService) GetByExam(ctx context.Context, examId int) ([]model.Question, error) {
+	data, err := s.repo.GetByExam(ctx, examId)
+	if err != nil {
+		return nil, fmt.Errorf("data with exam id %d not found: %w", examId, err)
+	}
+	return data, nil
+}
+
+func (s *questionService) GetByCreatorId(ctx context.Context, creatorId int) ([]model.Question, error) {
+	data, err := s.repo.GetByExam(ctx, creatorId)
+	if err != nil {
+		return nil, fmt.Errorf("data with creator id %d not found: %w", creatorId, err)
+	}
+	return data, nil
+}
+
+func (s *questionService) GetByDifficult(ctx context.Context, diff string) ([]model.Question, error) {
+	data, err := s.repo.GetByDifficult(ctx, diff)
+	if err != nil {
+		return nil, fmt.Errorf("data with difficulty %s not found: %w", diff, err)
+	}
+	return data, nil
 }

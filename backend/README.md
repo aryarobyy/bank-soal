@@ -1,3 +1,26 @@
+# 🧠 Bank Soal Backend
+
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Go Version](https://img.shields.io/github/go-mod/go-version/aryarobyy/bank-soal)
+![Gin](https://img.shields.io/badge/Gin-Framework-blue)
+![Status](https://img.shields.io/badge/Status-Active-success)
+
+Backend API untuk aplikasi **Bank Soal**, dibuat menggunakan **Golang (Gin + GORM)** dan **MySQL**.  
+Proyek ini dirancang untuk mendukung sistem manajemen soal dan ujian, dengan fitur autentikasi, manajemen user, serta middleware keamanan.
+
+---
+
+## ⚙️ Tech Stack
+
+- **Language:** Go 1.22+
+- **Framework:** Gin Gonic
+- **ORM:** GORM
+- **Database:** MySQL (atau PostgreSQL)
+- **Auth:** JWT (Access & Refresh Token)
+- **Other:** dotenv, rate limiting, middleware validation
+
+---
+
 # 🚀 Setup Project
 
 ## 1. Download & Install Go
@@ -79,3 +102,8 @@ Server berjalan di: `http://localhost:8080`
 go mod tidy          # Install/update dependencies
 go run main.go       # Run aplikasi
 ```
+
+## 📜 License
+This project is licensed under the **MIT License** — see the [LICENSE](./LICENSE) file for details.
+
+© 2025 Roby Aryanata

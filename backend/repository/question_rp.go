@@ -16,6 +16,8 @@ type QuestionRepository interface {
 	Delete(ctx context.Context, id int) error
 	CreateWithOptions(ctx context.Context, question model.Question) error
 	CreateBatch(ctx context.Context, q []model.Question) error
+	GetByDifficult(ctx context.Context, diff string) ([]model.Question, error)
+	GetByCreatorId(ctx context.Context, creatorId int) ([]model.Question, error)
 }
 
 type questionRepository struct {
@@ -53,7 +55,7 @@ func (r *questionRepository) GetAll(ctx context.Context) ([]model.Question, erro
 func (r *questionRepository) GetByExam(ctx context.Context, examId int) ([]model.Question, error) {
 	var q []model.Question
 
-	if err := r.db.WithContext(ctx).Where("exam_id = ?", examId).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(model.Question{}).Where("exam_id = ?", examId).Find(&q).Error; err != nil {
 		return nil, err
 	}
 	return q, nil
@@ -98,4 +100,22 @@ func (r *questionRepository) CreateBatch(ctx context.Context, q []model.Question
 		return err
 	}
 	return nil
+}
+
+func (r *questionRepository) GetByDifficult(ctx context.Context, diff string) ([]model.Question, error) {
+	var q []model.Question
+
+	if err := r.db.WithContext(ctx).Model(model.Question{}).Where("difficulty = ?", diff).Find(&q).Error; err != nil {
+		return nil, err
+	}
+	return q, nil
+}
+
+func (r *questionRepository) GetByCreatorId(ctx context.Context, creatorId int) ([]model.Question, error) {
+	var q []model.Question
+
+	if err := r.db.WithContext(ctx).Model(model.Question{}).Where("creator_id = ?", creatorId).Find(&q).Error; err != nil {
+		return nil, err
+	}
+	return q, nil
 }

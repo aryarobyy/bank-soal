@@ -33,7 +33,7 @@ func (h *QuestionController) Create(c *gin.Context) {
 }
 
 func (h *QuestionController) GetById(c *gin.Context) {
-	idStr := c.Param("id")
+	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid data id")
@@ -88,7 +88,7 @@ func (h *QuestionController) Delete(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
-	idStr2 := c.Param("id")
+	idStr2 := c.Query("creator_id")
 	userId, err := strconv.Atoi(idStr2)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
@@ -135,4 +135,50 @@ func (h *QuestionController) CreateFromJson(c *gin.Context) {
 		return
 	}
 	helper.Success(c, nil, "questions upload successfully")
+}
+
+func (h *QuestionController) GetByExam(c *gin.Context) {
+	idStr := c.Query("exam_id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid exam id")
+		return
+	}
+
+	data, err := h.service.GetByExam(c.Request.Context(), id)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	helper.Success(c, data, "data found")
+}
+
+func (h *QuestionController) GetByCreator(c *gin.Context) {
+	idStr := c.Query("creator_id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid exam id")
+		return
+	}
+
+	data, err := h.service.GetByCreatorId(c.Request.Context(), id)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	helper.Success(c, data, "data found")
+}
+
+func (h *QuestionController) GetByDiff(c *gin.Context) {
+	diff := c.Query("diff")
+
+	data, err := h.service.GetByDifficult(c.Request.Context(), diff)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	helper.Success(c, data, "data found")
 }

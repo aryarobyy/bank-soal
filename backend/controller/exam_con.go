@@ -41,7 +41,7 @@ func (h *ExamController) Create(c *gin.Context) {
 }
 
 func (h *ExamController) GetById(c *gin.Context) {
-	idStr := c.Param("id")
+	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid data id")

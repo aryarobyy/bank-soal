@@ -77,7 +77,7 @@ func (h *UserController) Login(c *gin.Context) {
 }
 
 func (h *UserController) GetById(c *gin.Context) {
-	idStr := c.Param("id")
+	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid user id")
@@ -94,7 +94,7 @@ func (h *UserController) GetById(c *gin.Context) {
 }
 
 func (h *UserController) GetByEmail(c *gin.Context) {
-	email := c.Param("email")
+	email := c.Query("email")
 	if email == "" {
 		helper.Error(c, http.StatusBadRequest, "invalid user email")
 		return
@@ -194,7 +194,7 @@ func (h *UserController) GetAll(c *gin.Context) {
 }
 
 func (h *UserController) GetByNim(c *gin.Context) {
-	nim := c.Param("nim")
+	nim := c.Query("nim")
 	user, err := h.service.GetByNim(c, nim)
 	if len(nim) >= 10 {
 		helper.Error(c, http.StatusBadRequest, "invalid nim")
@@ -209,7 +209,7 @@ func (h *UserController) GetByNim(c *gin.Context) {
 }
 
 func (h *UserController) GetByName(c *gin.Context) {
-	name := c.Param("name")
+	name := c.Query("name")
 	users, err := h.service.GetByName(c, name)
 	if len(name) > 256 {
 		helper.Error(c, http.StatusBadRequest, "invalid name")
@@ -224,7 +224,7 @@ func (h *UserController) GetByName(c *gin.Context) {
 }
 
 func (h *UserController) GetByRole(c *gin.Context) {
-	role := c.Param("role")
+	role := c.Query("role")
 	users, err := h.service.GetByRole(c, role)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
@@ -235,7 +235,7 @@ func (h *UserController) GetByRole(c *gin.Context) {
 }
 
 func (h *UserController) ChangePassword(c *gin.Context) {
-	idStr := c.Param("id")
+	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid user id")
@@ -257,7 +257,7 @@ func (h *UserController) ChangePassword(c *gin.Context) {
 }
 
 func (h *UserController) ChangeRole(c *gin.Context) {
-	idStr := c.Param("id")
+	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid user id")

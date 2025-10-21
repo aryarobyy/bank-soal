@@ -1,10 +1,10 @@
-import { USER } from "../core/constant"
-import ApiHandler from "./api.handler"
+import { USER } from "../core/constant";
+import ApiHandler from "./api.handler";
 
 export const register = async (data) => {
-  const res = await ApiHandler.post(`${USER}/register`, data)
-  return res.data
-}
+  const res = await ApiHandler.post(`${USER}/register`, data);
+  return res.data;
+};
 
 export const login = async (data) => {
   const res = await ApiHandler.post(`${USER}/login`, data)
@@ -12,9 +12,9 @@ export const login = async (data) => {
 }
 
 export const refreshToken = async () => {
-  const res = await ApiHandler.post(`/${USER}/refresh`, {})
-  return res
-}
+  const res = await ApiHandler.post(`${USER}/refresh`, {});
+  return res;
+};
 
 export const updateUser = async (data, id) => {
   const formData = new FormData();
@@ -23,25 +23,25 @@ export const updateUser = async (data, id) => {
     formData.append(key, data[key]);
   }
 
-  const res = await ApiHandler.put(`/${USER}/${id}`, data, {
-    headers : {
+  const res = await ApiHandler.put(`${USER}/${id}`, formData, {
+    headers: {
       "Content-Type": "multipart/form-data",
-    }
-  })
-  return res
-}
+    },
+  });
+  return res;
+};
 
 export const getUserById = async (id) => {
-  const res = await ApiHandler.get(`/${USER}/id/${id}`)
-  return res
-}
+  const res = await ApiHandler.get(`${USER}/id/${id}`);
+  return res;
+};
 
 export const getUsers = async () => {
-  const res = await ApiHandler.get(`/${USER}/`)
-  return res.data
-}
+  const res = await ApiHandler.get(`${USER}/`);
+  return res.data;
+};
 
 export const getUserByName = async (name) => {
-  const res = await ApiHandler.get(`/${USER}/name/${name}`)
-  return res
-}
+  const res = await ApiHandler.get(`${USER}/name/${name}`);
+  return res;
+};

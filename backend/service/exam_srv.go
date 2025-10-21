@@ -30,18 +30,6 @@ func NewExamService(repo repository.ExamRepository) ExamService {
 }
 
 func (s *examService) Create(ctx context.Context, data model.Exam) error {
-	if data.CreatorId == 0 {
-		return fmt.Errorf("creator_id is required")
-	}
-
-	if data.StartedAt == nil {
-		return fmt.Errorf("started_at is required")
-	}
-
-	if data.FinishedAt == nil {
-		return fmt.Errorf("finished_at is required")
-	}
-
 	if data.FinishedAt.Before(*data.StartedAt) {
 		return fmt.Errorf("finished_at must be after started_at")
 	}

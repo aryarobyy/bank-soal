@@ -27,13 +27,6 @@ func NewScoreService(repo repository.ScoreRepository) ScoreService {
 }
 
 func (s *scoreService) Create(ctx context.Context, data model.Score) error {
-	if data.ExamId == 0 {
-		return fmt.Errorf("examId is required")
-	}
-	if data.QuestionId == 0 {
-		return fmt.Errorf("questionId is required")
-	}
-
 	err := s.repo.Create(ctx, data)
 	if err != nil {
 		return fmt.Errorf("failed to create score: %w", err)
