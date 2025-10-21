@@ -14,7 +14,7 @@ func OptionRoutes(r *gin.Engine, option *controller.OptionController) {
 			"option_text", "is_correct",
 		}), option.Create)
 		options.GET("/", option.GetAll)
-		options.GET("/id/:id", option.GetById)
+		options.GET("/id", option.GetById)
 		options.PUT("/:id", option.Update)
 		options.DELETE("/:id", option.Delete)
 	}

@@ -11,7 +11,7 @@ func ExamScoreRoutes(r *gin.Engine, examScore *controller.ExamScoreController) {
 	{
 		examScores.POST("/", middleware.InputValidate([]string{"exam_id", "user_id", "status"}), examScore.Create)
 		examScores.GET("/", examScore.GetAll)
-		examScores.GET("/id/:id", examScore.GetById)
+		examScores.GET("/id", examScore.GetById)
 		examScores.PUT("/:id", examScore.Update)
 		examScores.DELETE("/:id", examScore.Delete)
 	}

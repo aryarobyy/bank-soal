@@ -33,7 +33,7 @@ func (h *ScoreController) Create(c *gin.Context) {
 }
 
 func (h *ScoreController) GetById(c *gin.Context) {
-	idStr := c.Param("id")
+	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid data id")
@@ -50,7 +50,7 @@ func (h *ScoreController) GetById(c *gin.Context) {
 }
 
 func (h *ScoreController) GetAll(c *gin.Context) {
-	idStr := c.Param("qId")
+	idStr := c.Query("question_id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid question id")
