@@ -144,8 +144,7 @@ const fields = [
 const handleSubmit = async () => {
   try {
     isSubmitting.value = true;
-    const data = await register(formData.value);
-    console.log("Response:", data.data);
+    await register(formData.value);
 
     toastRef.value.showToast(
       "success",
@@ -153,10 +152,7 @@ const handleSubmit = async () => {
       "Akun Anda berhasil dibuat!"
     );
 
-    // Redirect to login page after successful registration
-    setTimeout(() => {
-      router.push("/login");
-    }, 1500);
+    router.push("/login");
 
     isSubmitting.value = false;
   } catch (error) {

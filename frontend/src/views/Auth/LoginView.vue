@@ -35,7 +35,7 @@
         </div>
 
         <Button
-          :text="isSubmitting ? 'Mendaftar...' : 'Daftar'"
+          :text="isSubmitting ? 'Masuk...' : 'Masuk'"
           :disabled="isSubmitting"
           variant="modern"
           size="medium"
@@ -47,7 +47,7 @@
       <p class="text-center text-gray-600 mt-6">
         Belum Punya Akun?
         <router-link
-          to="/login"
+          to="/register"
           class="text-indigo-600 font-semibold hover:underline cursor-pointer"
         >
           Daftar di sini
@@ -62,12 +62,13 @@
 <script setup>
 import { onMounted, ref } from "vue";
 import { Mail, Lock, GraduationCap } from "lucide-vue-next";
-import Input from "../../components/ui/Input.vue";
+import Input from '../../components/ui/Input.vue'
 import Button from "../../components/ui/Button.vue";
 import { login } from "../../provider/user.provider";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import Toast from "../../components/utils/Toast.vue";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
+import { useRouter } from 'vue-router'
 
 const { setValue: setToken, value: token } = useLocalStorage("token");
 const { setValue: setUser, value } = useLocalStorage("user");
@@ -80,6 +81,7 @@ const formData = ref({
 });
 const errors = ref({});
 const isSubmitting = ref(false);
+const router = useRouter()
 
 const fields = [
   {
@@ -104,7 +106,7 @@ const handleSubmit = async () => {
   try {
     isSubmitting.value = true;
     const data = await login(formData.value);
-    console.log(data.data.data);
+    // const redirectPath = userRole === 'dosen' ? '/dosen/dashboard' : '/'
     if (data.data.token) {
       setToken(data.data.token);
       setUser(data.data.data);
@@ -117,6 +119,7 @@ const handleSubmit = async () => {
     );
 
     isSubmitting.value = false;
+    // router.push(redirectPath)
   } catch (error) {
     console.log("Something error", error.response?.data);
 

@@ -15,10 +15,8 @@
           >Dashboard</a
         >
         <button>
-          <img
-            src="/src/assets/user-icon.png"
-            alt="Profile"
-            class="w-8 h-8 rounded-full border border-[#3B3B98]"
+          <User
+            class="w-8 h-8 rounded-full border border-[#3B3B98] text-[#3B3B98]"
           />
         </button>
       </nav>
@@ -64,7 +62,7 @@
           <div class="mt-6 bg-gray-50 rounded-lg p-4">
             <h3 class="text-gray-700 font-semibold mb-2">My email address</h3>
             <div class="flex items-center gap-3">
-              <img src="/src/assets/mail-icon.png" alt="Mail" class="w-5 h-5" />
+              <Mail class="w-5 h-5" />
               <div>
                 <p class="text-gray-700">{{ superAdmin.email }}</p>
                 <p class="text-gray-400 text-sm">
@@ -115,7 +113,10 @@
 
 <script setup>
 import { ref } from "vue";
-import defaultAvatar from "../assets/default-avatar.png";
+import { User, Mail } from 'lucide-vue-next';
+
+// Placeholder image using SVG data URI as fallback
+const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
 
 const superAdmin = ref({
   fullName: "Jonathan Wibowo",

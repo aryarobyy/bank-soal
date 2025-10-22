@@ -86,15 +86,19 @@
 </template>
 
 <script>
-// Path gambar-gambar Anda yang sudah benar
-import userIcon from '../../assets/user-icon.png';
-import illustration1 from '../../assets/illustration-1.jpg';
-import illustration2 from '../../assets/illustration-2.jpg';
+import { User, GraduationCap } from 'lucide-vue-next';
 
-// 1. Baris 'import heroBgPattern' yang bermasalah sudah DIHAPUS dari sini.
+// Placeholder images using SVG data URIs as fallback
+const userIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
+const illustration1 = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='24' height='24' fill='%23d1d5db'/%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5z'/%3E%3Cpath d='M2 17l10 5 10-5'/%3E%3Cpath d='M2 12l10 5 10-5'/%3E%3C/svg%3E";
+const illustration2 = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='24' height='24' fill='%23d1d5db'/%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 6v6l4 2'/%3E%3C/svg%3E";
 
 export default {
   name: 'HomePage',
+  components: {
+    User,
+    GraduationCap
+  },
   data() {
     return {
       isLoggedIn: false,
