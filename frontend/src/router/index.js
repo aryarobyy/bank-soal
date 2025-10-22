@@ -22,6 +22,8 @@ import CreateManualSoal from '../views/dosen/CreateManualSoal.vue'
 import UploadJsonSoal from '../views/dosen/UploadJsonSoal.vue'
 import LecturerProfilePage from '../views/dosen/LecturerProfilePage.vue'
 import LecturerSoal from '../views/dosen/LecturerSoal.vue'
+import Profile from '../views/profile/Profile.vue'
+import UpdateProfile from '../views/profile/UpdateProfile.vue'
 
 const routes = [
   // --- Rute Umum & Mahasiswa ---
@@ -33,7 +35,8 @@ const routes = [
   { path: '/forgot-password', name: 'ForgotPassword', component: ForgotPassword },
   { path: '/ujian', name: 'ExamPage', component: ExamPage },
   
-  { path: '/update-profile', name: 'StudentProfilePage', component: StudentProfilePage },
+  { path: '/profile/:id', name:'profile', component: Profile },
+  { path: '/update-profile', name:'update profile', component: UpdateProfile },
 
   // --- Rute Dosen (Menggunakan Layout) ---
   {

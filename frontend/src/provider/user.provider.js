@@ -28,7 +28,7 @@ export const updateUser = async (data, id) => {
       "Content-Type": "multipart/form-data",
     },
   });
-  return res;
+  return res.data;
 };
 
 export const getUserById = async (id) => {

@@ -7,7 +7,7 @@ export const useGetCurrentUser = () => {
   const loading = ref(false)
   const error = ref(null)
   
-  const user = computed(() => value.value).value
+  const user = computed(() => value.value)
   
   return {
     user,
