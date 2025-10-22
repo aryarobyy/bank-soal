@@ -120,6 +120,7 @@ const handleSubmit = async () => {
 
     isSubmitting.value = false;
     // router.push(redirectPath)
+    router.push("/")
   } catch (error) {
     console.log("Something error", error.response?.data);
 
