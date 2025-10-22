@@ -32,8 +32,8 @@ export const updateUser = async (data, id) => {
 };
 
 export const getUserById = async (id) => {
-  const res = await ApiHandler.get(`${USER}/id/${id}`);
-  return res;
+  const res = await ApiHandler.get(`${USER}/id?id=${id}`);
+  return res.data;
 };
 
 export const getUsers = async () => {
@@ -42,6 +42,6 @@ export const getUsers = async () => {
 };
 
 export const getUserByName = async (name) => {
-  const res = await ApiHandler.get(`${USER}/name/${name}`);
+  const res = await ApiHandler.get(`${USER}/name?name=${name}`);
   return res;
 };

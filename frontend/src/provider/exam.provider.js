@@ -7,7 +7,7 @@ export const getAllExam = async () => {
 };
 
 export const getExamById = async (id) => {
-  const res = await ApiHandler.get(`${EXAM}/${id}`);
+  const res = await ApiHandler.get(`${EXAM}/id?id=${id}`);
   return res.data;
 };
 
@@ -17,11 +17,11 @@ export const createExam = async (data) => {
 };
 
 export const updateExam = async (id, data) => {
-  const res = await ApiHandler.put(`${EXAM}/${id}`, data);
+  const res = await ApiHandler.put(`${EXAM}/id?id=${id}`, data);
   return res.data;
 };
 
 export const deleteExam = async (id) => {
-  const res = await ApiHandler.delete(`${EXAM}/${id}`);
+  const res = await ApiHandler.delete(`${EXAM}/id?id=${id}`);
   return res.data;
 };
