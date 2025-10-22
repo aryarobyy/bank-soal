@@ -126,17 +126,20 @@ func (h *UserController) Update(c *gin.Context) {
 		return
 	}
 
+	email := c.PostForm("email")
+
+	if email != "" && !isValidEmail(email) {
+		helper.Error(c, http.StatusBadRequest, "wrong email format")
+		return
+	}
+
 	user := model.User{
 		Name:    c.PostForm("name"),
+		Email:   email,
 		Nim:     c.PostForm("nim"),
 		Major:   c.PostForm("major"),
 		Faculty: c.PostForm("faculty"),
 		Status:  model.Status(c.PostForm("status")),
-	}
-
-	if !isValidEmail(user.Email) {
-		helper.Error(c, http.StatusBadRequest, "wrong email format")
-		return
 	}
 
 	academicYearStr := c.PostForm("academic_year")
@@ -148,7 +151,6 @@ func (h *UserController) Update(c *gin.Context) {
 		}
 		user.AcademicYear = academicYear
 	}
-
 	file, _ := c.FormFile("image")
 	if file != nil {
 		imageUrl, err := helper.UploadImage(c, id)
@@ -158,13 +160,11 @@ func (h *UserController) Update(c *gin.Context) {
 		}
 		user.ImgUrl = imageUrl
 	}
-
 	updatedUser, err := h.service.Update(c.Request.Context(), user, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-
 	helper.Success(c, updatedUser, "user updated successfully")
 }
 
