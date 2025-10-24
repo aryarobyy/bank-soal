@@ -6,11 +6,11 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"latih.in-be/controller"
-	"latih.in-be/middleware"
-	"latih.in-be/repository"
-	"latih.in-be/route"
-	"latih.in-be/service"
+	"latih.in-be/internal/controller"
+	"latih.in-be/internal/middleware"
+	"latih.in-be/internal/repository"
+	"latih.in-be/internal/route"
+	"latih.in-be/internal/service"
 )
 
 type App struct {
