@@ -2,7 +2,7 @@ import { QUESTION } from "../core/constant";
 import ApiHandler from "./api.handler";
 
 export const getAllQuestions = async () => {
-  const res = await ApiHandler.get(`${QUESTION}`);
+  const res = await ApiHandler.get(`/${QUESTION}/`);
   return res.data;
 };
 
@@ -17,7 +17,7 @@ export const deleteQuestion = async (id) => {
 };
 
 export const getQuestionById = async (id) => {
-  const res = await ApiHandler.get(`${QUESTION}/id?id=${id}`);
+  const res = await ApiHandler.get(`/${QUESTION}/id?id=${id}`);
   return res.data;
 };
 

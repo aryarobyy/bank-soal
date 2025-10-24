@@ -1,24 +1,28 @@
 <template>
   <div class="w-full p-6 sm:p-8 mx-auto bg-white rounded-2xl shadow-xl">
+    
     <div class="flex items-center justify-between pb-4 mb-6 border-b border-gray-200">
       <h2 class="text-2xl font-bold text-dark-text">Manajemen Bank Soal</h2>
-      <button @click="$emit('buat-soal')" class="flex items-center gap-2 px-4 py-2 font-semibold text-white transition-opacity rounded-lg bg-primary hover:opacity-90">
+      
+      <button 
+        @click="$emit('buat-soal')" 
+        class="flex items-center gap-2 px-4 py-2 font-semibold text-white transition-colors rounded-lg bg-blue-600 hover:bg-blue-700"
+      >
         <i class="fas fa-plus-circle"></i> Buat Soal
       </button>
-    </div>
-
+      </div>
     <div class="grid grid-cols-1 gap-4 mb-8 md:grid-cols-4">
       <select class="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
         <option>Last Modified</option>
       </select>
-
+      
       <select class="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
         <option value="">Filter by Status</option>
         <option value="Not Started">Not Started</option>
         <option value="In Progress">In Progress</option>
         <option value="Completed">Completed</option>
       </select>
-
+      
       <div class="relative col-span-1 md:col-span-2">
         <input type="text" placeholder="Search your file" class="w-full px-3 py-2 pr-10 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
         <i class="absolute text-gray-400 fas fa-search top-3 right-4"></i>
@@ -26,6 +30,9 @@
     </div>
 
     <div class="space-y-4">
+      <div v-if="soalGroups.length === 0" class="text-center py-10 text-gray-500">
+        <p>Belum ada soal di bank soal.</p>
+      </div>
       <div v-for="(group, index) in soalGroups" :key="index" class="bg-indigo-50/50 rounded-lg">
         <button @click="toggleAccordion(group)" class="flex items-center justify-between w-full p-4 font-bold text-left text-dark-text">
           <span>{{ group.title }}</span>
@@ -76,6 +83,12 @@ export default {
     return {
       soalGroups: this.soalData.map(group => ({ ...group, isOpen: true }))
     };
+  },
+  watch: {
+    // Menambahkan watcher agar data diupdate jika ada perubahan dari parent
+    soalData(newData) {
+      this.soalGroups = newData.map(group => ({ ...group, isOpen: true }));
+    }
   },
   methods: {
     toggleAccordion(group) {
