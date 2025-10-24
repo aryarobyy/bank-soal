@@ -29,7 +29,7 @@ func (h *ScoreController) Create(c *gin.Context) {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	helper.Success(c, data, "exam created")
+	helper.Success(c, data, "data created")
 }
 
 func (h *ScoreController) GetById(c *gin.Context) {
