@@ -17,7 +17,7 @@ func QuestionRoutes(r *gin.Engine, question *controller.QuestionController) {
 		questions.POST("/options", middleware.InputValidate([]string{"creator_id", "question_text"}), question.CreateWithOptions)
 		questions.POST("/json", question.CreateFromJson)
 		questions.GET("/exam", question.GetByExam)
-		questions.GET("/diff", question.GetByCreator)
+		questions.GET("/diff", question.GetByDiff)
 		questions.GET("/creator", question.GetByCreator)
 	}
 }

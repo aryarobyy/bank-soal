@@ -35,8 +35,11 @@ func NewQuestionService(repo repository.QuestionRepository) QuestionService {
 }
 
 func (s *questionService) Create(ctx context.Context, data model.Question) error {
-	err := s.repo.Create(ctx, data)
-	if err != nil {
+	if IsValidSubjectTitle(data.Subject.Title) {
+		return fmt.Errorf("invalid subject: %s", data.Subject)
+	}
+
+	if err := s.repo.Create(ctx, data); err != nil {
 		return fmt.Errorf("failed to create question: %w", err)
 	}
 
@@ -168,4 +171,17 @@ func (s *questionService) GetByDifficult(ctx context.Context, diff string) ([]mo
 		return nil, fmt.Errorf("data with difficulty %s not found: %w", diff, err)
 	}
 	return data, nil
+}
+
+func IsValidSubjectTitle(title model.SubjectTitle) bool {
+	switch title {
+	case model.SubjectKalkulus,
+		model.SubjectMatDis,
+		model.SubjectAutomata,
+		model.SubjectData,
+		model.SubjectMetNum:
+		return true
+	default:
+		return false
+	}
 }
