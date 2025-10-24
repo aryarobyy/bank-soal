@@ -5,10 +5,14 @@
     <div class="p-8 border border-gray-200 rounded-lg">
       <p class="mb-6 font-semibold text-medium-text">Pilih Salah Satu Untuk Membuat Soal Ujian</p>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <button @click="uploadJson" class="w-full h-24 text-lg font-bold text-white transition-opacity rounded-lg bg-primary hover:opacity-90">
+        <button 
+          @click="uploadJson" 
+          class="w-full h-24 text-lg font-bold text-white transition-colors rounded-lg bg-blue-600 hover:bg-blue-700">
           UPLOAD FILE JSON
         </button>
-        <button @click="createManual" class="w-full h-24 text-lg font-bold text-white transition-opacity rounded-lg bg-primary hover:opacity-90">
+        <button 
+          @click="createManual" 
+          class="w-full h-24 text-lg font-bold text-white transition-colors rounded-lg bg-blue-600 hover:bg-blue-700">
           Buat Manual
         </button>
       </div>
@@ -17,16 +21,14 @@
 </template>
 
 <script>
-// Tidak perlu lagi mengimpor layout atau userIcon di sini
-
 export default {
   name: 'CreateSoal',
-  // Tidak ada lagi data atau method untuk layout
   methods: {
     uploadJson() {
       this.$router.push('/dosen/soal/upload-json');
     },
     createManual() {
+      // Pastikan path ini sudah benar
       this.$router.push('/dosen/soal/create-manual');
     }
   },

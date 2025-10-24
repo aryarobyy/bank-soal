@@ -9,7 +9,7 @@
     <div class="p-6 border border-gray-200 rounded-lg">
       <div class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="col-span-1">
-          <label for="level" class="block text-sm font-semibold text-medium-text mb-1">Level of difficult*</label>
+          <label for="level" class="block text-sm font-semibold text-medium-text mb-1">Level Kesulitan*</label>
           <select id="level" v-model="currentSoal.level" class="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
             <option value="easy">Easy</option>
             <option value="medium">Medium</option>
@@ -21,6 +21,7 @@
           <input id="mark" v-model.number="currentSoal.mark" type="number" class="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
         </div>
       </div>
+      
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div 
           @dragover.prevent="isDraggingImage = true"
@@ -65,7 +66,7 @@
         </div>
       </div>
       <div class="flex justify-end">
-        <button @click="addSoalToList" class="flex items-center gap-2 px-6 py-2 font-bold text-white transition-opacity rounded-lg bg-primary hover:opacity-90">
+        <button @click="addSoalToList" class="flex items-center gap-2 px-6 py-2 font-bold text-white transition-opacity rounded-lg bg-blue-600 hover:bg-blue-700">
           <i class="fas fa-plus"></i> Tambah Soal ke Daftar
         </button>
       </div>
@@ -83,7 +84,9 @@
 </template>
 
 <script>
-// Fungsi untuk membuat objek soal yang kosong (untuk reset form)
+import { createQuestionWithOptions } from '../../provider/question.provider';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
+
 const createEmptySoal = () => ({
   level: 'easy', mark: 10, imageUrl: null, question: '',
   answers: [
@@ -96,6 +99,7 @@ export default {
   name: 'CreateManualSoal',
   data() {
     return {
+      // Data untuk 'exams' dan 'selectedExamId' dihapus
       isDraggingImage: false,
       uploadedImageName: null,
       currentSoal: createEmptySoal(),
@@ -104,6 +108,7 @@ export default {
     };
   },
   methods: {
+    // Method fetchExams() dihapus
     triggerImageInput() { this.$refs.imageInput.click(); },
     handleImageSelect(event) { this.processImage(event.target.files[0]); },
     handleDropImage(event) { this.isDraggingImage = false; this.processImage(event.dataTransfer.files[0]); },
@@ -120,18 +125,12 @@ export default {
       this.currentSoal.imageUrl = null; this.uploadedImageName = null; this.$refs.imageInput.value = null;
     },
     
-    // FUNGSI UNTUK TOMBOL CEKLIS
     toggleCorrectAnswer(selectedIndex) {
       this.currentSoal.answers.forEach((answer, index) => {
-        if (index === selectedIndex) {
-          answer.isCorrect = !answer.isCorrect; // Toggle jawaban yang dipilih
-        } else {
-          answer.isCorrect = false; // Pastikan yang lain tidak terpilih
-        }
+        answer.isCorrect = (index === selectedIndex) ? !answer.isCorrect : false;
       });
     },
 
-    // FUNGSI UNTUK TOMBOL TAMBAH SOAL
     addSoalToList() {
       if (!this.currentSoal.question.trim()) { alert('Soal tidak boleh kosong!'); return; }
       if (this.currentSoal.answers.every(a => !a.text.trim())) { alert('Setidaknya satu jawaban harus diisi!'); return; }
@@ -150,15 +149,52 @@ export default {
       }
     },
 
-    // FUNGSI UNTUK TOMBOL SIMPAN SEMUA
-    saveAllSoals() {
+    // ## FUNGSI SAVE DIUBAH UNTUK MENGGUNAKAN EXAM_ID STATIS ##
+    async saveAllSoals() {
       if (this.soalList.length === 0) {
-        alert('Daftar soal masih kosong. Silakan tambah soal terlebih dahulu.'); return;
+        alert('Daftar soal masih kosong. Silakan tambah soal terlebih dahulu.');
+        return;
       }
-      console.log('Data yang akan dikirim ke backend:', this.soalList);
-      alert(`${this.soalList.length} soal berhasil disimpan (simulasi)!`);
-      this.$router.push('/dosen/soal/list');
+
+      // Ambil ID pembuat soal dari Local Storage
+      const { value: user } = useLocalStorage('user');
+      const creatorId = user.value?.id;
+      if (!creatorId) {
+        alert('Gagal mendapatkan ID pengguna. Silakan login ulang.');
+        return;
+      }
+      
+      // Tentukan exam_id secara statis/hardcoded di sini
+      const hardcodedExamId = 2; // Ganti dengan ID ujian yang sesuai
+
+      try {
+        for (const soal of this.soalList) {
+          const payload = {
+            exam_id: hardcodedExamId,
+            creator_id: creatorId,
+            question_text: soal.question,
+            difficulty: soal.level,
+            options: soal.answers
+              .filter(a => a.text.trim() !== '')
+              .map((a, index) => ({
+                option_label: String.fromCharCode(65 + index),
+                option_text: a.text,
+                is_correct: a.isCorrect,
+              })),
+          };
+          
+          await createQuestionWithOptions(payload);
+        }
+
+        alert(`${this.soalList.length} soal berhasil disimpan!`);
+        this.$router.push('/dosen/soal/list');
+
+      } catch (error) {
+        console.error("Gagal menyimpan soal:", error);
+        alert('Terjadi kesalahan saat menyimpan soal. Periksa konsol untuk detail.');
+      }
     }
-  }
+  },
+  // Hook mounted() tidak lagi diperlukan karena tidak ada data yang perlu di-fetch
 };
 </script>

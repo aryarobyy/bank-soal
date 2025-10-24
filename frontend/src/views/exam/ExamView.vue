@@ -32,23 +32,22 @@
   </div>
 </template>
 
-<script>
-import { User } from 'lucide-vue-next';
+<script setup>
+// CHANGE IS HERE: Use <script setup> instead of <script>
+
 import { useGetCurrentUser } from '../../hooks/useGetCurrentUser';
 import { onMounted, ref } from 'vue';
 import Toast from '../../components/utils/Toast.vue';
 import { useRouter } from 'vue-router';
 import Navbar from '../../components/ui/Navbar.vue';
 
-const userIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
-
-const { user, loading, error } = useGetCurrentUser()
-
+const { user } = useGetCurrentUser()
 const toastRef = ref(null);
 const router = useRouter()
 
 onMounted(() => {
-  if (!user){
+  // Now this code works correctly because it's inside the setup context
+  if (!user.value){
     toastRef.value.showToast(
       "error",
       "User tidak dikenali",
@@ -58,4 +57,8 @@ onMounted(() => {
   }
 })
 
+const startExam = () => {
+  // Add your logic to start the exam here
+  alert("Memulai ujian!");
+};
 </script>
