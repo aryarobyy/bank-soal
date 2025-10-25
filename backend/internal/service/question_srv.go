@@ -14,7 +14,7 @@ import (
 type QuestionService interface {
 	Create(ctx context.Context, data model.Question) error
 	GetById(ctx context.Context, id int) (*model.Question, error)
-	Update(ctx context.Context, data model.Question, id int) (*model.Question, error)
+	Update(ctx context.Context, newData model.Question, id int, userId int) (*model.Question, error)
 	Delete(ctx context.Context, id int, userId int) error
 	GetAll(ctx context.Context) ([]model.Question, error)
 	CreateWithOptions(ctx context.Context, data model.Question) error
@@ -27,11 +27,14 @@ type QuestionService interface {
 type questionService struct {
 	repo     repository.QuestionRepository
 	userRepo repository.UserRepository
+	optRepo  repository.OptionRepository
 }
 
-func NewQuestionService(repo repository.QuestionRepository) QuestionService {
+func NewQuestionService(repo repository.QuestionRepository, userRepo repository.UserRepository, optRepo repository.OptionRepository) QuestionService {
 	return &questionService{
-		repo: repo,
+		repo:     repo,
+		userRepo: userRepo,
+		optRepo:  optRepo,
 	}
 }
 
@@ -55,8 +58,22 @@ func (s *questionService) GetById(ctx context.Context, id int) (*model.Question,
 	return data, nil
 }
 
-func (s *questionService) Update(ctx context.Context, data model.Question, id int) (*model.Question, error) {
-	updatedData, err := s.repo.Update(ctx, data, id)
+func (s *questionService) Update(ctx context.Context, newData model.Question, id int, userId int) (*model.Question, error) {
+	data, err := s.repo.GetById(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("data is unavaible %w", err)
+	}
+
+	user, err := s.userRepo.GetById(ctx, userId)
+	if err != nil {
+		return nil, fmt.Errorf("user is unavaible %w", err)
+	}
+
+	if user.Id != data.CreatorId && user.Role != model.RoleAdmin {
+		return nil, fmt.Errorf("you are not the creator or admin")
+	}
+
+	updatedData, err := s.repo.Update(ctx, newData, id)
 	if err != nil {
 		return nil, fmt.Errorf("update failed: %w", err)
 	}
@@ -84,6 +101,10 @@ func (s *questionService) Delete(ctx context.Context, id int, userId int) error 
 
 	if user.Id != data.CreatorId && user.Role != model.RoleAdmin {
 		return fmt.Errorf("you are not the creator or admin")
+	}
+
+	if err := s.optRepo.DeleteByQuestionId(ctx, id); err != nil {
+		return fmt.Errorf("failed to delete data: %w", err)
 	}
 
 	if err := s.repo.Delete(ctx, id); err != nil {

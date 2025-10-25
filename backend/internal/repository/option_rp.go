@@ -13,6 +13,7 @@ type OptionRepository interface {
 	GetAll(ctx context.Context, qId int) ([]model.Option, error)
 	Update(ctx context.Context, o model.Option, id int) (*model.Option, error)
 	Delete(ctx context.Context, id int) error
+	DeleteByQuestionId(ctx context.Context, qId int) error
 }
 
 type optionRepository struct {
@@ -57,6 +58,13 @@ func (r *optionRepository) Update(ctx context.Context, o model.Option, id int) (
 
 func (r *optionRepository) Delete(ctx context.Context, id int) error {
 	if err := r.db.WithContext(ctx).Model(model.Option{}).Where("id = ?", id).Delete(id).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *optionRepository) DeleteByQuestionId(ctx context.Context, qId int) error {
+	if err := r.db.WithContext(ctx).Model(model.Option{}).Where("question_id = ?", qId).Delete(qId).Error; err != nil {
 		return err
 	}
 	return nil

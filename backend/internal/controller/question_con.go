@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"latih.in-be/utils/helper"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
+	"latih.in-be/utils/helper"
 )
 
 type QuestionController struct {
@@ -60,8 +60,14 @@ func (h *QuestionController) GetAll(c *gin.Context) {
 }
 
 func (h *QuestionController) Update(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
+	idStr1 := c.Param("id")
+	id, err := strconv.Atoi(idStr1)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid id")
+		return
+	}
+	idStr2 := c.Query("creator_id")
+	userId, err := strconv.Atoi(idStr2)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
@@ -73,7 +79,7 @@ func (h *QuestionController) Update(c *gin.Context) {
 		return
 	}
 
-	updatedData, err := h.service.Update(c, data, id)
+	updatedData, err := h.service.Update(c, data, id, userId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
