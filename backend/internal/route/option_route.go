@@ -12,14 +12,14 @@ func OptionRoutes(r *gin.Engine, option *controller.OptionController) {
 		auth := options.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			options.POST("/", middleware.RoleGuard("admin", "lecture"), middleware.InputValidate([]string{
+			options.POST("/", middleware.RoleGuard("admin", "lecturer"), middleware.InputValidate([]string{
 				"question_id", "option_label",
 				"option_text", "is_correct",
 			}), option.Create)
 			options.GET("/", option.GetAll)
 			options.GET("/id", option.GetById)
-			options.PUT("/:id", middleware.RoleGuard("admin", "lecture"), option.Update)
-			options.DELETE("/:id", middleware.RoleGuard("admin", "lecture"), option.Delete)
+			options.PUT("/:id", middleware.RoleGuard("admin", "lecturer"), option.Update)
+			options.DELETE("/:id", middleware.RoleGuard("admin", "lecturer"), option.Delete)
 		}
 	}
 }

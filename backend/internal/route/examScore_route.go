@@ -12,7 +12,7 @@ func ExamScoreRoutes(r *gin.Engine, examScore *controller.ExamScoreController) {
 		auth := examScores.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			examScores.POST("/", middleware.RoleGuard("admin", "lecture"), middleware.InputValidate([]string{"exam_id", "user_id", "status"}), examScore.Create)
+			examScores.POST("/", middleware.RoleGuard("admin", "lecturer"), middleware.InputValidate([]string{"exam_id", "user_id", "status"}), examScore.Create)
 			examScores.GET("/", examScore.GetAll)
 			examScores.GET("/id", examScore.GetById)
 			examScores.PUT("/:id", examScore.Update)

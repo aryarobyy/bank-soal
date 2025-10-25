@@ -12,13 +12,13 @@ func ExamRoutes(r *gin.Engine, exam *controller.ExamController) {
 		auth := exams.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			exams.POST("/", middleware.RoleGuard("admin", "lecture"),
+			exams.POST("/", middleware.RoleGuard("admin", "lecturer"),
 				middleware.InputValidate([]string{"title", "creator_id", "long_time", "started_at", "finished_at"}),
 				exam.Create)
 			exams.GET("/", exam.GetAll)
 			exams.GET("/id", exam.GetById)
-			exams.PUT("/:id", middleware.RoleGuard("admin", "lecture"), exam.Update)
-			exams.DELETE("/:id/:userId", middleware.RoleGuard("admin", "lecture"), exam.Delete)
+			exams.PUT("/:id", middleware.RoleGuard("admin", "lecturer"), exam.Update)
+			exams.DELETE("/:id/:userId", middleware.RoleGuard("admin", "lecturer"), exam.Delete)
 		}
 	}
 }

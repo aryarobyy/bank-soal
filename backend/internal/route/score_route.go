@@ -12,11 +12,11 @@ func ScoreRoutes(r *gin.Engine, score *controller.ScoreController) {
 		auth := scores.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			scores.POST("/", middleware.RoleGuard("admin", "lecture"), middleware.InputValidate([]string{"exam_id", "user_id", "question_id", "is_correct", "score"}), score.Create)
+			scores.POST("/", middleware.RoleGuard("admin", "lecturer"), middleware.InputValidate([]string{"exam_id", "user_id", "question_id", "is_correct", "score"}), score.Create)
 			scores.GET("/id", score.GetById)
 			scores.GET("/all", score.GetAll)
-			scores.PUT("/:id", middleware.RoleGuard("admin", "lecture"), score.Update)
-			scores.DELETE("/:id", middleware.RoleGuard("admin", "lecture"), score.Delete)
+			scores.PUT("/:id", middleware.RoleGuard("admin", "lecturer"), score.Update)
+			scores.DELETE("/:id", middleware.RoleGuard("admin", "lecturer"), score.Delete)
 		}
 	}
 }
