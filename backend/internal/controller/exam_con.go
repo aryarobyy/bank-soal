@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"latih.in-be/utils/helper"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
+	"latih.in-be/utils/helper"
 )
 
 type ExamController struct {
@@ -105,7 +105,7 @@ func (h *ExamController) Delete(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
-	idStr2 := c.Param("userId")
+	idStr2 := c.Param("user_id")
 	idUser, err := strconv.Atoi(idStr2)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid id")

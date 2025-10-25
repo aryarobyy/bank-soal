@@ -94,7 +94,7 @@ func (h *QuestionController) Delete(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
-	idStr2 := c.Query("creator_id")
+	idStr2 := c.Query("user_id")
 	userId, err := strconv.Atoi(idStr2)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
