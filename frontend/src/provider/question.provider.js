@@ -12,7 +12,7 @@ export const createQuestionWithOptions = async (data) => {
 };
 
 export const deleteQuestion = async (id) => {
-  const res = await ApiHandler.delete(`${QUESTION}/id?id=${id}`);
+  const res = await ApiHandler.delete(`/${QUESTION}/id?id=${id}`);
   return res.data;
 };
 
