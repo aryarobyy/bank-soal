@@ -7,9 +7,9 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/crypto/bcrypt"
-	"latih.in-be/utils/helper"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/repository"
+	"latih.in-be/utils/helper"
 )
 
 type UserService interface {

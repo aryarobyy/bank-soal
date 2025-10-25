@@ -3,6 +3,8 @@ package helper
 import (
 	"fmt"
 	"reflect"
+
+	"latih.in-be/internal/model"
 )
 
 func GetFieldValue(data interface{}, jsonTag string) interface{} {
@@ -27,4 +29,17 @@ func ValidateFieldLengths(data interface{}, rules map[string]int) error {
 		}
 	}
 	return nil
+}
+
+func IsValidSubjectTitle(title model.SubjectTitle) bool {
+	switch title {
+	case model.SubjectKalkulus,
+		model.SubjectMatDis,
+		model.SubjectAutomata,
+		model.SubjectData,
+		model.SubjectMetNum:
+		return true
+	default:
+		return false
+	}
 }

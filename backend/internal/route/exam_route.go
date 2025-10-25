@@ -9,12 +9,16 @@ import (
 func ExamRoutes(r *gin.Engine, exam *controller.ExamController) {
 	exams := r.Group("/exam")
 	{
-		exams.POST("/",
-			middleware.InputValidate([]string{"title", "creator_id", "long_time", "started_at", "finished_at"}),
-			exam.Create)
-		exams.GET("/", exam.GetAll)
-		exams.GET("/id", exam.GetById)
-		exams.PUT("/:id", exam.Update)
-		exams.DELETE("/:id/:userId", exam.Delete)
+		auth := exams.Group("")
+		auth.Use(middleware.AuthMiddleware())
+		{
+			exams.POST("/", middleware.RoleGuard("admin", "lecture"),
+				middleware.InputValidate([]string{"title", "creator_id", "long_time", "started_at", "finished_at"}),
+				exam.Create)
+			exams.GET("/", exam.GetAll)
+			exams.GET("/id", exam.GetById)
+			exams.PUT("/:id", middleware.RoleGuard("admin", "lecture"), exam.Update)
+			exams.DELETE("/:id/:userId", middleware.RoleGuard("admin", "lecture"), exam.Delete)
+		}
 	}
 }

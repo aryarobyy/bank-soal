@@ -8,6 +8,7 @@ import (
 
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/repository"
+	"latih.in-be/utils/helper"
 )
 
 type QuestionService interface {
@@ -35,7 +36,7 @@ func NewQuestionService(repo repository.QuestionRepository) QuestionService {
 }
 
 func (s *questionService) Create(ctx context.Context, data model.Question) error {
-	if IsValidSubjectTitle(data.Subject.Title) {
+	if helper.IsValidSubjectTitle(data.Subject.Title) {
 		return fmt.Errorf("invalid subject: %s", data.Subject.Title)
 	}
 
@@ -171,17 +172,4 @@ func (s *questionService) GetByDifficult(ctx context.Context, diff string) ([]mo
 		return nil, fmt.Errorf("data with difficulty %s not found: %w", diff, err)
 	}
 	return data, nil
-}
-
-func IsValidSubjectTitle(title model.SubjectTitle) bool {
-	switch title {
-	case model.SubjectKalkulus,
-		model.SubjectMatDis,
-		model.SubjectAutomata,
-		model.SubjectData,
-		model.SubjectMetNum:
-		return true
-	default:
-		return false
-	}
 }
