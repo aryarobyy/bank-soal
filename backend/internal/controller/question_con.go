@@ -66,12 +66,14 @@ func (h *QuestionController) Update(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
-	idStr2 := c.Query("creator_id")
-	userId, err := strconv.Atoi(idStr2)
-	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid id")
+
+	userIdVal, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "user id not found in context")
 		return
 	}
+	userId := userIdVal.(int)
+
 	var data model.Question
 
 	if err := c.ShouldBindJSON(&data); err != nil {
@@ -94,12 +96,14 @@ func (h *QuestionController) Delete(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
-	idStr2 := c.Query("user_id")
-	userId, err := strconv.Atoi(idStr2)
-	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid id")
+
+	userIdVal, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "user id not found in context")
 		return
 	}
+	userId := userIdVal.(int)
+
 	err = h.service.Delete(c, id, userId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())

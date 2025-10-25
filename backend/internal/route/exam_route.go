@@ -18,7 +18,7 @@ func ExamRoutes(r *gin.Engine, exam *controller.ExamController) {
 			exams.GET("/", exam.GetAll)
 			exams.GET("/id", exam.GetById)
 			exams.PUT("/:id", middleware.RoleGuard("admin", "lecturer"), exam.Update)
-			exams.DELETE("/:id/:userId", middleware.RoleGuard("admin", "lecturer"), exam.Delete)
+			exams.DELETE("/:id", middleware.RoleGuard("admin", "lecturer"), exam.Delete)
 		}
 	}
 }

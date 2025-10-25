@@ -50,6 +50,9 @@ func RoleGuard(allowedRoles ...string) gin.HandlerFunc {
 			return
 		}
 
+		c.Set("user_id", claims.UserId)
+		c.Set("role", claims.Role)
+
 		allowed := false
 		for _, r := range allowedRoles {
 			if strings.EqualFold(r, role) {

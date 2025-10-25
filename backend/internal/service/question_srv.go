@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
+	"strings"
 
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/repository"
@@ -75,8 +76,21 @@ func (s *questionService) Update(ctx context.Context, newData model.Question, id
 
 	updatedData, err := s.repo.Update(ctx, newData, id)
 	if err != nil {
-		return nil, fmt.Errorf("update failed: %w", err)
+		if strings.Contains(err.Error(), "Unknown column") {
+			var fieldName string
+			parts := strings.Split(err.Error(), "'")
+			if len(parts) >= 2 {
+				fieldName = parts[1]
+			}
+
+			val := helper.GetFieldValue(data, fieldName)
+
+			return nil, fmt.Errorf("field '%s' with value '%v' is undefined", fieldName, val)
+		}
+
+		return nil, fmt.Errorf("update gagal: %v", err)
 	}
+
 	return updatedData, nil
 }
 

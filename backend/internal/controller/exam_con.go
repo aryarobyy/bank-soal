@@ -89,7 +89,14 @@ func (h *ExamController) Update(c *gin.Context) {
 		return
 	}
 
-	updatedData, err := h.service.Update(c, data, id)
+	userIdVal, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "user id not found in context")
+		return
+	}
+	userId := userIdVal.(int)
+
+	updatedData, err := h.service.Update(c, data, id, userId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -105,13 +112,15 @@ func (h *ExamController) Delete(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
-	idStr2 := c.Param("user_id")
-	idUser, err := strconv.Atoi(idStr2)
-	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid id")
+
+	userIdVal, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "user id not found in context")
 		return
 	}
-	err = h.service.Delete(c, id, idUser)
+	userId := userIdVal.(int)
+
+	err = h.service.Delete(c, id, userId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
