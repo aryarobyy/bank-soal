@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"latih.in-be/utils/helper"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/repository"
+	"latih.in-be/utils/helper"
 )
 
 type ExamService interface {
@@ -23,9 +23,10 @@ type examService struct {
 	userRepo repository.UserRepository
 }
 
-func NewExamService(repo repository.ExamRepository) ExamService {
+func NewExamService(repo repository.ExamRepository, userRepo repository.UserRepository) ExamService {
 	return &examService{
-		repo: repo,
+		repo:     repo,
+		userRepo: userRepo,
 	}
 }
 
