@@ -13,6 +13,7 @@ type Question struct {
 	QuestionText string     `json:"question_text" validate:"required"`
 	Difficulty   Difficulty `json:"difficulty" gorm:"type:enum('easy','medium','hard');not null" validate:"oneof=easy medium hard"`
 	Answer       string     `json:"answer,omitempty"`
+	Score        int        `json:"score" gorm:"not null;default:0"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 

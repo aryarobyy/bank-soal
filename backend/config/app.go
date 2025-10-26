@@ -23,7 +23,6 @@ type Controllers struct {
 	Exam      *controller.ExamController
 	Question  *controller.QuestionController
 	Option    *controller.OptionController
-	Score     *controller.ScoreController
 	ExamScore *controller.ExamScoreController
 }
 
@@ -32,14 +31,12 @@ func NewApp(db *gorm.DB) *App {
 	examRepo := repository.NewExamRepository(db)
 	questionRepo := repository.NewQuestionRepository(db)
 	optionRepo := repository.NewOptionRepository(db)
-	scoreRepo := repository.NewScoreRepository(db)
 	examScoreRepo := repository.NewExamScoreRepository(db)
 
 	userService := service.NewUserService(userRepo)
 	examService := service.NewExamService(examRepo, userRepo)
 	questionService := service.NewQuestionService(questionRepo, userRepo, optionRepo)
 	optionService := service.NewOptionService(optionRepo)
-	scoreService := service.NewScoreService(scoreRepo)
 	examScoreService := service.NewExamScoreService(examScoreRepo)
 
 	controllers := &Controllers{
@@ -47,7 +44,6 @@ func NewApp(db *gorm.DB) *App {
 		Exam:      controller.NewExamController(examService),
 		Question:  controller.NewQuestionController(questionService),
 		Option:    controller.NewOptionController(optionService),
-		Score:     controller.NewScoreController(scoreService),
 		ExamScore: controller.NewExamScoreController(examScoreService),
 	}
 
@@ -86,7 +82,6 @@ func setupRoutes(r *gin.Engine, ctrl *Controllers) {
 	route.ExamRoutes(r, ctrl.Exam)
 	route.QuestionRoutes(r, ctrl.Question)
 	route.OptionRoutes(r, ctrl.Option)
-	route.ScoreRoutes(r, ctrl.Score)
 	route.ExamScoreRoutes(r, ctrl.ExamScore)
 }
 

@@ -71,7 +71,6 @@ func performMigration() error {
 		&model.User{},
 		&model.Question{},
 		&model.Option{},
-		&model.Score{},
 		&model.ExamScore{},
 		&model.Exam{},
 	)

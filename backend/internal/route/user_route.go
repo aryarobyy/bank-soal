@@ -22,7 +22,7 @@ func UserRoutes(r *gin.Engine, user *controller.UserController) {
 			usersAuth.GET("/nim", user.GetByNim)
 			usersAuth.GET("/name", user.GetByName)
 			usersAuth.GET("/role", user.GetByRole)
-			usersAuth.GET("/", user.GetAll)
+			usersAuth.GET("/", user.GetMany)
 			usersAuth.PUT("/:id", user.Update)
 			usersAuth.PUT("/password", middleware.InputValidate([]string{"old_password", "new_password"}), user.ChangePassword)
 			usersAuth.DELETE("/id", user.Delete)

@@ -13,7 +13,7 @@ func QuestionRoutes(r *gin.Engine, question *controller.QuestionController) {
 		auth.Use(middleware.AuthMiddleware())
 		{
 			questions.POST("/", middleware.RoleGuard("admin", "lecturer"), middleware.InputValidate([]string{"creator_id", "question_text"}), question.Create)
-			questions.GET("/", question.GetAll)
+			questions.GET("/", question.GetMany)
 			questions.GET("/id", question.GetById)
 			questions.PUT("/:id", middleware.RoleGuard("admin", "lecturer"), question.Update)
 			questions.DELETE("/:id", middleware.RoleGuard("admin", "lecturer"), question.Delete)

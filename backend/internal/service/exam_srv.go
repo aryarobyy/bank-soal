@@ -15,7 +15,7 @@ type ExamService interface {
 	GetById(ctx context.Context, id int) (*model.Exam, error)
 	Update(ctx context.Context, newData model.Exam, id int, userId int) (*model.Exam, error)
 	Delete(ctx context.Context, id int, userId int) error
-	GetAll(ctx context.Context) ([]model.Exam, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, error)
 }
 
 type examService struct {
@@ -85,8 +85,8 @@ func (s *examService) Update(ctx context.Context, newData model.Exam, id int, us
 	return updatedData, nil
 }
 
-func (s *examService) GetAll(ctx context.Context) ([]model.Exam, error) {
-	data, err := s.repo.GetAll(ctx)
+func (s *examService) GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, error) {
+	data, err := s.repo.GetMany(ctx, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all data: %w", err)
 	}

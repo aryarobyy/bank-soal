@@ -49,8 +49,13 @@ func (h *QuestionController) GetById(c *gin.Context) {
 	helper.Success(c, data, "data found")
 }
 
-func (h *QuestionController) GetAll(c *gin.Context) {
-	data, err := h.service.GetAll(c.Request.Context())
+func (h *QuestionController) GetMany(c *gin.Context) {
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+	data, err := h.service.GetMany(c, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -155,7 +160,18 @@ func (h *QuestionController) GetByExam(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.GetByExam(c.Request.Context(), id)
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	data, err := h.service.GetByExam(c, id, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -172,7 +188,13 @@ func (h *QuestionController) GetByCreator(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.GetByCreatorId(c.Request.Context(), id)
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+
+	data, err := h.service.GetByCreatorId(c, id, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -184,7 +206,13 @@ func (h *QuestionController) GetByCreator(c *gin.Context) {
 func (h *QuestionController) GetByDiff(c *gin.Context) {
 	diff := c.Query("diff")
 
-	data, err := h.service.GetByDifficult(c.Request.Context(), diff)
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+
+	data, err := h.service.GetByDifficult(c, diff, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return

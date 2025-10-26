@@ -2,13 +2,12 @@ package controller
 
 import (
 	"net/http"
-	"regexp"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"latih.in-be/utils/helper"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
+	"latih.in-be/utils/helper"
 )
 
 type UserController struct {
@@ -37,7 +36,7 @@ func (h *UserController) Register(c *gin.Context) {
 		return
 	}
 
-	if !isValidEmail(user.Email) {
+	if !helper.IsValidEmail(user.Email) {
 		helper.Error(c, http.StatusBadRequest, "wrong email format")
 		return
 	}
@@ -57,7 +56,7 @@ func (h *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	if !isValidEmail(cred.Email) {
+	if !helper.IsValidEmail(cred.Email) {
 		helper.Error(c, http.StatusBadRequest, "wrong email format")
 		return
 	}
@@ -104,7 +103,7 @@ func (h *UserController) GetByEmail(c *gin.Context) {
 		return
 	}
 
-	if !isValidEmail(email) {
+	if !helper.IsValidEmail(email) {
 		helper.Error(c, http.StatusBadRequest, "wrong email format")
 		return
 	}
@@ -128,7 +127,7 @@ func (h *UserController) Update(c *gin.Context) {
 
 	email := c.PostForm("email")
 
-	if email != "" && !isValidEmail(email) {
+	if email != "" && !helper.IsValidEmail(email) {
 		helper.Error(c, http.StatusBadRequest, "wrong email format")
 		return
 	}
@@ -183,8 +182,13 @@ func (h *UserController) Delete(c *gin.Context) {
 	}
 }
 
-func (h *UserController) GetAll(c *gin.Context) {
-	users, err := h.service.GetAll(c)
+func (h *UserController) GetMany(c *gin.Context) {
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+	users, err := h.service.GetMany(c, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -209,8 +213,14 @@ func (h *UserController) GetByNim(c *gin.Context) {
 }
 
 func (h *UserController) GetByName(c *gin.Context) {
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+
 	name := c.Query("name")
-	users, err := h.service.GetByName(c, name)
+	users, err := h.service.GetByName(c, name, limit, offset)
 	if len(name) > 256 {
 		helper.Error(c, http.StatusBadRequest, "invalid name")
 		return
@@ -224,8 +234,14 @@ func (h *UserController) GetByName(c *gin.Context) {
 }
 
 func (h *UserController) GetByRole(c *gin.Context) {
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+
 	role := c.Query("role")
-	users, err := h.service.GetByRole(c, role)
+	users, err := h.service.GetByRole(c, role, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -324,9 +340,4 @@ func (h *UserController) RefreshToken(c *gin.Context) {
 	}
 
 	helper.Success(c, newAccessToken, "token refreshed")
-}
-
-func isValidEmail(e string) bool {
-	re := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
-	return re.MatchString(e)
 }

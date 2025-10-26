@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"latih.in-be/utils/helper"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
+	"latih.in-be/utils/helper"
 )
 
 type ExamScoreController struct {
@@ -49,8 +49,21 @@ func (h *ExamScoreController) GetById(c *gin.Context) {
 	helper.Success(c, data, "data found")
 }
 
-func (h *ExamScoreController) GetAll(c *gin.Context) {
-	data, err := h.service.GetAll(c.Request.Context())
+func (h *ExamScoreController) GetMany(c *gin.Context) {
+	idStr := c.Query("exam_id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+
+	data, err := h.service.GetMany(c, id, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return

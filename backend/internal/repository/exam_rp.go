@@ -13,7 +13,7 @@ type ExamRepository interface {
 	GetById(ctx context.Context, id int) (*model.Exam, error)
 	Update(ctx context.Context, e model.Exam, id int) (*model.Exam, error)
 	Delete(ctx context.Context, id int) error
-	GetAll(ctx context.Context) ([]model.Exam, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, error)
 }
 
 type examRepository struct {
@@ -25,7 +25,9 @@ func NewExamRepository(db *gorm.DB) ExamRepository {
 }
 
 func (r *examRepository) Create(ctx context.Context, e model.Exam) error {
-	if err := r.db.WithContext(ctx).Create(&e).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Create(&e).
+		Error; err != nil {
 		return err
 	}
 	return nil
@@ -34,7 +36,10 @@ func (r *examRepository) Create(ctx context.Context, e model.Exam) error {
 func (r *examRepository) GetById(ctx context.Context, id int) (*model.Exam, error) {
 	e := model.Exam{}
 
-	if err := r.db.WithContext(ctx).Model(model.Exam{}).First(&e, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Model(model.Exam{}).
+		First(&e, id).
+		Error; err != nil {
 		return nil, err
 	}
 	return &e, nil
@@ -77,22 +82,31 @@ func (r *examRepository) Update(ctx context.Context, e model.Exam, id int) (*mod
 	}
 
 	var updated model.Exam
-	if err := r.db.WithContext(ctx).First(&updated, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		First(&updated, id).
+		Error; err != nil {
 		return nil, err
 	}
 	return &updated, nil
 }
 
 func (r *examRepository) Delete(ctx context.Context, id int) error {
-	if err := r.db.WithContext(ctx).Model(model.Exam{}).Where("id = ?", id).Delete(id).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Model(model.Exam{}).
+		Where("id = ?", id).
+		Delete(id).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *examRepository) GetAll(ctx context.Context) ([]model.Exam, error) {
+func (r *examRepository) GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, error) {
 	var e []model.Exam
-	if err := r.db.WithContext(ctx).Find(&e).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Find(&e).
+		Limit(limit).
+		Offset(offset).
+		Error; err != nil {
 		return nil, err
 	}
 	return e, nil

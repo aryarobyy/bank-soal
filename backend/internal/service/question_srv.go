@@ -17,12 +17,12 @@ type QuestionService interface {
 	GetById(ctx context.Context, id int) (*model.Question, error)
 	Update(ctx context.Context, newData model.Question, id int, userId int) (*model.Question, error)
 	Delete(ctx context.Context, id int, userId int) error
-	GetAll(ctx context.Context) ([]model.Question, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.Question, error)
 	CreateWithOptions(ctx context.Context, data model.Question) error
 	CreateFromJson(ctx context.Context, file *multipart.FileHeader) error
-	GetByExam(ctx context.Context, examId int) ([]model.Question, error)
-	GetByCreatorId(ctx context.Context, creatorId int) ([]model.Question, error)
-	GetByDifficult(ctx context.Context, diff string) ([]model.Question, error)
+	GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, error)
+	GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, error)
+	GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, error)
 }
 
 type questionService struct {
@@ -94,8 +94,8 @@ func (s *questionService) Update(ctx context.Context, newData model.Question, id
 	return updatedData, nil
 }
 
-func (s *questionService) GetAll(ctx context.Context) ([]model.Question, error) {
-	data, err := s.repo.GetAll(ctx)
+func (s *questionService) GetMany(ctx context.Context, limit int, offset int) ([]model.Question, error) {
+	data, err := s.repo.GetMany(ctx, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all data: %w", err)
 	}
@@ -185,24 +185,24 @@ func (s *questionService) CreateFromJson(ctx context.Context, file *multipart.Fi
 	return nil
 }
 
-func (s *questionService) GetByExam(ctx context.Context, examId int) ([]model.Question, error) {
-	data, err := s.repo.GetByExam(ctx, examId)
+func (s *questionService) GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, error) {
+	data, err := s.repo.GetByExam(ctx, examId, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("data with exam id %d not found: %w", examId, err)
 	}
 	return data, nil
 }
 
-func (s *questionService) GetByCreatorId(ctx context.Context, creatorId int) ([]model.Question, error) {
-	data, err := s.repo.GetByExam(ctx, creatorId)
+func (s *questionService) GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, error) {
+	data, err := s.repo.GetByExam(ctx, creatorId, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("data with creator id %d not found: %w", creatorId, err)
 	}
 	return data, nil
 }
 
-func (s *questionService) GetByDifficult(ctx context.Context, diff string) ([]model.Question, error) {
-	data, err := s.repo.GetByDifficult(ctx, diff)
+func (s *questionService) GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, error) {
+	data, err := s.repo.GetByDifficult(ctx, diff, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("data with difficulty %s not found: %w", diff, err)
 	}
