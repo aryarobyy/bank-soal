@@ -112,7 +112,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGetCurrentUser } from '../../hooks/useGetCurrentUser'
 import { getUserById } from '../../provider/user.provider'
-import Navbar from '../../components/ui/Navbar.vue'
+
 import { User } from 'lucide-vue-next'
 
 const { user: userLocal, loading, error } = useGetCurrentUser()
