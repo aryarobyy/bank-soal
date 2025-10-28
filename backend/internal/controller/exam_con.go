@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"latih.in-be/utils/helper"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
+	"latih.in-be/utils/helper"
 )
 
 type ExamController struct {
@@ -57,8 +57,13 @@ func (h *ExamController) GetById(c *gin.Context) {
 	helper.Success(c, data, "data found")
 }
 
-func (h *ExamController) GetAll(c *gin.Context) {
-	data, err := h.service.GetAll(c.Request.Context())
+func (h *ExamController) GetMany(c *gin.Context) {
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+	data, err := h.service.GetMany(c, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -89,7 +94,14 @@ func (h *ExamController) Update(c *gin.Context) {
 		return
 	}
 
-	updatedData, err := h.service.Update(c, data, id)
+	userIdVal, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "user id not found in context")
+		return
+	}
+	userId := userIdVal.(int)
+
+	updatedData, err := h.service.Update(c, data, id, userId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -105,13 +117,15 @@ func (h *ExamController) Delete(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
-	idStr2 := c.Param("userId")
-	idUser, err := strconv.Atoi(idStr2)
-	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid id")
+
+	userIdVal, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "user id not found in context")
 		return
 	}
-	err = h.service.Delete(c, id, idUser)
+	userId := userIdVal.(int)
+
+	err = h.service.Delete(c, id, userId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return

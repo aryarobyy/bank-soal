@@ -9,18 +9,27 @@
       </nav>
       <div class="relative">
         <div @click="toggleProfileDropdown" class="cursor-pointer">
-          <img :src="userIcon" alt="User Profile" class="w-10 h-10 rounded-full" />
+          <UserCircle class="w-10 h-10 text-gray-600 transition-colors hover:text-primary" />
         </div>
+        
         <div v-if="showProfileDropdown" class="absolute top-16 right-0 z-50 w-72 p-2 bg-white rounded-lg shadow-xl border border-gray-100">
             <div class="flex items-center p-2">
-              <img :src="userIcon" alt="User Profile" class="w-12 h-12 rounded-full mr-4" />
+              <UserCircle class="w-12 h-12 text-gray-600 mr-4" />
               <div v-if="user">
                 <div class="font-semibold">{{ user.name }}</div>
                 <div class="text-sm text-gray-500">{{ user.email }}</div>
               </div>
             </div>
             <hr class="my-2 border-gray-200" />
-            <router-link to="/dosen/update-profile" class="block w-full px-4 py-2 text-left text-gray-700 rounded hover:bg-gray-100">Update Profile</router-link>
+            
+            <router-link 
+              v-if="user"
+              :to="`/dosen/profile/${user.id}`" 
+              class="block w-full px-4 py-2 text-left text-gray-700 rounded hover:bg-gray-100"
+            >
+              Lihat Profil
+            </router-link>
+            
             <a href="#" @click.prevent="logout" class="block w-full px-4 py-2 text-left text-gray-700 rounded hover:bg-gray-100">Logout</a>
         </div>
       </div>
@@ -51,41 +60,39 @@
   </div>
 </template>
 
-<script>
-import userIcon from '../assets/user-icon.png';
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useRouter, useRoute, RouterLink } from 'vue-router';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { UserCircle } from 'lucide-vue-next';
 
-export default {
-  name: 'DosenLayout',
-  data() {
-    return {
-      showProfileDropdown: false,
-      user: null,
-      userIcon,
-    };
-  },
-  methods: {
-    toggleProfileDropdown() {
-      this.showProfileDropdown = !this.showProfileDropdown;
-    },
-    logout() {
-      const { removeValue: removeToken } = useLocalStorage('token');
-      const { removeValue: removeUser } = useLocalStorage('user');
-      removeToken();
-      removeUser();
-      this.$router.push('/login');
-    },
-    isActive(path) {
-      return this.$route.path.startsWith(path);
-    }
-  },
-  created() {
-    const { value: storedUser } = useLocalStorage('user');
-    if (storedUser.value) {
-      this.user = storedUser.value;
-    } else {
-      this.logout();
-    }
-  }
+const showProfileDropdown = ref(false);
+const user = ref(null);
+const router = useRouter();
+const route = useRoute();
+
+const toggleProfileDropdown = () => {
+  showProfileDropdown.value = !showProfileDropdown.value;
 };
+
+const logout = () => {
+  const { removeValue: removeToken } = useLocalStorage('token');
+  const { removeValue: removeUser } = useLocalStorage('user');
+  removeToken();
+  removeUser();
+  router.push('/login');
+};
+
+const isActive = (path) => {
+  return route.path.startsWith(path);
+};
+
+onMounted(() => {
+  const { value: storedUser } = useLocalStorage('user');
+  if (storedUser.value) {
+    user.value = storedUser.value;
+  } else {
+    logout();
+  }
+});
 </script>

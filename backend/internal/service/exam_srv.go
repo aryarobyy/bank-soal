@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"strings"
 
-	"latih.in-be/utils/helper"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/repository"
+	"latih.in-be/utils/helper"
 )
 
 type ExamService interface {
 	Create(ctx context.Context, data model.Exam) error
 	GetById(ctx context.Context, id int) (*model.Exam, error)
-	Update(ctx context.Context, data model.Exam, id int) (*model.Exam, error)
+	Update(ctx context.Context, newData model.Exam, id int, userId int) (*model.Exam, error)
 	Delete(ctx context.Context, id int, userId int) error
-	GetAll(ctx context.Context) ([]model.Exam, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, error)
 }
 
 type examService struct {
@@ -23,9 +23,10 @@ type examService struct {
 	userRepo repository.UserRepository
 }
 
-func NewExamService(repo repository.ExamRepository) ExamService {
+func NewExamService(repo repository.ExamRepository, userRepo repository.UserRepository) ExamService {
 	return &examService{
-		repo: repo,
+		repo:     repo,
+		userRepo: userRepo,
 	}
 }
 
@@ -49,8 +50,22 @@ func (s *examService) GetById(ctx context.Context, id int) (*model.Exam, error) 
 	return data, nil
 }
 
-func (s *examService) Update(ctx context.Context, data model.Exam, id int) (*model.Exam, error) {
-	updatedData, err := s.repo.Update(ctx, data, id)
+func (s *examService) Update(ctx context.Context, newData model.Exam, id int, userId int) (*model.Exam, error) {
+	data, err := s.repo.GetById(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("data is unavaible %w", err)
+	}
+
+	user, err := s.userRepo.GetById(ctx, userId)
+	if err != nil {
+		return nil, fmt.Errorf("user is unavaible %w", err)
+	}
+
+	if user.Id != data.CreatorId && user.Role != model.RoleAdmin {
+		return nil, fmt.Errorf("you are not the creator or admin")
+	}
+
+	updatedData, err := s.repo.Update(ctx, newData, id)
 	if err != nil {
 		if strings.Contains(err.Error(), "Unknown column") {
 			var fieldName string
@@ -70,8 +85,8 @@ func (s *examService) Update(ctx context.Context, data model.Exam, id int) (*mod
 	return updatedData, nil
 }
 
-func (s *examService) GetAll(ctx context.Context) ([]model.Exam, error) {
-	data, err := s.repo.GetAll(ctx)
+func (s *examService) GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, error) {
+	data, err := s.repo.GetMany(ctx, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all data: %w", err)
 	}

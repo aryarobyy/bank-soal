@@ -14,10 +14,10 @@ type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	Update(ctx context.Context, user model.User, id int) (*model.User, error)
 	Delete(ctx context.Context, id int) error
-	GetAll(ctx context.Context) ([]model.User, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.User, error)
 	GetByNim(ctx context.Context, nim string) (*model.User, error)
-	GetByName(ctx context.Context, name string) ([]model.User, error)
-	GetByRole(ctx context.Context, role string) ([]model.User, error)
+	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, error)
+	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, error)
 	ChangePassword(ctx context.Context, id int, password string) error
 	ChangeRole(ctx context.Context, id int, role model.Role) error
 }
@@ -31,7 +31,10 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 }
 
 func (r *userRepository) Register(ctx context.Context, user model.User) (*model.User, error) {
-	if err := r.db.WithContext(ctx).Create(&user).Error; err != nil {
+	if err := r.db.
+		WithContext(ctx).
+		Create(&user).
+		Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -40,7 +43,11 @@ func (r *userRepository) Register(ctx context.Context, user model.User) (*model.
 func (r *userRepository) GetById(ctx context.Context, id int) (*model.User, error) {
 	user := model.User{}
 
-	if err := r.db.WithContext(ctx).Model(model.User{}).First(&user, id).Error; err != nil {
+	if err := r.db.
+		WithContext(ctx).
+		Model(model.User{}).
+		First(&user, id).
+		Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -48,7 +55,11 @@ func (r *userRepository) GetById(ctx context.Context, id int) (*model.User, erro
 
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
 	user := model.User{}
-	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
+	if err := r.db.
+		WithContext(ctx).
+		Where("email = ?", email).
+		First(&user).
+		Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -94,7 +105,11 @@ func (r *userRepository) Update(ctx context.Context, user model.User, id int) (*
 	}
 
 	var updated model.User
-	if err := r.db.WithContext(ctx).Model(model.User{}).First(&updated, id).Error; err != nil {
+	if err := r.db.
+		WithContext(ctx).
+		Model(model.User{}).
+		First(&updated, id).
+		Error; err != nil {
 		return nil, err
 	}
 
@@ -102,15 +117,24 @@ func (r *userRepository) Update(ctx context.Context, user model.User, id int) (*
 }
 
 func (r *userRepository) Delete(ctx context.Context, id int) error {
-	if err := r.db.WithContext(ctx).Delete(id).Error; err != nil {
+	if err := r.db.
+		WithContext(ctx).
+		Delete(id).
+		Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *userRepository) GetAll(ctx context.Context) ([]model.User, error) {
+func (r *userRepository) GetMany(ctx context.Context, limit int, offset int) ([]model.User, error) {
 	var users []model.User
-	if err := r.db.WithContext(ctx).Model(model.User{}).Find(&users).Error; err != nil {
+	if err := r.db.
+		WithContext(ctx).
+		Model(model.User{}).
+		Limit(limit).
+		Offset(offset).
+		Find(&users).
+		Error; err != nil {
 		return nil, err
 	}
 	return users, nil
@@ -118,37 +142,65 @@ func (r *userRepository) GetAll(ctx context.Context) ([]model.User, error) {
 
 func (r *userRepository) GetByNim(ctx context.Context, nim string) (*model.User, error) {
 	user := model.User{}
-	if err := r.db.WithContext(ctx).Model(model.User{}).Where("nim = ?", nim).First(&user).Error; err != nil {
+	if err := r.db.
+		WithContext(ctx).
+		Model(model.User{}).
+		Where("nim = ?", nim).
+		First(&user).
+		Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-func (r *userRepository) GetByName(ctx context.Context, name string) ([]model.User, error) {
+func (r *userRepository) GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, error) {
 	var users []model.User
-	if err := r.db.WithContext(ctx).Model(model.User{}).Where("name = ?", name).Find(&users).Error; err != nil {
+	if err := r.db.
+		WithContext(ctx).
+		Model(model.User{}).
+		Where("name = ?", name).
+		Limit(limit).
+		Offset(offset).
+		Find(&users).
+		Error; err != nil {
 		return nil, err
 	}
 	return users, nil
 }
 
-func (r *userRepository) GetByRole(ctx context.Context, role string) ([]model.User, error) {
+func (r *userRepository) GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, error) {
 	var users []model.User
-	if err := r.db.WithContext(ctx).Model(model.User{}).Where("role = ?", role).Find(&users).Error; err != nil {
+	if err := r.db.
+		WithContext(ctx).
+		Model(model.User{}).Where("role = ?", role).
+		Limit(limit).
+		Offset(offset).
+		Find(&users).
+		Error; err != nil {
 		return nil, err
 	}
 	return users, nil
 }
 
 func (r *userRepository) ChangePassword(ctx context.Context, id int, password string) error {
-	if err := r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Update("password", password).Error; err != nil {
+	if err := r.db.
+		WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ?", id).
+		Update("password", password).
+		Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func (r *userRepository) ChangeRole(ctx context.Context, id int, role model.Role) error {
-	if err := r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Update("role", role).Error; err != nil {
+	if err := r.db.
+		WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ?", id).
+		Update("role", role).
+		Error; err != nil {
 		return err
 	}
 	return nil

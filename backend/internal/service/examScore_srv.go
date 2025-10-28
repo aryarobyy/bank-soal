@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"latih.in-be/utils/helper"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/repository"
+	"latih.in-be/utils/helper"
 )
 
 type ExamScoreService interface {
@@ -15,7 +15,7 @@ type ExamScoreService interface {
 	GetById(ctx context.Context, id int) (*model.ExamScore, error)
 	Update(ctx context.Context, data model.ExamScore, id int) (*model.ExamScore, error)
 	Delete(ctx context.Context, id int) error
-	GetAll(ctx context.Context) ([]model.ExamScore, error)
+	GetMany(ctx context.Context, examId int, limit int, offset int) ([]model.ExamScore, error)
 }
 
 type examScoreService struct {
@@ -76,8 +76,8 @@ func (s *examScoreService) Update(ctx context.Context, data model.ExamScore, id 
 	return updatedData, nil
 }
 
-func (s *examScoreService) GetAll(ctx context.Context) ([]model.ExamScore, error) {
-	data, err := s.repo.GetAll(ctx)
+func (s *examScoreService) GetMany(ctx context.Context, examId int, limit int, offset int) ([]model.ExamScore, error) {
+	data, err := s.repo.GetMany(ctx, examId, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all data: %w", err)
 	}

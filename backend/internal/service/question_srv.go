@@ -5,37 +5,42 @@ import (
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
+	"strings"
 
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/repository"
+	"latih.in-be/utils/helper"
 )
 
 type QuestionService interface {
 	Create(ctx context.Context, data model.Question) error
 	GetById(ctx context.Context, id int) (*model.Question, error)
-	Update(ctx context.Context, data model.Question, id int) (*model.Question, error)
+	Update(ctx context.Context, newData model.Question, id int, userId int) (*model.Question, error)
 	Delete(ctx context.Context, id int, userId int) error
-	GetAll(ctx context.Context) ([]model.Question, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.Question, error)
 	CreateWithOptions(ctx context.Context, data model.Question) error
 	CreateFromJson(ctx context.Context, file *multipart.FileHeader) error
-	GetByExam(ctx context.Context, examId int) ([]model.Question, error)
-	GetByCreatorId(ctx context.Context, creatorId int) ([]model.Question, error)
-	GetByDifficult(ctx context.Context, diff string) ([]model.Question, error)
+	GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, error)
+	GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, error)
+	GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, error)
 }
 
 type questionService struct {
 	repo     repository.QuestionRepository
 	userRepo repository.UserRepository
+	optRepo  repository.OptionRepository
 }
 
-func NewQuestionService(repo repository.QuestionRepository) QuestionService {
+func NewQuestionService(repo repository.QuestionRepository, userRepo repository.UserRepository, optRepo repository.OptionRepository) QuestionService {
 	return &questionService{
-		repo: repo,
+		repo:     repo,
+		userRepo: userRepo,
+		optRepo:  optRepo,
 	}
 }
 
 func (s *questionService) Create(ctx context.Context, data model.Question) error {
-	if IsValidSubjectTitle(data.Subject.Title) {
+	if helper.IsValidSubjectTitle(data.Subject.Title) {
 		return fmt.Errorf("invalid subject: %s", data.Subject.Title)
 	}
 
@@ -54,16 +59,43 @@ func (s *questionService) GetById(ctx context.Context, id int) (*model.Question,
 	return data, nil
 }
 
-func (s *questionService) Update(ctx context.Context, data model.Question, id int) (*model.Question, error) {
-	updatedData, err := s.repo.Update(ctx, data, id)
+func (s *questionService) Update(ctx context.Context, newData model.Question, id int, userId int) (*model.Question, error) {
+	data, err := s.repo.GetById(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("update failed: %w", err)
+		return nil, fmt.Errorf("data is unavaible %w", err)
 	}
+
+	user, err := s.userRepo.GetById(ctx, userId)
+	if err != nil {
+		return nil, fmt.Errorf("user is unavaible %w", err)
+	}
+
+	if user.Id != data.CreatorId && user.Role != model.RoleAdmin {
+		return nil, fmt.Errorf("you are not the creator or admin")
+	}
+
+	updatedData, err := s.repo.Update(ctx, newData, id)
+	if err != nil {
+		if strings.Contains(err.Error(), "Unknown column") {
+			var fieldName string
+			parts := strings.Split(err.Error(), "'")
+			if len(parts) >= 2 {
+				fieldName = parts[1]
+			}
+
+			val := helper.GetFieldValue(data, fieldName)
+
+			return nil, fmt.Errorf("field '%s' with value '%v' is undefined", fieldName, val)
+		}
+
+		return nil, fmt.Errorf("update gagal: %v", err)
+	}
+
 	return updatedData, nil
 }
 
-func (s *questionService) GetAll(ctx context.Context) ([]model.Question, error) {
-	data, err := s.repo.GetAll(ctx)
+func (s *questionService) GetMany(ctx context.Context, limit int, offset int) ([]model.Question, error) {
+	data, err := s.repo.GetMany(ctx, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all data: %w", err)
 	}
@@ -83,6 +115,10 @@ func (s *questionService) Delete(ctx context.Context, id int, userId int) error 
 
 	if user.Id != data.CreatorId && user.Role != model.RoleAdmin {
 		return fmt.Errorf("you are not the creator or admin")
+	}
+
+	if err := s.optRepo.DeleteByQuestionId(ctx, id); err != nil {
+		return fmt.Errorf("failed to delete data: %w", err)
 	}
 
 	if err := s.repo.Delete(ctx, id); err != nil {
@@ -149,39 +185,26 @@ func (s *questionService) CreateFromJson(ctx context.Context, file *multipart.Fi
 	return nil
 }
 
-func (s *questionService) GetByExam(ctx context.Context, examId int) ([]model.Question, error) {
-	data, err := s.repo.GetByExam(ctx, examId)
+func (s *questionService) GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, error) {
+	data, err := s.repo.GetByExam(ctx, examId, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("data with exam id %d not found: %w", examId, err)
 	}
 	return data, nil
 }
 
-func (s *questionService) GetByCreatorId(ctx context.Context, creatorId int) ([]model.Question, error) {
-	data, err := s.repo.GetByExam(ctx, creatorId)
+func (s *questionService) GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, error) {
+	data, err := s.repo.GetByExam(ctx, creatorId, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("data with creator id %d not found: %w", creatorId, err)
 	}
 	return data, nil
 }
 
-func (s *questionService) GetByDifficult(ctx context.Context, diff string) ([]model.Question, error) {
-	data, err := s.repo.GetByDifficult(ctx, diff)
+func (s *questionService) GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, error) {
+	data, err := s.repo.GetByDifficult(ctx, diff, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("data with difficulty %s not found: %w", diff, err)
 	}
 	return data, nil
-}
-
-func IsValidSubjectTitle(title model.SubjectTitle) bool {
-	switch title {
-	case model.SubjectKalkulus,
-		model.SubjectMatDis,
-		model.SubjectAutomata,
-		model.SubjectData,
-		model.SubjectMetNum:
-		return true
-	default:
-		return false
-	}
 }

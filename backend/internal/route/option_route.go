@@ -9,13 +9,17 @@ import (
 func OptionRoutes(r *gin.Engine, option *controller.OptionController) {
 	options := r.Group("/option")
 	{
-		options.POST("/", middleware.InputValidate([]string{
-			"question_id", "option_label",
-			"option_text", "is_correct",
-		}), option.Create)
-		options.GET("/", option.GetAll)
-		options.GET("/id", option.GetById)
-		options.PUT("/:id", option.Update)
-		options.DELETE("/:id", option.Delete)
+		auth := options.Group("")
+		auth.Use(middleware.AuthMiddleware())
+		{
+			options.POST("/", middleware.RoleGuard("admin", "lecturer"), middleware.InputValidate([]string{
+				"question_id", "option_label",
+				"option_text", "is_correct",
+			}), option.Create)
+			options.GET("/", option.GetMany)
+			options.GET("/id", option.GetById)
+			options.PUT("/:id", middleware.RoleGuard("admin", "lecturer"), option.Update)
+			options.DELETE("/:id", middleware.RoleGuard("admin", "lecturer"), option.Delete)
+		}
 	}
 }

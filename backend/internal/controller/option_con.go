@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"latih.in-be/utils/helper"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
+	"latih.in-be/utils/helper"
 )
 
 type OptionController struct {
@@ -49,14 +49,20 @@ func (h *OptionController) GetById(c *gin.Context) {
 	helper.Success(c, data, "data found")
 }
 
-func (h *OptionController) GetAll(c *gin.Context) {
-	idStr := c.Param("qId")
+func (h *OptionController) GetMany(c *gin.Context) {
+	idStr := c.Query("question_id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
-	data, err := h.service.GetAll(c.Request.Context(), id)
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+
+	data, err := h.service.GetMany(c, id, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return

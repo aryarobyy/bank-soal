@@ -13,7 +13,7 @@ type OptionService interface {
 	GetById(ctx context.Context, id int) (*model.Option, error)
 	Update(ctx context.Context, data model.Option, id int) (*model.Option, error)
 	Delete(ctx context.Context, id int) error
-	GetAll(ctx context.Context, qId int) ([]model.Option, error)
+	GetMany(ctx context.Context, qId int, limit int, offset int) ([]model.Option, error)
 }
 
 type optionService struct {
@@ -51,8 +51,8 @@ func (s *optionService) Update(ctx context.Context, data model.Option, id int) (
 	return updatedData, nil
 }
 
-func (s *optionService) GetAll(ctx context.Context, qId int) ([]model.Option, error) {
-	data, err := s.repo.GetAll(ctx, qId)
+func (s *optionService) GetMany(ctx context.Context, qId int, limit int, offset int) ([]model.Option, error) {
+	data, err := s.repo.GetMany(ctx, qId, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all data: %w", err)
 	}

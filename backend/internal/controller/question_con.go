@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"latih.in-be/utils/helper"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
+	"latih.in-be/utils/helper"
 )
 
 type QuestionController struct {
@@ -49,8 +49,13 @@ func (h *QuestionController) GetById(c *gin.Context) {
 	helper.Success(c, data, "data found")
 }
 
-func (h *QuestionController) GetAll(c *gin.Context) {
-	data, err := h.service.GetAll(c.Request.Context())
+func (h *QuestionController) GetMany(c *gin.Context) {
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+	data, err := h.service.GetMany(c, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -60,12 +65,20 @@ func (h *QuestionController) GetAll(c *gin.Context) {
 }
 
 func (h *QuestionController) Update(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
+	idStr1 := c.Param("id")
+	id, err := strconv.Atoi(idStr1)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
+
+	userIdVal, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "user id not found in context")
+		return
+	}
+	userId := userIdVal.(int)
+
 	var data model.Question
 
 	if err := c.ShouldBindJSON(&data); err != nil {
@@ -73,7 +86,7 @@ func (h *QuestionController) Update(c *gin.Context) {
 		return
 	}
 
-	updatedData, err := h.service.Update(c, data, id)
+	updatedData, err := h.service.Update(c, data, id, userId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -88,12 +101,14 @@ func (h *QuestionController) Delete(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
-	idStr2 := c.Query("creator_id")
-	userId, err := strconv.Atoi(idStr2)
-	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid id")
+
+	userIdVal, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "user id not found in context")
 		return
 	}
+	userId := userIdVal.(int)
+
 	err = h.service.Delete(c, id, userId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
@@ -145,7 +160,18 @@ func (h *QuestionController) GetByExam(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.GetByExam(c.Request.Context(), id)
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	data, err := h.service.GetByExam(c, id, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -162,7 +188,13 @@ func (h *QuestionController) GetByCreator(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.GetByCreatorId(c.Request.Context(), id)
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+
+	data, err := h.service.GetByCreatorId(c, id, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -174,7 +206,13 @@ func (h *QuestionController) GetByCreator(c *gin.Context) {
 func (h *QuestionController) GetByDiff(c *gin.Context) {
 	diff := c.Query("diff")
 
-	data, err := h.service.GetByDifficult(c.Request.Context(), diff)
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+
+	data, err := h.service.GetByDifficult(c, diff, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
