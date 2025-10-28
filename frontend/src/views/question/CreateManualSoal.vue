@@ -58,7 +58,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div v-for="(answer, index) in currentSoal.answers" :key="index" class="flex items-center p-4 bg-gray-100 border border-gray-200 rounded-lg">
           <span :class="[answerColors[index % answerColors.length], 'flex items-center justify-center w-8 h-8 font-bold text-white rounded-full mr-4 flex-shrink-0']">{{ String.fromCharCode(65 + index) }}</span>
-          <input v-model="answer.text" :placeholder="'Add answer ' + (index + 1)" class="flex-1 w-full bg-transparent focus:outline-none text-gray-800">
+          <input v-model="answer.text" :placeholder="'Add answer ' + (index + 1)" class="flex-1 w-full bg-transparent focus:outline-none text-gray-800" />
           <button @click="toggleCorrectAnswer(index)" class="ml-4 w-6 h-6 rounded-full border-2 transition-colors flex-shrink-0" :class="answer.isCorrect ? 'bg-blue-500 border-blue-500' : 'bg-white border-gray-300 hover:border-gray-400'"></button>
         </div>
       </div>
@@ -83,7 +83,6 @@
 </template>
 
 <script>
-// Impor semua provider yang dibutuhkan
 import { createQuestionWithOptions, getQuestionById, updateQuestion } from '../../provider/question.provider';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 
@@ -119,7 +118,6 @@ export default {
     };
   },
   methods: {
-    // ## METHOD UNTUK MODE EDIT ##
     async fetchQuestionData(id) {
       try {
         const response = await getQuestionById(id);
@@ -129,7 +127,7 @@ export default {
         this.currentSoal = {
           subject_id: questionData.subject_id,
           level: questionData.difficulty,
-          mark: 10, // Sesuaikan jika perlu
+          mark: 10,
           question: questionData.question_text,
           answers: this.prepareAnswers(questionData.options),
           imageUrl: questionData.image_url || null
@@ -149,73 +147,77 @@ export default {
       return answers.slice(0, 4);
     },
 
-    // ## FUNGSI SIMPAN/UPDATE UTAMA ##
     async saveSoal() {
-      if (!this.currentSoal.question.trim()) { alert('Pertanyaan tidak boleh kosong.'); return; }
-      if (!this.currentSoal.subject_id) { alert('Subjek harus dipilih.'); return; }
-      if (!this.currentSoal.answers.some(a => a.isCorrect)) { alert('Pilih satu jawaban yang benar.'); return; }
-
       const { value: user } = useLocalStorage('user');
       const creatorId = user.value?.id;
-      if (!creatorId) { alert('Gagal mendapatkan ID pengguna. Silakan login ulang.'); return; }
-      
+      if (!creatorId) {
+        alert('Gagal mendapatkan ID pengguna. Silakan login ulang.');
+        return;
+      }
       const hardcodedExamId = 2;
-
-      const payload = {
-        exam_id: hardcodedExamId,
-        creator_id: creatorId,
-        subject_id: this.currentSoal.subject_id,
-        question_text: this.currentSoal.question,
-        difficulty: this.currentSoal.level,
-        options: this.currentSoal.answers
-          .filter(a => a.text.trim() !== '')
-          .map((a, index) => ({
-            option_label: String.fromCharCode(65 + index),
-            option_text: a.text,
-            is_correct: a.isCorrect,
-          })),
-      };
 
       try {
         if (this.isEditMode) {
+          // --- ALUR UNTUK MODE EDIT ---
+          if (!this.currentSoal.question.trim() || !this.currentSoal.subject_id || !this.currentSoal.answers.some(a => a.isCorrect)) {
+            alert('Harap lengkapi semua field yang wajib diisi (Subjek, Pertanyaan, dan Jawaban Benar).');
+            return;
+          }
+          const payload = this.formatPayload(this.currentSoal, creatorId, hardcodedExamId);
           await updateQuestion(this.questionId, payload);
           alert('Soal berhasil diperbarui!');
+
         } else {
-          // Jika tidak dalam mode edit, simpan semua soal dari daftar
-          const questionsToSave = this.soalList.length > 0 ? this.soalList : [this.currentSoal];
+          // --- ALUR UNTUK MODE BUAT BARU ---
+          const questionsToSave = this.soalList.length > 0 ? this.soalList : [];
+          
+          // Jika form tidak kosong, tambahkan juga isinya ke daftar yang akan disimpan
+          if(this.currentSoal.question.trim()){
+              questionsToSave.push(this.currentSoal);
+          }
+
+          if (questionsToSave.length === 0) {
+            alert('Tidak ada soal untuk disimpan. Harap isi form atau tambahkan soal ke daftar terlebih dahulu.');
+            return;
+          }
+
           for (const soal of questionsToSave) {
-            const listPayload = {
-              ...payload,
-              subject_id: soal.subject_id,
-              question_text: soal.question,
-              difficulty: soal.level,
-              options: soal.answers.filter(a => a.text.trim() !== '').map((a, index) => ({
-                option_label: String.fromCharCode(65 + index),
-                option_text: a.text,
-                is_correct: a.isCorrect,
-              })),
-            };
-            await createQuestionWithOptions(listPayload);
+            if (!soal.question.trim()) continue; // Lewati soal kosong
+            const payload = this.formatPayload(soal, creatorId, hardcodedExamId);
+            await createQuestionWithOptions(payload);
           }
           alert(`${questionsToSave.length} soal berhasil disimpan!`);
         }
+
         this.$router.push('/dosen/soal/list');
+
       } catch (error) {
         console.error("Gagal menyimpan/update soal:", error);
         alert('Terjadi kesalahan. Periksa konsol untuk detail.');
       }
     },
     
-    // ## SEMUA METHOD UI DARI SEBELUMNYA ##
-    triggerImageInput() { this.$refs.imageInput.click(); },
-    
-    handleImageSelect(event) { this.processImage(event.target.files[0]); },
-    
-    handleDropImage(event) { 
-      this.isDraggingImage = false; 
-      this.processImage(event.dataTransfer.files[0]); 
+    formatPayload(soal, creatorId, examId) {
+        return {
+            exam_id: examId,
+            creator_id: creatorId,
+            subject_id: soal.subject_id,
+            question_text: soal.question,
+            difficulty: soal.level,
+            score: soal.mark, // Menambahkan score/mark
+            options: soal.answers
+                .filter(a => a.text.trim() !== '')
+                .map((a, index) => ({
+                    option_label: String.fromCharCode(65 + index),
+                    option_text: a.text,
+                    is_correct: a.isCorrect,
+                })),
+        };
     },
     
+    triggerImageInput() { this.$refs.imageInput.click(); },
+    handleImageSelect(event) { this.processImage(event.target.files[0]); },
+    handleDropImage(event) { this.isDraggingImage = false; this.processImage(event.dataTransfer.files[0]); },
     processImage(file) {
       if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
@@ -225,19 +227,16 @@ export default {
         alert('Hanya file gambar yang diperbolehkan!');
       }
     },
-    
     removeImage() {
       this.currentSoal.imageUrl = null;
       this.uploadedImageName = null;
       this.$refs.imageInput.value = null;
     },
-    
     toggleCorrectAnswer(selectedIndex) {
       this.currentSoal.answers.forEach((answer, index) => {
         answer.isCorrect = (index === selectedIndex);
       });
     },
-    
     addSoalToList() {
       if (!this.currentSoal.subject_id) { alert('Silakan pilih subjek mata kuliah terlebih dahulu!'); return; }
       if (!this.currentSoal.question.trim()) { alert('Soal tidak boleh kosong!'); return; }
@@ -251,12 +250,11 @@ export default {
       this.removeImage();
       alert('Soal berhasil ditambahkan ke daftar!');
     },
-    
     removeSoalFromList(index) {
         if (confirm('Anda yakin ingin menghapus soal ini dari daftar?')) {
             this.soalList.splice(index, 1);
         }
-    }
+    },
   },
   created() {
     const id = this.$route.params.id;
