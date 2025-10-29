@@ -91,7 +91,6 @@
 </template>
 
 <script setup>
-import Navbar from "../../components/ui/Navbar.vue";
 import Toast from "../../components/utils/Toast.vue";
 import { ref, onMounted, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";

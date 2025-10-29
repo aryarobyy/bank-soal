@@ -12,9 +12,11 @@ export const createQuestionWithOptions = async (data) => {
 };
 
 export const deleteQuestion = async (id) => {
-  const res = await ApiHandler.delete(`${QUESTION}/id?id=${id}`);
+  // Menggunakan format path parameter: /question/5
+  const res = await ApiHandler.delete(`/${QUESTION}/${id}`);
   return res.data;
 };
+
 
 export const getQuestionById = async (id) => {
   const res = await ApiHandler.get(`/${QUESTION}/id?id=${id}`);
@@ -22,7 +24,7 @@ export const getQuestionById = async (id) => {
 };
 
 export const updateQuestion = async (id, data) => {
-  const res = await ApiHandler.put(`${QUESTION}/${id}`, data);
+  const res = await ApiHandler.put(`/${QUESTION}/${id}`, data);
   return res.data;
 };
 
@@ -50,3 +52,4 @@ export const getQuestionsByCreator = async (creatorId) => {
   const res = await ApiHandler.get(`${QUESTION}/creator?creator_id=${creatorId}`);
   return res.data;
 };
+

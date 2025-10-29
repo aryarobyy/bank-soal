@@ -31,9 +31,7 @@
             <td class="p-3 text-medium-text">{{ soal.id }}</td>
             <td class="p-3 text-medium-text">{{ soal.question_text }}</td>
             <td class="p-3 font-semibold text-medium-text">
-              
               {{ soal.options?.find(opt => opt.is_correct)?.option_text || 'N/A' }}
-
             </td>
             <td class="p-3 text-medium-text">{{ soal.difficulty }}</td>
             <td class="p-3">
@@ -77,16 +75,22 @@ export default {
         this.loading = false;
       }
     },
+    
+    // ## LOGIKA TOMBOL EDIT DIPERBARUI DI SINI ##
     editSoal(id) {
-      alert(`Fungsi edit untuk soal ID: ${id} belum diimplementasikan.`);
+      // Mengarahkan ke halaman edit dengan membawa ID soal
+      this.$router.push(`/dosen/soal/edit/${id}`);
     },
+
+    // ## LOGIKA HAPUS SUDAH BENAR DAN TERINTEGRASI ##
     async handleDeleteSoal(id) {
       if (confirm(`Apakah Anda yakin ingin menghapus soal ID: ${id}?`)) {
         try {
           await deleteQuestion(id);
-          alert('Soal berhasil dihapus!');
-          this.fetchSoalList();
+          alert('Soal berhasil dihapus dari database!');
+          this.fetchSoalList(); // Muat ulang data untuk memperbarui tampilan
         } catch (error) {
+          console.error("Gagal menghapus soal:", error);
           alert('Gagal menghapus soal.');
         }
       }

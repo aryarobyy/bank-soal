@@ -70,9 +70,8 @@ import Toast from "../../components/utils/Toast.vue";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import { useRouter } from 'vue-router'
 
-const { setValue: setToken, value: token } = useLocalStorage("token");
-const { setValue: setUser, value } = useLocalStorage("user");
-const { user } = useGetCurrentUser();
+const { setValue: setToken } = useLocalStorage("token");
+const { setValue: setUser } = useLocalStorage("user");
 
 const toastRef = ref(null);
 const formData = ref({
@@ -106,10 +105,21 @@ const handleSubmit = async () => {
   try {
     isSubmitting.value = true;
     const data = await login(formData.value);
-    // const redirectPath = userRole === 'dosen' ? '/dosen/dashboard' : '/'
+    
+    // Simpan token dan data user ke Local Storage
     if (data.data.token) {
       setToken(data.data.token);
       setUser(data.data.data);
+    }
+
+    // ## PERBAIKAN DILAKUKAN DI SINI ##
+    // 1. Baca peran (role) dari data pengguna yang baru saja disimpan
+    const userRole = data.data.data.role;
+
+    // 2. Tentukan halaman tujuan berdasarkan peran
+    let redirectPath = '/'; // Halaman default untuk 'user' (HomeView)
+    if (userRole === 'lecturer') {
+      redirectPath = '/dosen/dashboard'; // Halaman untuk 'lecturer' (LecturerDashboard)
     }
 
     toastRef.value.showToast(
@@ -119,8 +129,10 @@ const handleSubmit = async () => {
     );
 
     isSubmitting.value = false;
-    // router.push(redirectPath)
-    router.push("/")
+    
+    // 3. Arahkan ke halaman yang sudah ditentukan
+    router.push(redirectPath);
+
   } catch (error) {
     console.log("Something error", error.response?.data);
 
@@ -133,5 +145,4 @@ const handleSubmit = async () => {
     isSubmitting.value = false;
   }
 };
-console.log(user.value);
 </script>
