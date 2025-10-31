@@ -4,12 +4,12 @@ import "time"
 
 type ExamSession struct {
 	Id         int           `json:"id" gorm:"primaryKey;autoIncrement;not null"`
-	UserId     int           `json:"user_id" gorm:not null"`
+	UserId     int           `json:"user_id" gorm:"not null"`
 	ExamId     int           `json:"exam_id" gorm:"not null"`
-	StartedAt  time.Time     `json:"started_at" gorm:"not null"`
+	StartedAt  time.Time     `json:"started_at" gorm:"autoCreateTime"`
 	FinishedAt *time.Time    `json:"finished_at"`
 	Status     SessionStatus `json:"status" gorm:"default:'in_progress'"`
-	CurrentNo  int           `json:"current_no" gorm:"not null"`
+	CurrentNo  int           `json:"current_no" gorm:"default:1"`
 	Score      *float64      `json:"score"`
 
 	CreatedAt time.Time `json:"created_at"`
@@ -19,7 +19,7 @@ type ExamSession struct {
 }
 
 type UpdateExamSession struct {
-	UserId     int           `json:"user_id" gorm:not null"`
+	UserId     int           `json:"user_id" gorm:"not null"`
 	ExamId     int           `json:"exam_id" gorm:"not null"`
 	StartedAt  time.Time     `json:"started_at" gorm:"not null"`
 	FinishedAt *time.Time    `json:"finished_at"`
@@ -44,7 +44,7 @@ type FinishExam struct {
 
 type ESessionResponse struct {
 	Id         int           `json:"id" gorm:"primaryKey;autoIncrement;not null"`
-	UserId     int           `json:"user_id" gorm:not null"`
+	UserId     int           `json:"user_id" gorm:"not null"`
 	ExamId     int           `json:"exam_id" gorm:"not null"`
 	StartedAt  time.Time     `json:"started_at" gorm:"not null"`
 	FinishedAt *time.Time    `json:"finished_at"`

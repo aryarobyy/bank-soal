@@ -6,14 +6,14 @@ import (
 	"latih.in-be/internal/middleware"
 )
 
-func ExamSessionRoute(r *gin.Engine, examSession *controller.ExamSessionController) {
+func ExamSessionRoutes(r *gin.Engine, examSession *controller.ExamSessionController) {
 	routes := r.Group("/exam-session")
 	{
 		auth := routes.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
 			auth.POST("/",
-				middleware.InputValidate([]string{"user_id", "exam_id"}),
+				middleware.InputValidate([]string{"exam_id"}),
 				examSession.Create,
 			)
 			auth.GET("/",
@@ -29,7 +29,6 @@ func ExamSessionRoute(r *gin.Engine, examSession *controller.ExamSessionControll
 				examSession.Update,
 			)
 			auth.PUT("/:id/current-no",
-				middleware.RoleGuard("student"),
 				middleware.InputValidate([]string{"current_no"}),
 				examSession.UpdateCurrNo,
 			)

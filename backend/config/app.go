@@ -19,34 +19,15 @@ type App struct {
 }
 
 type Controllers struct {
-	User      *controller.UserController
-	Exam      *controller.ExamController
-	Question  *controller.QuestionController
-	Option    *controller.OptionController
-	ExamScore *controller.ExamScoreController
+	User        *controller.UserController
+	Exam        *controller.ExamController
+	Question    *controller.QuestionController
+	Option      *controller.OptionController
+	ExamScore   *controller.ExamScoreController
+	ExamSession *controller.ExamSessionController
 }
 
 func NewApp(db *gorm.DB) *App {
-	userRepo := repository.NewUserRepository(db)
-	examRepo := repository.NewExamRepository(db)
-	questionRepo := repository.NewQuestionRepository(db)
-	optionRepo := repository.NewOptionRepository(db)
-	examScoreRepo := repository.NewExamScoreRepository(db)
-
-	userService := service.NewUserService(userRepo)
-	examService := service.NewExamService(examRepo, userRepo)
-	questionService := service.NewQuestionService(questionRepo, userRepo, optionRepo)
-	optionService := service.NewOptionService(optionRepo)
-	examScoreService := service.NewExamScoreService(examScoreRepo)
-
-	controllers := &Controllers{
-		User:      controller.NewUserController(userService),
-		Exam:      controller.NewExamController(examService),
-		Question:  controller.NewQuestionController(questionService),
-		Option:    controller.NewOptionController(optionService),
-		ExamScore: controller.NewExamScoreController(examScoreService),
-	}
-
 	router := gin.Default()
 
 	corsConfig := cors.Config{
@@ -58,6 +39,29 @@ func NewApp(db *gorm.DB) *App {
 		MaxAge:           12 * time.Hour,
 	}
 	router.Use(cors.New(corsConfig))
+
+	userRepo := repository.NewUserRepository(db)
+	examRepo := repository.NewExamRepository(db)
+	questionRepo := repository.NewQuestionRepository(db)
+	optionRepo := repository.NewOptionRepository(db)
+	examScoreRepo := repository.NewExamScoreRepository(db)
+	examSessionRepo := repository.NewExamSessionRepository(db)
+
+	userService := service.NewUserService(userRepo)
+	examService := service.NewExamService(examRepo, userRepo)
+	questionService := service.NewQuestionService(questionRepo, userRepo, optionRepo)
+	optionService := service.NewOptionService(optionRepo)
+	examScoreService := service.NewExamScoreService(examScoreRepo)
+	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo)
+
+	controllers := &Controllers{
+		User:        controller.NewUserController(userService),
+		Exam:        controller.NewExamController(examService),
+		Question:    controller.NewQuestionController(questionService),
+		Option:      controller.NewOptionController(optionService),
+		ExamScore:   controller.NewExamScoreController(examScoreService),
+		ExamSession: controller.NewExamSessionController(examSessionService),
+	}
 
 	store := middleware.InMemoryStore(&middleware.InMemoryOptions{
 		Rate:  10 * time.Second, // 10s
@@ -83,6 +87,7 @@ func setupRoutes(r *gin.Engine, ctrl *Controllers) {
 	route.QuestionRoutes(r, ctrl.Question)
 	route.OptionRoutes(r, ctrl.Option)
 	route.ExamScoreRoutes(r, ctrl.ExamScore)
+	route.ExamSessionRoutes(r, ctrl.ExamSession)
 }
 
 func (a *App) Run(addr string) error {

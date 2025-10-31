@@ -166,11 +166,6 @@ func (h *QuestionController) GetByExam(c *gin.Context) {
 		return
 	}
 
-	if err != nil {
-		helper.Error(c, http.StatusNotFound, err.Error())
-		return
-	}
-
 	data, err := h.service.GetByExam(c, id, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
@@ -217,6 +212,27 @@ func (h *QuestionController) GetByDiff(c *gin.Context) {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
+
+	helper.Success(c, data, "data found")
+}
+
+func (h *QuestionController) GetBySubject(c *gin.Context) {
+	subjectStr := c.Query("subject_id")
+	subject := 0
+
+	if subjectStr != "" {
+		if l, err := strconv.Atoi(subjectStr); err == nil && l > 0 {
+			subject = l
+		}
+	}
+
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+
+	data, err := h.service.GetBySubject(c, subject, limit, offset)
 
 	helper.Success(c, data, "data found")
 }

@@ -23,6 +23,7 @@ type QuestionService interface {
 	GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, error)
 	GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, error)
 	GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, error)
+	GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, error)
 }
 
 type questionService struct {
@@ -205,6 +206,14 @@ func (s *questionService) GetByDifficult(ctx context.Context, diff string, limit
 	data, err := s.repo.GetByDifficult(ctx, diff, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("data with difficulty %s not found: %w", diff, err)
+	}
+	return data, nil
+}
+
+func (s *questionService) GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, error) {
+	data, err := s.repo.GetBySubject(ctx, subjectId, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("data with subjectId %d not found: %w", subjectId, err)
 	}
 	return data, nil
 }

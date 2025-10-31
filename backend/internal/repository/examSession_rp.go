@@ -10,7 +10,7 @@ import (
 )
 
 type ExamSessionRepository interface {
-	Create(ctx context.Context, e model.ExamSession) error
+	Create(ctx context.Context, e model.ExamSession) (*model.ExamSession, error)
 	GetById(ctx context.Context, id int) (*model.ExamSession, error)
 	Update(ctx context.Context, id int, e model.UpdateExamSession) (*model.ExamSession, error)
 	Delete(ctx context.Context, id int) error
@@ -28,11 +28,14 @@ func NewExamSessionRepository(db *gorm.DB) ExamSessionRepository {
 	return &examSessionRepository{db: db}
 }
 
-func (r *examSessionRepository) Create(ctx context.Context, e model.ExamSession) error {
-	if err := r.db.WithContext(ctx).Create(&e).Error; err != nil {
-		return err
+func (r *examSessionRepository) Create(ctx context.Context, e model.ExamSession) (*model.ExamSession, error) {
+	if err := r.db.WithContext(ctx).
+		Create(&e).
+		Error; err != nil {
+		return nil, err
 	}
-	return nil
+
+	return &e, nil
 }
 
 func (r *examSessionRepository) GetById(ctx context.Context, id int) (*model.ExamSession, error) {
@@ -161,11 +164,7 @@ func (r *examSessionRepository) CheckUserSession(ctx context.Context, userId int
 		Where("user_id = ? AND exam_id = ? AND status = ?", userId, examId, model.SessionInProgress).
 		First(&session).Error
 
-	if err == nil {
-		return fmt.Errorf("user already has an active session")
-	}
-
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil {
 		return err
 	}
 

@@ -10,7 +10,7 @@ import (
 )
 
 type ExamSessionService interface {
-	Create(ctx context.Context, e model.ExamSession, userId int, examId int) error
+	Create(ctx context.Context, e model.ExamSession, userId int, examId int) (*model.ExamSession, error)
 	GetById(ctx context.Context, id int) (*model.ExamSession, error)
 	Update(ctx context.Context, id int, e model.UpdateExamSession) (*model.ExamSession, error)
 	Delete(ctx context.Context, id int) error
@@ -20,25 +20,36 @@ type ExamSessionService interface {
 }
 
 type examSessionService struct {
-	repo repository.ExamSessionRepository
+	repo     repository.ExamSessionRepository
+	examRepo repository.ExamRepository
 }
 
-func NewExamSessionService(repo repository.ExamSessionRepository) ExamSessionService {
+func NewExamSessionService(repo repository.ExamSessionRepository, examRepo repository.ExamRepository) ExamSessionService {
 	return &examSessionService{
-		repo: repo,
+		repo:     repo,
+		examRepo: examRepo,
 	}
 }
 
-func (s *examSessionService) Create(ctx context.Context, e model.ExamSession, userId int, examId int) error {
-	err := s.repo.CheckUserSession(ctx, userId, examId)
-	if err != nil && err != gorm.ErrRecordNotFound {
-		return fmt.Errorf("failed to check existing session: %w", err)
+func (s *examSessionService) Create(ctx context.Context, e model.ExamSession, userId int, examId int) (*model.ExamSession, error) {
+	if err := s.repo.CheckUserSession(ctx, userId, examId); err != nil && err != gorm.ErrRecordNotFound {
+		return nil, fmt.Errorf("failed to check existing session: %w", err)
 	}
 
-	if err := s.repo.Create(ctx, e); err != nil {
-		return fmt.Errorf("failed to create session: %w", err)
+	e.UserId = userId
+	e.ExamId = examId
+
+	session, err := s.repo.Create(ctx, e)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create exam session: %w", err)
 	}
-	return nil
+
+	exam, err := s.examRepo.StartSession(ctx, examId)
+	if err != nil {
+		return session, fmt.Errorf("failed to load exam questions: %w", err)
+	}
+	fmt.Println(exam)
+	return session, nil
 }
 
 func (s *examSessionService) GetById(ctx context.Context, id int) (*model.ExamSession, error) {

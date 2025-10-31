@@ -10,6 +10,12 @@ import (
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+
+		if c.Request.Method == "OPTIONS" {
+			c.Next()
+			return
+		}
+
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
@@ -24,6 +30,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("user", claims)
+		c.Set("user_id", claims.UserId)
+		c.Set("role", claims.Role)
 		c.Next()
 	}
 }
