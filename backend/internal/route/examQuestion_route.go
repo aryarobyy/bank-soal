@@ -6,7 +6,7 @@ import (
 	"latih.in-be/internal/middleware"
 )
 
-func ExamQuestionRoutes(r *gin.Engine, examQ *controller.ExamQuestionHandler) {
+func ExamQuestionRoutes(r *gin.Engine, examQ *controller.ExamQuestionController) {
 	routes := r.Group("/exam-question")
 	{
 		routes.OPTIONS("/*path", func(c *gin.Context) {

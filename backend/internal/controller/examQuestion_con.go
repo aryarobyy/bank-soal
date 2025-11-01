@@ -9,15 +9,15 @@ import (
 	"latih.in-be/utils/helper"
 )
 
-type ExamQuestionHandler struct {
+type ExamQuestionController struct {
 	service service.ExamQuestionService
 }
 
-func NewExamQuestionHandler(s service.ExamQuestionService) *ExamQuestionHandler {
-	return &ExamQuestionHandler{service: s}
+func NewExamQuestionController(s service.ExamQuestionService) *ExamQuestionController {
+	return &ExamQuestionController{service: s}
 }
 
-func (h *ExamQuestionHandler) AddQuestionsToExam(c *gin.Context) {
+func (h *ExamQuestionController) AddQuestionsToExam(c *gin.Context) {
 	examIdStr := c.Param("examId")
 	examId, err := strconv.Atoi(examIdStr)
 	if err != nil {
@@ -45,7 +45,7 @@ func (h *ExamQuestionHandler) AddQuestionsToExam(c *gin.Context) {
 	helper.Success(c, nil, "questions added to exam successfully")
 }
 
-func (h *ExamQuestionHandler) UpdateQuestionsInExam(c *gin.Context) {
+func (h *ExamQuestionController) UpdateQuestionsInExam(c *gin.Context) {
 	examIdStr := c.Param("id")
 	examId, err := strconv.Atoi(examIdStr)
 	if err != nil {
@@ -73,7 +73,7 @@ func (h *ExamQuestionHandler) UpdateQuestionsInExam(c *gin.Context) {
 	helper.Success(c, nil, "exam questions updated successfully")
 }
 
-func (h *ExamQuestionHandler) RemoveQuestionsFromExam(c *gin.Context) {
+func (h *ExamQuestionController) RemoveQuestionsFromExam(c *gin.Context) {
 	examIdStr := c.Param("id")
 	examId, err := strconv.Atoi(examIdStr)
 	if err != nil {
