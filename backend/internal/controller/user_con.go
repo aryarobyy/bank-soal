@@ -286,21 +286,6 @@ func (h *UserController) ChangeRole(c *gin.Context) {
 		return
 	}
 
-	if input.AdminId == 0 || input.Role == "" {
-		helper.Error(c, http.StatusBadRequest, "adminId and role are required")
-		return
-	}
-
-	admin, err := h.service.GetById(c, input.AdminId)
-	if err != nil {
-		helper.Error(c, http.StatusUnauthorized, "admin not found")
-		return
-	}
-	if admin.Role != "admin" {
-		helper.Error(c, http.StatusForbidden, "you are not authorized to change roles")
-		return
-	}
-
 	user, err := h.service.GetById(c, id)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, "user not found")

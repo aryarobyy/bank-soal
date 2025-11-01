@@ -39,6 +39,5 @@ type ChangePasswordCredential struct {
 }
 
 type ChangeRoleCredential struct {
-	AdminId int  `json:"admin_id" binding:"required"`
-	Role    Role `json:"role" binding:"required"`
+	Role Role `json:"role" binding:"required"`
 }
