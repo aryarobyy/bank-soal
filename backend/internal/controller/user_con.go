@@ -180,6 +180,8 @@ func (h *UserController) Delete(c *gin.Context) {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
+	helper.Success(c, nil, "user deleted")
+
 }
 
 func (h *UserController) GetMany(c *gin.Context) {

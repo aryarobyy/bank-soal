@@ -119,6 +119,8 @@ func (r *userRepository) Update(ctx context.Context, user model.User, id int) (*
 func (r *userRepository) Delete(ctx context.Context, id int) error {
 	if err := r.db.
 		WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ?", id).
 		Delete(id).
 		Error; err != nil {
 		return err
