@@ -74,6 +74,12 @@ func (r *userRepository) Update(ctx context.Context, user model.User, id int) (*
 	if user.Nim != "" {
 		updateData["nim"] = user.Nim
 	}
+	if user.Nip != "" {
+		updateData["nip"] = user.Nip
+	}
+	if user.Nidn != "" {
+		updateData["nidn"] = user.Nidn
+	}
 	if user.Major != "" {
 		updateData["major"] = user.Major
 	}

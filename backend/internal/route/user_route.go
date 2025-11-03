@@ -9,7 +9,7 @@ import (
 func UserRoutes(r *gin.Engine, user *controller.UserController) {
 	routes := r.Group("/user")
 	{
-		routes.POST("/register", middleware.InputValidate([]string{"name", "nim", "password", "major", "faculty"}), user.Register)
+		routes.POST("/register", middleware.InputValidate([]string{"name", "password", "major", "faculty"}), user.Register)
 		routes.POST("/login", middleware.InputValidate([]string{"email", "password"}), user.Login)
 
 		routes.POST("/refresh", user.RefreshToken)

@@ -54,13 +54,28 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 		return fmt.Errorf("email %s already used", data.Email)
 	}
 
+	switch data.Role {
+	case "lecturer":
+		if data.Nip == "" || data.Nidn == "" {
+			return fmt.Errorf("lecturer must have both NIP and NIDN")
+		}
+	case "user":
+		if data.Nim == "" {
+			return fmt.Errorf("user must have NIM")
+		}
+	default:
+		return fmt.Errorf("invalid role: %s", data.Role)
+	}
+
 	userData := model.User{
 		Name:     data.Name,
 		Email:    data.Email,
 		Password: string(hashedPassword),
 		Major:    data.Major,
-		Nim:      data.Nim,
 		Faculty:  data.Faculty,
+		Nim:      data.Nim,
+		Nip:      data.Nip,
+		Nidn:     data.Nidn,
 		Role:     model.Role(data.Role),
 	}
 
@@ -115,6 +130,14 @@ func (s *userService) Update(ctx context.Context, data model.User, id int) (*mod
 	oldUser, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	if data.Role != "lecturer" && (data.Nip != "" || data.Nidn != "") {
+		return nil, fmt.Errorf("only lecturers can have Nip or Nidn")
+	}
+
+	if data.Role != "user" && (data.Nim != "") {
+		return nil, fmt.Errorf("only user can have Nim")
 	}
 
 	if oldUser.ImgUrl != "" && oldUser.ImgUrl != data.ImgUrl {
