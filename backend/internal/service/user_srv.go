@@ -61,7 +61,7 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 		Major:    data.Major,
 		Nim:      data.Nim,
 		Faculty:  data.Faculty,
-		Role:     model.RoleUser,
+		Role:     model.Role(data.Role),
 	}
 
 	_, err = s.repo.Register(ctx, userData)
