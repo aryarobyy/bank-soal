@@ -251,6 +251,23 @@ func (s *userService) GetByRole(ctx context.Context, role string, limit int, off
 }
 
 func (s *userService) ChangePassword(ctx context.Context, id int, newPassword string) error {
+	if newPassword == "" {
+		return fmt.Errorf("new password cannot be empty")
+	}
+
+	if len(newPassword) < 6 {
+		return fmt.Errorf("password must be at least 6 characters")
+	}
+
+	user, err := s.GetById(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to get user: %w", err)
+	}
+
+	if user == nil {
+		return fmt.Errorf("user not found")
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("failed to hash new password: %w", err)
