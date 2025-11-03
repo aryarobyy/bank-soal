@@ -71,7 +71,7 @@ import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import { useRouter } from 'vue-router'
 
 const { setValue: setToken } = useLocalStorage("token");
-const { setValue: setUser } = useLocalStorage("user");
+const { setValue: setUser } = useLocalStorage("id");
 
 const toastRef = ref(null);
 const formData = ref({
@@ -109,7 +109,7 @@ const handleSubmit = async () => {
     // Simpan token dan data user ke Local Storage
     if (data.data.token) {
       setToken(data.data.token);
-      setUser(data.data.data);
+      setUser(data.data.data.id);
     }
 
     // ## PERBAIKAN DILAKUKAN DI SINI ##
