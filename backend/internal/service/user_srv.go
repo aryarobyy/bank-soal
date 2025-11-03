@@ -23,7 +23,7 @@ type UserService interface {
 	GetByNim(ctx context.Context, nim string) (*model.User, error)
 	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, error)
 	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, error)
-	ChangePassword(ctx context.Context, id int, oldPassword, newPassword string) error
+	ChangePassword(ctx context.Context, id int, newPassword string) error
 	ChangeRole(ctx context.Context, id int, role model.Role) error
 	RefreshToken(ctx context.Context, refreshToken string) (string, error)
 }
@@ -206,16 +206,7 @@ func (s *userService) GetByRole(ctx context.Context, role string, limit int, off
 	return dataList, nil
 }
 
-func (s *userService) ChangePassword(ctx context.Context, id int, oldPassword, newPassword string) error {
-	data, err := s.repo.GetById(ctx, id)
-	if err != nil {
-		return fmt.Errorf("user not found: %w", err)
-	}
-
-	if bcrypt.CompareHashAndPassword([]byte(data.Password), []byte(oldPassword)) != nil {
-		return fmt.Errorf("old password is incorrect")
-	}
-
+func (s *userService) ChangePassword(ctx context.Context, id int, newPassword string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("failed to hash new password: %w", err)

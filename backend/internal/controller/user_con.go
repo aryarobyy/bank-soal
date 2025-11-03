@@ -266,7 +266,7 @@ func (h *UserController) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ChangePassword(c.Request.Context(), id, req.OldPassword, req.NewPassword); err != nil {
+	if err := h.service.ChangePassword(c.Request.Context(), id, req.NewPassword); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
