@@ -145,13 +145,18 @@ func (s *userService) Update(ctx context.Context, data model.User, id int) (*mod
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
-	if data.Role != "lecturer" {
+	effectiveRole := data.Role
+	if effectiveRole == "" {
+		effectiveRole = oldUser.Role
+	}
+
+	if effectiveRole != "lecturer" {
 		if (data.Nip != nil && *data.Nip != "") || (data.Nidn != nil && *data.Nidn != "") {
 			return nil, fmt.Errorf("only lecturers can have Nip or Nidn")
 		}
 	}
 
-	if data.Role != "user" {
+	if effectiveRole != "user" {
 		if data.Nim != nil && *data.Nim != "" {
 			return nil, fmt.Errorf("only user can have Nim")
 		}
