@@ -77,6 +77,9 @@ func (r *userRepository) Update(ctx context.Context, user model.User, id int) (*
 	if user.Major != "" {
 		updateData["major"] = user.Major
 	}
+	if user.Email != "" {
+		updateData["email"] = user.Email
+	}
 	if user.Faculty != "" {
 		updateData["faculty"] = user.Faculty
 	}
