@@ -5,9 +5,9 @@ import "time"
 type User struct {
 	Id           int       `json:"id" gorm:"primaryKey;autoIncrement;not null"`
 	Name         string    `json:"name" validate:"required"`
-	Nim          string    `json:"nim,omitempty" gorm:"unique"`
-	Nip          string    `json:"nip,omitempty" gorm:"unique"`
-	Nidn         string    `json:"nidn,omitempty" gorm:"unique"`
+	Nim          *string   `json:"nim,omitempty" gorm:"unique"`
+	Nip          *string   `json:"nip,omitempty" gorm:"unique"`
+	Nidn         *string   `json:"nidn,omitempty" gorm:"unique"`
 	ImgUrl       string    `json:"img_url,omitempty"`
 	Email        string    `json:"email" gorm:"unique" validate:"required,email"`
 	Password     string    `json:"password" validate:"required,min=6"`

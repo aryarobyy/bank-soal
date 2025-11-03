@@ -63,8 +63,21 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 		if data.Nim == "" {
 			return fmt.Errorf("user must have NIM")
 		}
+	case "admin":
 	default:
 		return fmt.Errorf("invalid role: %s", data.Role)
+	}
+
+	var nimPtr, nipPtr, nidnPtr *string
+
+	if data.Nim != "" {
+		nimPtr = &data.Nim
+	}
+	if data.Nip != "" {
+		nipPtr = &data.Nip
+	}
+	if data.Nidn != "" {
+		nidnPtr = &data.Nidn
 	}
 
 	userData := model.User{
@@ -73,9 +86,9 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 		Password: string(hashedPassword),
 		Major:    data.Major,
 		Faculty:  data.Faculty,
-		Nim:      data.Nim,
-		Nip:      data.Nip,
-		Nidn:     data.Nidn,
+		Nim:      nimPtr,
+		Nip:      nipPtr,
+		Nidn:     nidnPtr,
 		Role:     model.Role(data.Role),
 	}
 
@@ -132,12 +145,16 @@ func (s *userService) Update(ctx context.Context, data model.User, id int) (*mod
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
-	if data.Role != "lecturer" && (data.Nip != "" || data.Nidn != "") {
-		return nil, fmt.Errorf("only lecturers can have Nip or Nidn")
+	if data.Role != "lecturer" {
+		if (data.Nip != nil && *data.Nip != "") || (data.Nidn != nil && *data.Nidn != "") {
+			return nil, fmt.Errorf("only lecturers can have Nip or Nidn")
+		}
 	}
 
-	if data.Role != "user" && (data.Nim != "") {
-		return nil, fmt.Errorf("only user can have Nim")
+	if data.Role != "user" {
+		if data.Nim != nil && *data.Nim != "" {
+			return nil, fmt.Errorf("only user can have Nim")
+		}
 	}
 
 	if oldUser.ImgUrl != "" && oldUser.ImgUrl != data.ImgUrl {
@@ -156,7 +173,6 @@ func (s *userService) Update(ctx context.Context, data model.User, id int) (*mod
 			}
 
 			val := helper.GetFieldValue(data, fieldName)
-
 			return nil, fmt.Errorf("field '%s' with value '%v' is undefined", fieldName, val)
 		}
 
