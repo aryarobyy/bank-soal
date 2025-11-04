@@ -13,11 +13,11 @@ func UserRoutes(r *gin.Engine, user *controller.UserController) {
 		routes.POST("/login", middleware.InputValidate([]string{"email", "password"}), user.Login)
 
 		routes.POST("/refresh", user.RefreshToken)
+		routes.GET("/id", user.GetById)
 
 		usersAuth := routes.Group("")
 		usersAuth.Use(middleware.AuthMiddleware())
 		{
-			usersAuth.GET("/id", user.GetById)
 			usersAuth.GET("/email", user.GetByEmail)
 			usersAuth.GET("/nim", user.GetByNim)
 			usersAuth.GET("/name", user.GetByName)
