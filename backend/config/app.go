@@ -30,8 +30,9 @@ type Controllers struct {
 func NewApp(db *gorm.DB) *App {
 	router := gin.Default()
 
+	// ✅ CORS untuk mengizinkan FE akses BE
 	corsConfig := cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     []string{"http://localhost:5173"}, // FE URL
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -40,6 +41,14 @@ func NewApp(db *gorm.DB) *App {
 	}
 	router.Use(cors.New(corsConfig))
 
+	// ✅ Rate limiter tetap digunakan
+	store := middleware.InMemoryStore(&middleware.InMemoryOptions{
+		Rate:  10 * time.Second,
+		Limit: 5,
+	})
+	router.Use(middleware.RateLimiter(store, nil))
+
+	// Repository
 	userRepo := repository.NewUserRepository(db)
 	examRepo := repository.NewExamRepository(db)
 	questionRepo := repository.NewQuestionRepository(db)
@@ -47,6 +56,7 @@ func NewApp(db *gorm.DB) *App {
 	examScoreRepo := repository.NewExamScoreRepository(db)
 	examSessionRepo := repository.NewExamSessionRepository(db)
 
+	// Service
 	userService := service.NewUserService(userRepo)
 	examService := service.NewExamService(examRepo, userRepo)
 	questionService := service.NewQuestionService(questionRepo, userRepo, optionRepo)
@@ -54,6 +64,7 @@ func NewApp(db *gorm.DB) *App {
 	examScoreService := service.NewExamScoreService(examScoreRepo)
 	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo)
 
+	// Controller
 	controllers := &Controllers{
 		User:        controller.NewUserController(userService),
 		Exam:        controller.NewExamController(examService),
@@ -63,16 +74,7 @@ func NewApp(db *gorm.DB) *App {
 		ExamSession: controller.NewExamSessionController(examSessionService),
 	}
 
-	store := middleware.InMemoryStore(&middleware.InMemoryOptions{
-		Rate:  10 * time.Second, // 10s
-		Limit: 5,                // maks 5 request
-		// Skip: func(c *gin.Context) bool { //skip rate limit
-		// 	return c.FullPath() == "/"
-		// },
-	})
-
-	router.Use(middleware.RateLimiter(store, nil))
-
+	// Routes
 	setupRoutes(router, controllers)
 
 	return &App{

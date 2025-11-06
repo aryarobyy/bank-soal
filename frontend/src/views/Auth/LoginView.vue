@@ -62,13 +62,13 @@
 <script setup>
 import { onMounted, ref } from "vue";
 import { Mail, Lock, GraduationCap } from "lucide-vue-next";
-import Input from '../../components/ui/Input.vue'
+import Input from "../../components/ui/Input.vue";
 import Button from "../../components/ui/Button.vue";
 import { login } from "../../provider/user.provider";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import Toast from "../../components/utils/Toast.vue";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
-import { useRouter } from 'vue-router'
+import { useRouter } from "vue-router";
 
 const { setValue: setToken } = useLocalStorage("token");
 const { setValue: setUser } = useLocalStorage("user");
@@ -80,7 +80,7 @@ const formData = ref({
 });
 const errors = ref({});
 const isSubmitting = ref(false);
-const router = useRouter()
+const router = useRouter();
 
 const fields = [
   {
@@ -105,7 +105,7 @@ const handleSubmit = async () => {
   try {
     isSubmitting.value = true;
     const data = await login(formData.value);
-    
+
     // Simpan token dan data user ke Local Storage
     if (data.data.token) {
       setToken(data.data.token);
@@ -117,9 +117,9 @@ const handleSubmit = async () => {
     const userRole = data.data.data.role;
 
     // 2. Tentukan halaman tujuan berdasarkan peran
-    let redirectPath = '/'; // Halaman default untuk 'user' (HomeView)
-    if (userRole === 'lecturer') {
-      redirectPath = '/dosen/dashboard'; // Halaman untuk 'lecturer' (LecturerDashboard)
+    let redirectPath = "/"; // Halaman default untuk 'user' (HomeView)
+    if (userRole === "lecturer") {
+      redirectPath = "/dosen/dashboard"; // Halaman untuk 'lecturer' (LecturerDashboard)
     }
 
     toastRef.value.showToast(
@@ -129,10 +129,9 @@ const handleSubmit = async () => {
     );
 
     isSubmitting.value = false;
-    
+
     // 3. Arahkan ke halaman yang sudah ditentukan
     router.push(redirectPath);
-
   } catch (error) {
     console.log("Something error", error.response?.data);
 
