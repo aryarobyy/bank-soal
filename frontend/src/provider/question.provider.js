@@ -6,6 +6,11 @@ export const getAllQuestions = async () => {
   return res.data;
 };
 
+export const getmanyQuestions = async (limit,offset) => {
+  const res = await ApiHandler.get(`/${QUESTION}/?limit=${limit}&offset=${offset}`);
+  return res.data;
+};
+
 export const createQuestionWithOptions = async (data) => {
   const res = await ApiHandler.post(`${QUESTION}/options`, data);
   return res.data;
@@ -50,6 +55,11 @@ export const getQuestionsByDiff = async (difficulty) => {
 
 export const getQuestionsByCreator = async (creatorId) => {
   const res = await ApiHandler.get(`${QUESTION}/creator?creator_id=${creatorId}`);
+  return res.data;
+};
+
+export const getQuestionsBySubject = async (subjectId) => {
+  const res = await ApiHandler.get(`${QUESTION}/subject?subject_id=${subjectId}`);
   return res.data;
 };
 

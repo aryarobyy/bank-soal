@@ -2,7 +2,7 @@ import { EXAM } from "../core/constant";
 import ApiHandler from "./api.handler";
 
 export const getAllExam = async () => {
-  const res = await ApiHandler.get(`/${EXAM}`);
+  const res = await ApiHandler.get(`/${EXAM}/`);
   return res.data;
 };
 
@@ -12,7 +12,7 @@ export const getExamById = async (id) => {
 };
 
 export const createExam = async (data) => {
-  const res = await ApiHandler.post(`/${EXAM}`, data);
+  const res = await ApiHandler.post(`/${EXAM}/`, data);
   return res.data;
 };
 

@@ -63,36 +63,44 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute, RouterLink } from 'vue-router';
-import { useLocalStorage } from '../hooks/useLocalStorage';
 import { UserCircle } from 'lucide-vue-next';
+// 1. Impor hook state global yang baru
+import { useGetCurrentUser } from '../hooks/useGetCurrentUser'; 
+// 2. Impor useLocalStorage (masih dipakai untuk logout)
+import { useLocalStorage } from '../hooks/useLocalStorage'; 
 
 const showProfileDropdown = ref(false);
-const user = ref(null);
 const router = useRouter();
 const route = useRoute();
+
+// 3. Gunakan hook BARU untuk mendapatkan 'user'
+// 'user' sekarang reaktif dan diisi oleh App.vue
+const { user } = useGetCurrentUser(); 
+
+// 4. Hapus 'onMounted' lama
+// (App.vue dan layout lain sudah mengurus pengecekan token/login)
+/* onMounted(() => {
+  // Logika lama yang membaca localStorage('user') dihapus
+});
+*/
 
 const toggleProfileDropdown = () => {
   showProfileDropdown.value = !showProfileDropdown.value;
 };
 
+// 5. Perbarui fungsi logout
 const logout = () => {
   const { removeValue: removeToken } = useLocalStorage('token');
-  const { removeValue: removeUser } = useLocalStorage('user');
+  // Pastikan menghapus 'id' (sistem baru), bukan 'user' (sistem lama)
+  const { removeValue: removeId } = useLocalStorage('id'); 
   removeToken();
-  removeUser();
-  router.push('/login');
+  removeId();
+  
+  // Lakukan hard reload ke halaman login
+  window.location.href = '/login';
 };
 
 const isActive = (path) => {
   return route.path.startsWith(path);
 };
-
-onMounted(() => {
-  const { value: storedUser } = useLocalStorage('user');
-  if (storedUser.value) {
-    user.value = storedUser.value;
-  } else {
-    logout();
-  }
-});
 </script>

@@ -24,7 +24,7 @@
       <p v-if="selectedFileName" class="text-lg font-semibold text-green-600">File Selected:</p>
       <p v-if="selectedFileName" class="mb-4 text-medium-text">{{ selectedFileName }}</p>
 
-      <button @click="triggerFileInput" class="px-8 py-3 font-bold text-white transition-opacity rounded-lg bg-teal-400 hover:opacity-90">
+      <button @click="triggerFileInput" class="px-8 py-3 font-bold text-white transition-opacity rounded-lg bg-teal-400 hover:opacity-９0">
         Select file
       </button>
       <input 
@@ -39,8 +39,8 @@
 </template>
 
 <script>
-// I've also updated the API call logic to be functional
-import { createQuestionFromJson } from '../../provider/question.provider';
+// Pastikan path impor ini benar dari lokasi file Anda
+import { createQuestionFromJson } from '../../provider/question.provider'; 
 
 export default {
   name: 'UploadJsonSoal',
@@ -51,6 +51,18 @@ export default {
       selectedFileName: null,
     };
   },
+  
+  // ## 1. TAMBAHKAN COMPUTED PROPERTY INI ##
+  computed: {
+    isAdminRoute() {
+      return this.$route.path.startsWith('/admin/soal');
+    },
+    // Membuat properti untuk nama rute 'list' yang benar
+    listRouteName() {
+      return this.isAdminRoute ? 'AdminSoalList' : 'DosenSoalList';
+    }
+  },
+  
   methods: {
     triggerFileInput() { this.$refs.fileInput.click(); },
     handleFileSelect(event) { this.processFile(event.target.files[0]); },
@@ -66,7 +78,6 @@ export default {
       }
     },
     
-    // ## SAVE FUNCTION IS UPDATED HERE ##
     async saveFile() {
       if (!this.selectedFile) {
         alert('Silakan pilih file terlebih dahulu.'); 
@@ -79,7 +90,11 @@ export default {
       try {
         await createQuestionFromJson(formData);
         alert(`File ${this.selectedFileName} berhasil diunggah dan soal telah dibuat!`);
-        this.$router.push('/dosen/soal/list');
+        
+        // ## 2. PERBAIKI METODE INI (MENGGUNAKAN NAMED ROUTE) ##
+        // Menggunakan nama rute yang sudah kita siapkan di computed
+        this.$router.push({ name: this.listRouteName });
+
       } catch (error) {
         console.error("Gagal mengunggah file JSON:", error);
         alert('Terjadi kesalahan saat menyimpan file. Silakan periksa format JSON Anda.');

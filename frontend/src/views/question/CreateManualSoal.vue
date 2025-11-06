@@ -84,7 +84,10 @@
 
 <script>
 import { createQuestionWithOptions, getQuestionById, updateQuestion } from '../../provider/question.provider';
-import { useLocalStorage } from '../../hooks/useLocalStorage';
+// ## 1. HAPUS `useLocalStorage` ##
+// import { useLocalStorage } from '../../hooks/useLocalStorage';
+// ## 2. IMPOR `useGetCurrentUser` (state global) ##
+import { useGetCurrentUser } from '../../hooks/useGetCurrentUser';
 
 const subjects = [
   { id: 1, title: 'Kalkulus', code: 'MFG-101' },
@@ -105,6 +108,15 @@ const createEmptySoal = () => ({
 
 export default {
   name: 'CreateManualSoal',
+
+  // ## 3. TAMBAHKAN FUNGSI `setup()` ##
+  // Ini untuk mengambil 'user' dari state global
+  setup() {
+    const { user } = useGetCurrentUser();
+    // Kembalikan 'user' agar bisa diakses di 'methods' melalui `this.user`
+    return { user };
+  },
+
   data() {
     return {
       isEditMode: false,
@@ -117,6 +129,16 @@ export default {
       answerColors: ['bg-red-500', 'bg-blue-500', 'bg-yellow-500', 'bg-green-500']
     };
   },
+  
+  computed: {
+    isAdminRoute() {
+      return this.$route.path.startsWith('/admin/soal');
+    },
+    listRouteName() {
+      return this.isAdminRoute ? 'AdminSoalList' : 'DosenSoalList';
+    }
+  },
+  
   methods: {
     async fetchQuestionData(id) {
       try {
@@ -135,7 +157,7 @@ export default {
       } catch (error) {
         console.error("Gagal mengambil data soal:", error);
         alert('Gagal memuat data soal untuk diedit.');
-        this.$router.push('/dosen/soal/list');
+        this.$router.push({ name: this.listRouteName });
       }
     },
     
@@ -148,13 +170,16 @@ export default {
     },
 
     async saveSoal() {
-      const { value: user } = useLocalStorage('user');
-      const creatorId = user.value?.id;
+      // ## 4. PERBAIKI CARA MENDAPATKAN ID PENGGUNA ##
+      // Menggunakan 'this.user' yang didapat dari 'setup()'
+      const creatorId = this.user?.id; // 'this.user' sekarang adalah data dari state global
+
       if (!creatorId) {
         alert('Gagal mendapatkan ID pengguna. Silakan login ulang.');
         return;
       }
-      const hardcodedExamId = 2;
+      
+      const hardcodedExamId = 2; // TODO: Perbaiki ini nanti
 
       try {
         if (this.isEditMode) {
@@ -166,12 +191,14 @@ export default {
           const payload = this.formatPayload(this.currentSoal, creatorId, hardcodedExamId);
           await updateQuestion(this.questionId, payload);
           alert('Soal berhasil diperbarui!');
+          
+          // **NAVIGASI BARU (EDIT)**: Kembali ke daftar biasa
+          this.$router.push({ name: this.listRouteName });
 
         } else {
           // --- ALUR UNTUK MODE BUAT BARU ---
           const questionsToSave = this.soalList.length > 0 ? this.soalList : [];
           
-          // Jika form tidak kosong, tambahkan juga isinya ke daftar yang akan disimpan
           if(this.currentSoal.question.trim()){
               questionsToSave.push(this.currentSoal);
           }
@@ -187,9 +214,15 @@ export default {
             await createQuestionWithOptions(payload);
           }
           alert(`${questionsToSave.length} soal berhasil disimpan!`);
+          
+          // **NAVIGASI BARU (CREATE)**: Arahkan ke daftar DENGAN query creator_id
+          this.$router.push({ 
+            name: this.listRouteName, 
+            query: { creator_id: creatorId } 
+          });
         }
 
-        this.$router.push('/dosen/soal/list');
+        // Hapus baris router.push yang lama dari sini
 
       } catch (error) {
         console.error("Gagal menyimpan/update soal:", error);
@@ -204,7 +237,7 @@ export default {
             subject_id: soal.subject_id,
             question_text: soal.question,
             difficulty: soal.level,
-            score: soal.mark, // Menambahkan score/mark
+            score: soal.mark, 
             options: soal.answers
                 .filter(a => a.text.trim() !== '')
                 .map((a, index) => ({
