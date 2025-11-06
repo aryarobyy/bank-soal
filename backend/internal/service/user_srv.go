@@ -23,7 +23,7 @@ type UserService interface {
 	GetByNim(ctx context.Context, nim string) (*model.User, error)
 	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, error)
 	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, error)
-	ChangePassword(ctx context.Context, id int, oldPassword, newPassword string) error
+	ChangePassword(ctx context.Context, id int, newPassword string) error
 	ChangeRole(ctx context.Context, id int, role model.Role) error
 	RefreshToken(ctx context.Context, refreshToken string) (string, error)
 }
@@ -54,14 +54,42 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 		return fmt.Errorf("email %s already used", data.Email)
 	}
 
+	switch data.Role {
+	case "lecturer":
+		if data.Nip == "" || data.Nidn == "" {
+			return fmt.Errorf("lecturer must have both NIP and NIDN")
+		}
+	case "user":
+		if data.Nim == "" {
+			return fmt.Errorf("user must have NIM")
+		}
+	case "admin":
+	default:
+		return fmt.Errorf("invalid role: %s", data.Role)
+	}
+
+	var nimPtr, nipPtr, nidnPtr *string
+
+	if data.Nim != "" {
+		nimPtr = &data.Nim
+	}
+	if data.Nip != "" {
+		nipPtr = &data.Nip
+	}
+	if data.Nidn != "" {
+		nidnPtr = &data.Nidn
+	}
+
 	userData := model.User{
 		Name:     data.Name,
 		Email:    data.Email,
 		Password: string(hashedPassword),
 		Major:    data.Major,
-		Nim:      data.Nim,
 		Faculty:  data.Faculty,
-		Role:     model.RoleUser,
+		Nim:      nimPtr,
+		Nip:      nipPtr,
+		Nidn:     nidnPtr,
+		Role:     model.Role(data.Role),
 	}
 
 	_, err = s.repo.Register(ctx, userData)
@@ -117,6 +145,23 @@ func (s *userService) Update(ctx context.Context, data model.User, id int) (*mod
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
+	effectiveRole := data.Role
+	if effectiveRole == "" {
+		effectiveRole = oldUser.Role
+	}
+
+	if effectiveRole != "lecturer" {
+		if (data.Nip != nil && *data.Nip != "") || (data.Nidn != nil && *data.Nidn != "") {
+			return nil, fmt.Errorf("only lecturers can have Nip or Nidn")
+		}
+	}
+
+	if effectiveRole != "user" {
+		if data.Nim != nil && *data.Nim != "" {
+			return nil, fmt.Errorf("only user can have Nim")
+		}
+	}
+
 	if oldUser.ImgUrl != "" && oldUser.ImgUrl != data.ImgUrl {
 		if err := helper.DeleteImage(oldUser.ImgUrl); err != nil {
 			return nil, fmt.Errorf("failed to delete old image: %w", err)
@@ -133,7 +178,6 @@ func (s *userService) Update(ctx context.Context, data model.User, id int) (*mod
 			}
 
 			val := helper.GetFieldValue(data, fieldName)
-
 			return nil, fmt.Errorf("field '%s' with value '%v' is undefined", fieldName, val)
 		}
 
@@ -206,14 +250,22 @@ func (s *userService) GetByRole(ctx context.Context, role string, limit int, off
 	return dataList, nil
 }
 
-func (s *userService) ChangePassword(ctx context.Context, id int, oldPassword, newPassword string) error {
-	data, err := s.repo.GetById(ctx, id)
-	if err != nil {
-		return fmt.Errorf("user not found: %w", err)
+func (s *userService) ChangePassword(ctx context.Context, id int, newPassword string) error {
+	if newPassword == "" {
+		return fmt.Errorf("new password cannot be empty")
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(data.Password), []byte(oldPassword)) != nil {
-		return fmt.Errorf("old password is incorrect")
+	if len(newPassword) < 6 {
+		return fmt.Errorf("password must be at least 6 characters")
+	}
+
+	user, err := s.GetById(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to get user: %w", err)
+	}
+
+	if user == nil {
+		return fmt.Errorf("user not found")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)

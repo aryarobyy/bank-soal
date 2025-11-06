@@ -13,4 +13,6 @@ type Exam struct {
 	FinishedAt  *time.Time `json:"finished_at" validate:"required, gtfield=StartedAt"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
+
+	Questions []Question `json:"questions" gorm:"many2many:exam_questions;"`
 }

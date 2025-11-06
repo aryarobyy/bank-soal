@@ -72,10 +72,7 @@ import { useRouter } from 'vue-router'
 import { useUser } from "../../hooks/useGetCurrentUser";
 
 const { setValue: setToken } = useLocalStorage("token");
-// ## 2. Ubah key Local Storage dari "user" menjadi "id" ##
-const { setValue: setId } = useLocalStorage("id");
-// ## 3. Dapatkan fungsi `setUser` global dari hook `useUser` ##
-const { setUser: setGlobalUser } = useUser();
+const { setValue: setUser } = useLocalStorage("id");
 
 const toastRef = ref(null);
 const formData = ref({
@@ -102,12 +99,7 @@ const handleSubmit = async () => {
     // Simpan token dan data user ke Local Storage
     if (data.data.token && userData) {
       setToken(data.data.token);
-      
-      // ## 4. Simpan HANYA ID ke Local Storage ##
-      setId(userData.id);
-      
-      // ## 5. Atur state global secara instan ##
-      setGlobalUser(userData);
+      setUser(data.data.data.id);
     }
 
     // ## 6. Logika Redirect untuk SEMUA ROLE (termasuk admin/super_admin) ##

@@ -132,10 +132,27 @@ func (h *UserController) Update(c *gin.Context) {
 		return
 	}
 
+	nim := c.PostForm("nim")
+	nip := c.PostForm("nip")
+	nidn := c.PostForm("nidn")
+
+	var nimPtr, nipPtr, nidnPtr *string
+	if nim != "" {
+		nimPtr = &nim
+	}
+	if nip != "" {
+		nipPtr = &nip
+	}
+	if nidn != "" {
+		nidnPtr = &nidn
+	}
+
 	user := model.User{
 		Name:    c.PostForm("name"),
 		Email:   email,
-		Nim:     c.PostForm("nim"),
+		Nim:     nimPtr,
+		Nip:     nipPtr,
+		Nidn:    nidnPtr,
 		Major:   c.PostForm("major"),
 		Faculty: c.PostForm("faculty"),
 		Status:  model.Status(c.PostForm("status")),
@@ -180,6 +197,8 @@ func (h *UserController) Delete(c *gin.Context) {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
+	helper.Success(c, nil, "user deleted")
+
 }
 
 func (h *UserController) GetMany(c *gin.Context) {
@@ -264,7 +283,7 @@ func (h *UserController) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ChangePassword(c.Request.Context(), id, req.OldPassword, req.NewPassword); err != nil {
+	if err := h.service.ChangePassword(c.Request.Context(), id, req.NewPassword); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -283,21 +302,6 @@ func (h *UserController) ChangeRole(c *gin.Context) {
 	var input model.ChangeRoleCredential
 	if err := c.ShouldBindJSON(&input); err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid input format")
-		return
-	}
-
-	if input.AdminId == 0 || input.Role == "" {
-		helper.Error(c, http.StatusBadRequest, "adminId and role are required")
-		return
-	}
-
-	admin, err := h.service.GetById(c, input.AdminId)
-	if err != nil {
-		helper.Error(c, http.StatusUnauthorized, "admin not found")
-		return
-	}
-	if admin.Role != "admin" {
-		helper.Error(c, http.StatusForbidden, "you are not authorized to change roles")
 		return
 	}
 

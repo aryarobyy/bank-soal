@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"strings"
 
+	"gorm.io/gorm"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/repository"
 	"latih.in-be/utils/helper"
@@ -23,6 +24,7 @@ type QuestionService interface {
 	GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, error)
 	GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, error)
 	GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, error)
+	GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, error)
 }
 
 type questionService struct {
@@ -54,6 +56,9 @@ func (s *questionService) Create(ctx context.Context, data model.Question) error
 func (s *questionService) GetById(ctx context.Context, id int) (*model.Question, error) {
 	data, err := s.repo.GetById(ctx, id)
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("question with id %d not found", id)
+		}
 		return nil, fmt.Errorf("data with id %d not found: %w", id, err)
 	}
 	return data, nil
@@ -62,6 +67,9 @@ func (s *questionService) GetById(ctx context.Context, id int) (*model.Question,
 func (s *questionService) Update(ctx context.Context, newData model.Question, id int, userId int) (*model.Question, error) {
 	data, err := s.repo.GetById(ctx, id)
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("question with id %d not found", id)
+		}
 		return nil, fmt.Errorf("data is unavaible %w", err)
 	}
 
@@ -110,6 +118,9 @@ func (s *questionService) Delete(ctx context.Context, id int, userId int) error 
 
 	user, err := s.userRepo.GetById(ctx, userId)
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("user with id %d not found", id)
+		}
 		return fmt.Errorf("user is unavaible %w", err)
 	}
 
@@ -118,6 +129,9 @@ func (s *questionService) Delete(ctx context.Context, id int, userId int) error 
 	}
 
 	if err := s.optRepo.DeleteByQuestionId(ctx, id); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("question with id %d not found", id)
+		}
 		return fmt.Errorf("failed to delete data: %w", err)
 	}
 
@@ -188,6 +202,9 @@ func (s *questionService) CreateFromJson(ctx context.Context, file *multipart.Fi
 func (s *questionService) GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, error) {
 	data, err := s.repo.GetByExam(ctx, examId, limit, offset)
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("question with id %d not found", examId)
+		}
 		return nil, fmt.Errorf("data with exam id %d not found: %w", examId, err)
 	}
 	return data, nil
@@ -196,6 +213,9 @@ func (s *questionService) GetByExam(ctx context.Context, examId int, limit int, 
 func (s *questionService) GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, error) {
 	data, err := s.repo.GetByExam(ctx, creatorId, limit, offset)
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("creator with id %d not found", creatorId)
+		}
 		return nil, fmt.Errorf("data with creator id %d not found: %w", creatorId, err)
 	}
 	return data, nil
@@ -204,7 +224,21 @@ func (s *questionService) GetByCreatorId(ctx context.Context, creatorId int, lim
 func (s *questionService) GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, error) {
 	data, err := s.repo.GetByDifficult(ctx, diff, limit, offset)
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("question with difficulty %s not found", diff)
+		}
 		return nil, fmt.Errorf("data with difficulty %s not found: %w", diff, err)
+	}
+	return data, nil
+}
+
+func (s *questionService) GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, error) {
+	data, err := s.repo.GetBySubject(ctx, subjectId, limit, offset)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("question with subject id %d not found", subjectId)
+		}
+		return nil, fmt.Errorf("data with subjectId %d not found: %w", subjectId, err)
 	}
 	return data, nil
 }

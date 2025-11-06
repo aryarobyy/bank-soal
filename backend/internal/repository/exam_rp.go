@@ -14,6 +14,7 @@ type ExamRepository interface {
 	Update(ctx context.Context, e model.Exam, id int) (*model.Exam, error)
 	Delete(ctx context.Context, id int) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, error)
+	StartSession(ctx context.Context, id int) (*model.Exam, error)
 }
 
 type examRepository struct {
@@ -110,4 +111,14 @@ func (r *examRepository) GetMany(ctx context.Context, limit int, offset int) ([]
 		return nil, err
 	}
 	return e, nil
+}
+
+func (r *examRepository) StartSession(ctx context.Context, id int) (*model.Exam, error) {
+	var exam model.Exam
+	if err := r.db.WithContext(ctx).
+		Preload("Questions.Options").
+		First(&exam, id).Error; err != nil {
+		return nil, fmt.Errorf("failed to load exam with questions: %w", err)
+	}
+	return &exam, nil
 }
