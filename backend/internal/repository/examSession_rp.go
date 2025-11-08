@@ -95,7 +95,11 @@ func (r *examSessionRepository) Update(ctx context.Context, id int, e model.Upda
 }
 
 func (r *examSessionRepository) Delete(ctx context.Context, id int) error {
-	if err := r.db.WithContext(ctx).Delete(&model.ExamSession{}, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Model(&model.ExamSession{}).
+		Where("id = ?", id).
+		Delete(id).
+		Error; err != nil {
 		return err
 	}
 	return nil

@@ -17,11 +17,11 @@ func ExamSessionRoutes(r *gin.Engine, examSession *controller.ExamSessionControl
 				examSession.Create,
 			)
 			auth.GET("/",
-				middleware.RoleGuard("admin", "lecturer"),
+				middleware.RoleGuard("admin", "lecturer", "super_admin"),
 				examSession.GetMany,
 			)
 			auth.GET("/:id",
-				middleware.RoleGuard("admin", "lecturer"),
+				middleware.RoleGuard("admin", "lecturer", "super_admin"),
 				examSession.GetById,
 			)
 			auth.PUT("/:id",

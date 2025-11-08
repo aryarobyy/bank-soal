@@ -95,6 +95,7 @@ func (r *questionRepository) Delete(ctx context.Context, id int) error {
 	if err := r.db.WithContext(ctx).
 		Where("id = ?", id).
 		Delete(&model.Question{}).
+		Delete(id).
 		Error; err != nil {
 		return err
 	}

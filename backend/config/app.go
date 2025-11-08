@@ -19,12 +19,13 @@ type App struct {
 }
 
 type Controllers struct {
-	User        *controller.UserController
-	Exam        *controller.ExamController
-	Question    *controller.QuestionController
-	Option      *controller.OptionController
-	ExamScore   *controller.ExamScoreController
-	ExamSession *controller.ExamSessionController
+	User         *controller.UserController
+	Exam         *controller.ExamController
+	Question     *controller.QuestionController
+	Option       *controller.OptionController
+	ExamScore    *controller.ExamScoreController
+	ExamSession  *controller.ExamSessionController
+	ExamQuestion *controller.ExamQuestionController
 }
 
 func NewApp(db *gorm.DB) *App {
@@ -55,6 +56,7 @@ func NewApp(db *gorm.DB) *App {
 	optionRepo := repository.NewOptionRepository(db)
 	examScoreRepo := repository.NewExamScoreRepository(db)
 	examSessionRepo := repository.NewExamSessionRepository(db)
+	examQuestionRepo := repository.NewExamQuestionRepository(db)
 
 	// Service
 	userService := service.NewUserService(userRepo)
@@ -63,15 +65,17 @@ func NewApp(db *gorm.DB) *App {
 	optionService := service.NewOptionService(optionRepo)
 	examScoreService := service.NewExamScoreService(examScoreRepo)
 	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo)
+	examQuestionService := service.NewExamQuestionService(examQuestionRepo, questionRepo, examRepo)
 
 	// Controller
 	controllers := &Controllers{
-		User:        controller.NewUserController(userService),
-		Exam:        controller.NewExamController(examService),
-		Question:    controller.NewQuestionController(questionService),
-		Option:      controller.NewOptionController(optionService),
-		ExamScore:   controller.NewExamScoreController(examScoreService),
-		ExamSession: controller.NewExamSessionController(examSessionService),
+		User:         controller.NewUserController(userService),
+		Exam:         controller.NewExamController(examService),
+		Question:     controller.NewQuestionController(questionService),
+		Option:       controller.NewOptionController(optionService),
+		ExamScore:    controller.NewExamScoreController(examScoreService),
+		ExamSession:  controller.NewExamSessionController(examSessionService),
+		ExamQuestion: controller.NewExamQuestionController(examQuestionService),
 	}
 
 	// Routes
@@ -84,12 +88,14 @@ func NewApp(db *gorm.DB) *App {
 }
 
 func setupRoutes(r *gin.Engine, ctrl *Controllers) {
+	r.Static("/storages/images", "./storages/images")
 	route.UserRoutes(r, ctrl.User)
 	route.ExamRoutes(r, ctrl.Exam)
 	route.QuestionRoutes(r, ctrl.Question)
 	route.OptionRoutes(r, ctrl.Option)
 	route.ExamScoreRoutes(r, ctrl.ExamScore)
 	route.ExamSessionRoutes(r, ctrl.ExamSession)
+	route.ExamQuestionRoutes(r, ctrl.ExamQuestion)
 }
 
 func (a *App) Run(addr string) error {

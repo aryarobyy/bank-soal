@@ -60,18 +60,19 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 import { Mail, Lock, GraduationCap } from "lucide-vue-next";
 import Input from "../../components/ui/Input.vue";
 import Button from "../../components/ui/Button.vue";
 import { login } from "../../provider/user.provider";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import Toast from "../../components/utils/Toast.vue";
-import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import { useRouter } from "vue-router";
+// ## 1. Impor `useUser` (bukan `useGetCurrentUser`) ##
+import { useUser } from "../../hooks/useGetCurrentUser";
 
 const { setValue: setToken } = useLocalStorage("token");
-const { setValue: setUser } = useLocalStorage("user");
+const { setValue: setUser } = useLocalStorage("id");
 
 const toastRef = ref(null);
 const formData = ref({
@@ -106,20 +107,26 @@ const handleSubmit = async () => {
     isSubmitting.value = true;
     const data = await login(formData.value);
 
+    // Ambil data pengguna dari respons
+    const userData = data.data.data;
+
     // Simpan token dan data user ke Local Storage
-    if (data.data.token) {
+    if (data.data.token && userData) {
       setToken(data.data.token);
-      setUser(data.data.data);
+      setUser(data.data.data.id);
     }
 
-    // ## PERBAIKAN DILAKUKAN DI SINI ##
-    // 1. Baca peran (role) dari data pengguna yang baru saja disimpan
-    const userRole = data.data.data.role;
+    // ## 6. Logika Redirect untuk SEMUA ROLE (termasuk admin/super_admin) ##
 
-    // 2. Tentukan halaman tujuan berdasarkan peran
-    let redirectPath = "/"; // Halaman default untuk 'user' (HomeView)
+    const userRole = userData.role;
+    let redirectPath = "/"; // Default untuk 'user'
+
     if (userRole === "lecturer") {
-      redirectPath = "/dosen/dashboard"; // Halaman untuk 'lecturer' (LecturerDashboard)
+      redirectPath = "/dosen/dashboard";
+    } else if (userRole === "admin") {
+      redirectPath = "/admin/dashboard";
+    } else if (userRole === "super_admin") {
+      redirectPath = "/superadmin/dashboard";
     }
 
     toastRef.value.showToast(
@@ -131,16 +138,15 @@ const handleSubmit = async () => {
     isSubmitting.value = false;
 
     // 3. Arahkan ke halaman yang sudah ditentukan
+
     router.push(redirectPath);
   } catch (error) {
     console.log("Something error", error.response?.data);
-
     toastRef.value.showToast(
       "error",
       "Login Gagal",
       "Email atau password salah."
     );
-
     isSubmitting.value = false;
   }
 };

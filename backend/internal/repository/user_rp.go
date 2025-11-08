@@ -71,11 +71,32 @@ func (r *userRepository) Update(ctx context.Context, user model.User, id int) (*
 	if user.Name != "" {
 		updateData["name"] = user.Name
 	}
-	if user.Nim != "" {
-		updateData["nim"] = user.Nim
+	if user.Nim != nil {
+		if *user.Nim != "" {
+			updateData["nim"] = user.Nim
+		} else {
+			updateData["nim"] = nil
+		}
+	}
+	if user.Nip != nil {
+		if *user.Nip != "" {
+			updateData["nip"] = user.Nip
+		} else {
+			updateData["nip"] = nil
+		}
+	}
+	if user.Nidn != nil {
+		if *user.Nidn != "" {
+			updateData["nidn"] = user.Nidn
+		} else {
+			updateData["nidn"] = nil
+		}
 	}
 	if user.Major != "" {
 		updateData["major"] = user.Major
+	}
+	if user.Email != "" {
+		updateData["email"] = user.Email
 	}
 	if user.Faculty != "" {
 		updateData["faculty"] = user.Faculty
@@ -119,6 +140,8 @@ func (r *userRepository) Update(ctx context.Context, user model.User, id int) (*
 func (r *userRepository) Delete(ctx context.Context, id int) error {
 	if err := r.db.
 		WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ?", id).
 		Delete(id).
 		Error; err != nil {
 		return err
