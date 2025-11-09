@@ -322,7 +322,21 @@ func (h *UserController) ChangeRole(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ChangeRole(c, id, user.Role); err != nil {
+	userRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	roleStr, ok := userRole.(string)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	roleValue := model.Role(roleStr)
+
+	if err := h.service.ChangeRole(c, id, user.Role, roleValue); err != nil {
 		helper.Error(c, http.StatusInternalServerError, "failed to update user role")
 		return
 	}

@@ -24,7 +24,7 @@ type UserService interface {
 	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, error)
 	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, error)
 	ChangePassword(ctx context.Context, id int, newPassword string) error
-	ChangeRole(ctx context.Context, id int, role model.Role) error
+	ChangeRole(ctx context.Context, id int, role model.Role, userRole model.Role) error
 	RefreshToken(ctx context.Context, refreshToken string) (string, error)
 }
 
@@ -280,7 +280,11 @@ func (s *userService) ChangePassword(ctx context.Context, id int, newPassword st
 	return nil
 }
 
-func (s *userService) ChangeRole(ctx context.Context, id int, role model.Role) error {
+func (s *userService) ChangeRole(ctx context.Context, id int, role model.Role, userRole model.Role) error {
+	if role == model.RoleAdmin && model.Role(userRole) != model.RoleSuperAdmin {
+		return fmt.Errorf("you dont have permission to assign admin role")
+	}
+
 	if err := s.repo.ChangeRole(ctx, id, role); err != nil {
 		return fmt.Errorf("cannot change role: %w", err)
 	}
