@@ -207,7 +207,7 @@ func (s *questionService) GetByExam(ctx context.Context, examId int, limit int, 
 }
 
 func (s *questionService) GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, int64, error) {
-	data, total, err := s.repo.GetByExam(ctx, creatorId, limit, offset)
+	data, total, err := s.repo.GetByCreatorId(ctx, creatorId, limit, offset)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, 0, fmt.Errorf("creator with id %d not found", creatorId)
