@@ -16,8 +16,8 @@ func ExamQuestionRoutes(r *gin.Engine, examQ *controller.ExamQuestionController)
 		auth.Use(middleware.AuthMiddleware())
 		{
 			auth.POST("/", middleware.RoleGuard("admin", "lecturer"), examQ.AddQuestionsToExam)
-			auth.PUT("/:id", middleware.RoleGuard("admin", "lecturer"), examQ.UpdateQuestionsInExam)
-			auth.DELETE("/:id", middleware.RoleGuard("admin", "lecturer"), examQ.RemoveQuestionsFromExam)
+			auth.PUT("/", middleware.RoleGuard("admin", "lecturer"), examQ.UpdateQuestionsInExam)
+			auth.DELETE("/", middleware.RoleGuard("admin", "lecturer"), examQ.RemoveQuestionsFromExam)
 		}
 	}
 }
