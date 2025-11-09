@@ -8,7 +8,7 @@ import (
 )
 
 type QuestionRepository interface {
-	Create(ctx context.Context, q model.Question) error
+	Create(ctx context.Context, q *model.Question) error
 	GetById(ctx context.Context, id int) (*model.Question, error)
 	GetMany(ctx context.Context, limit int, offset int) ([]model.Question, error)
 	GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, error)
@@ -29,13 +29,17 @@ func NewQuestionRepository(db *gorm.DB) QuestionRepository {
 	return &questionRepository{db: db}
 }
 
-func (r *questionRepository) Create(ctx context.Context, q model.Question) error {
-	if err := r.db.
-		WithContext(ctx).
-		Create(&q).
-		Error; err != nil {
+func (r *questionRepository) Create(ctx context.Context, q *model.Question) error {
+	if err := r.db.WithContext(ctx).Create(q).Error; err != nil {
 		return err
 	}
+
+	if err := r.db.WithContext(ctx).
+		Preload("Subject").
+		First(q, q.Id).Error; err != nil {
+		return err
+	}
+
 	return nil
 }
 

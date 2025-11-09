@@ -14,7 +14,7 @@ import (
 )
 
 type QuestionService interface {
-	Create(ctx context.Context, data model.Question) error
+	Create(ctx context.Context, data *model.Question) error
 	GetById(ctx context.Context, id int) (*model.Question, error)
 	Update(ctx context.Context, newData model.Question, id int, userId int) (*model.Question, error)
 	Delete(ctx context.Context, id int, userId int) error
@@ -41,11 +41,7 @@ func NewQuestionService(repo repository.QuestionRepository, userRepo repository.
 	}
 }
 
-func (s *questionService) Create(ctx context.Context, data model.Question) error {
-	if helper.IsValidSubjectTitle(data.Subject.Title) {
-		return fmt.Errorf("invalid subject: %s", data.Subject.Title)
-	}
-
+func (s *questionService) Create(ctx context.Context, data *model.Question) error {
 	if err := s.repo.Create(ctx, data); err != nil {
 		return fmt.Errorf("failed to create question: %w", err)
 	}

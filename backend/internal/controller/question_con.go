@@ -19,7 +19,7 @@ func NewQuestionController(s service.QuestionService) *QuestionController {
 }
 
 func (h *QuestionController) Create(c *gin.Context) {
-	var data model.Question
+	var data *model.Question
 	if err := c.ShouldBindJSON(&data); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
@@ -118,7 +118,7 @@ func (h *QuestionController) Delete(c *gin.Context) {
 }
 
 func (h *QuestionController) CreateWithOptions(c *gin.Context) {
-	var data model.Question
+	var data *model.Question
 
 	if err := c.ShouldBindJSON(&data); err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid request body")
