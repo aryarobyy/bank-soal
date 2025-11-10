@@ -26,6 +26,7 @@ type Controllers struct {
 	ExamScore    *controller.ExamScoreController
 	ExamSession  *controller.ExamSessionController
 	ExamQuestion *controller.ExamQuestionController
+	Subject      *controller.SubjectController
 }
 
 func NewApp(db *gorm.DB) *App {
@@ -48,6 +49,7 @@ func NewApp(db *gorm.DB) *App {
 	examScoreRepo := repository.NewExamScoreRepository(db)
 	examSessionRepo := repository.NewExamSessionRepository(db)
 	examQuestionRepo := repository.NewExamQuestionRepository(db)
+	subjectRepo := repository.NewSubjectRepository(db)
 
 	userService := service.NewUserService(userRepo)
 	examService := service.NewExamService(examRepo, userRepo)
@@ -56,6 +58,7 @@ func NewApp(db *gorm.DB) *App {
 	examScoreService := service.NewExamScoreService(examScoreRepo)
 	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo)
 	examQuestionService := service.NewExamQuestionService(examQuestionRepo, questionRepo, examRepo)
+	subjectService := service.NewSubjectService(subjectRepo)
 
 	controllers := &Controllers{
 		User:         controller.NewUserController(userService),
@@ -65,6 +68,7 @@ func NewApp(db *gorm.DB) *App {
 		ExamScore:    controller.NewExamScoreController(examScoreService),
 		ExamSession:  controller.NewExamSessionController(examSessionService),
 		ExamQuestion: controller.NewExamQuestionController(examQuestionService),
+		Subject:      controller.NewSubjectController(subjectService),
 	}
 
 	store := middleware.InMemoryStore(&middleware.InMemoryOptions{
@@ -94,6 +98,7 @@ func setupRoutes(r *gin.Engine, ctrl *Controllers) {
 	route.ExamScoreRoutes(r, ctrl.ExamScore)
 	route.ExamSessionRoutes(r, ctrl.ExamSession)
 	route.ExamQuestionRoutes(r, ctrl.ExamQuestion)
+	route.SubjectRoutes(r, ctrl.Subject)
 }
 
 func (a *App) Run(addr string) error {
