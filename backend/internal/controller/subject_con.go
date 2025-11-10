@@ -10,26 +10,18 @@ import (
 	"latih.in-be/utils/helper"
 )
 
-type ExamController struct {
-	service service.ExamService
+type SubjectController struct {
+	service service.SubjectService
 }
 
-func NewExamController(s service.ExamService) *ExamController {
-	return &ExamController{service: s}
+func NewSubjectController(s service.SubjectService) *SubjectController {
+	return &SubjectController{service: s}
 }
 
-func (h *ExamController) Create(c *gin.Context) {
-	var data model.Exam
+func (h *SubjectController) Create(c *gin.Context) {
+	var data model.Subject
 	if err := c.ShouldBindJSON(&data); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	if data.Difficulty != "" &&
-		data.Difficulty != "easy" &&
-		data.Difficulty != "medium" &&
-		data.Difficulty != "hard" {
-		helper.Error(c, http.StatusBadRequest, "invalid difficulty value (must be 'easy', 'medium', or 'hard')")
 		return
 	}
 
@@ -37,10 +29,10 @@ func (h *ExamController) Create(c *gin.Context) {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	helper.Success(c, data, "exam created")
+	helper.Success(c, data, "subject created")
 }
 
-func (h *ExamController) GetById(c *gin.Context) {
+func (h *SubjectController) GetById(c *gin.Context) {
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -57,12 +49,25 @@ func (h *ExamController) GetById(c *gin.Context) {
 	helper.Success(c, data, "data found")
 }
 
-func (h *ExamController) GetMany(c *gin.Context) {
+func (h *SubjectController) GetByCode(c *gin.Context) {
+	code := c.Query("code")
+
+	data, err := h.service.GetByCode(c.Request.Context(), code)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	helper.Success(c, data, "data found")
+}
+
+func (h *SubjectController) GetMany(c *gin.Context) {
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid limit")
 		return
 	}
+
 	data, total, err := h.service.GetMany(c, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
@@ -72,60 +77,36 @@ func (h *ExamController) GetMany(c *gin.Context) {
 	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
 }
 
-func (h *ExamController) Update(c *gin.Context) {
-	idStr := c.Param("id")
+func (h *SubjectController) Update(c *gin.Context) {
+	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
+	var data model.Subject
 
-	var data model.Exam
 	if err := c.ShouldBindJSON(&data); err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	if data.Difficulty != "" &&
-		data.Difficulty != "easy" &&
-		data.Difficulty != "medium" &&
-		data.Difficulty != "hard" {
-		helper.Error(c, http.StatusBadRequest, "invalid difficulty value (must be 'easy', 'medium', or 'hard')")
-		return
-	}
-
-	userIdVal, exists := c.Get("user_id")
-	if !exists {
-		helper.Error(c, http.StatusUnauthorized, "user id not found in context")
-		return
-	}
-	userId := userIdVal.(int)
-
-	updatedData, err := h.service.Update(c, data, id, userId)
+	updatedData, err := h.service.Update(c, data, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-
 	helper.Success(c, updatedData, "data updated")
 }
 
-func (h *ExamController) Delete(c *gin.Context) {
-	idStr1 := c.Param("id")
-	id, err := strconv.Atoi(idStr1)
+func (h *SubjectController) Delete(c *gin.Context) {
+	idStr := c.Query("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
-
-	userIdVal, exists := c.Get("user_id")
-	if !exists {
-		helper.Error(c, http.StatusUnauthorized, "user id not found in context")
-		return
-	}
-	userId := userIdVal.(int)
-
-	err = h.service.Delete(c, id, userId)
+	err = h.service.Delete(c, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return

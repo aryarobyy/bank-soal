@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"latih.in-be/internal/controller"
 	"latih.in-be/internal/middleware"
+	"latih.in-be/internal/model"
 )
 
 func UserRoutes(r *gin.Engine, user *controller.UserController) {
@@ -26,7 +27,7 @@ func UserRoutes(r *gin.Engine, user *controller.UserController) {
 			usersAuth.PUT("/:id", user.Update)
 			usersAuth.PUT("/password", middleware.RoleGuard("admin"), middleware.InputValidate([]string{"new_password"}), user.ChangePassword)
 			usersAuth.DELETE("/:id", user.Delete)
-			usersAuth.PUT("/role", middleware.RoleGuard("admin", "super_admin"), middleware.InputValidate([]string{"role"}), user.ChangeRole)
+			usersAuth.PUT("/role", middleware.RoleGuard(model.RoleAdmin, model.RoleSuperAdmin), middleware.InputValidate([]string{"role"}), user.ChangeRole)
 		}
 	}
 }

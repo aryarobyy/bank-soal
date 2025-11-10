@@ -18,7 +18,7 @@ func NewExamQuestionController(s service.ExamQuestionService) *ExamQuestionContr
 }
 
 func (h *ExamQuestionController) AddQuestionsToExam(c *gin.Context) {
-	examIdStr := c.Param("examId")
+	examIdStr := c.Query("exam_id")
 	examId, err := strconv.Atoi(examIdStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid exam Id")
@@ -46,7 +46,7 @@ func (h *ExamQuestionController) AddQuestionsToExam(c *gin.Context) {
 }
 
 func (h *ExamQuestionController) UpdateQuestionsInExam(c *gin.Context) {
-	examIdStr := c.Param("id")
+	examIdStr := c.Query("exam_id")
 	examId, err := strconv.Atoi(examIdStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid exam Id")
@@ -74,7 +74,7 @@ func (h *ExamQuestionController) UpdateQuestionsInExam(c *gin.Context) {
 }
 
 func (h *ExamQuestionController) RemoveQuestionsFromExam(c *gin.Context) {
-	examIdStr := c.Param("id")
+	examIdStr := c.Query("exam_id")
 	examId, err := strconv.Atoi(examIdStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid exam ID")
