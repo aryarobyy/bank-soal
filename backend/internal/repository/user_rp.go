@@ -154,6 +154,12 @@ func (r *userRepository) GetMany(ctx context.Context, limit int, offset int) ([]
 		users []model.User
 		total int64
 	)
+	if err := r.db.WithContext(ctx).
+		Model(&model.Question{}).
+		Count(&total).
+		Error; err != nil {
+		return nil, 0, err
+	}
 	if err := r.db.
 		WithContext(ctx).
 		Model(model.User{}).
