@@ -19,10 +19,10 @@ type UserService interface {
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	Update(ctx context.Context, data model.User, id int) (*model.User, error)
 	Delete(ctx context.Context, id int) error
-	GetMany(ctx context.Context, limit int, offset int) ([]model.User, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
 	GetByNim(ctx context.Context, nim string) (*model.User, error)
-	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, error)
-	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, error)
+	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error)
+	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, int64, error)
 	ChangePassword(ctx context.Context, id int, newPassword string) error
 	ChangeRole(ctx context.Context, id int, role model.Role, userRole model.Role) error
 	RefreshToken(ctx context.Context, refreshToken string) (string, error)
@@ -203,13 +203,13 @@ func (s *userService) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *userService) GetMany(ctx context.Context, limit int, offset int) ([]model.User, error) {
-	dataList, err := s.repo.GetMany(ctx, limit, offset)
+func (s *userService) GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error) {
+	dataList, total, err := s.repo.GetMany(ctx, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get all users: %w", err)
+		return nil, 0, fmt.Errorf("failed to get all users: %w", err)
 	}
 
-	return dataList, nil
+	return dataList, total, nil
 }
 
 func (s *userService) GetByNim(ctx context.Context, nim string) (*model.User, error) {
@@ -225,29 +225,29 @@ func (s *userService) GetByNim(ctx context.Context, nim string) (*model.User, er
 	return data, nil
 }
 
-func (s *userService) GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, error) {
+func (s *userService) GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error) {
 	if containsNumber(name) {
-		return nil, fmt.Errorf("name cannot contain numbers")
+		return nil, 0, fmt.Errorf("name cannot contain numbers")
 	}
 
-	dataList, err := s.repo.GetByName(ctx, name, limit, offset)
+	dataList, total, err := s.repo.GetByName(ctx, name, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("user with name %q not found: %w", name, err)
+		return nil, 0, fmt.Errorf("user with name %q not found: %w", name, err)
 	}
-	return dataList, nil
+	return dataList, total, nil
 }
 
-func (s *userService) GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, error) {
+func (s *userService) GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, int64, error) {
 	if role != "admin" && role != "user" && role != "lecturer" {
-		return nil, fmt.Errorf("invalid role: %s", role)
+		return nil, 0, fmt.Errorf("invalid role: %s", role)
 	}
 
-	dataList, err := s.repo.GetByRole(ctx, role, limit, offset)
+	dataList, total, err := s.repo.GetByRole(ctx, role, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("user with role %q not found: %w", role, err)
+		return nil, 0, fmt.Errorf("user with role %q not found: %w", role, err)
 	}
 
-	return dataList, nil
+	return dataList, total, nil
 }
 
 func (s *userService) ChangePassword(ctx context.Context, id int, newPassword string) error {

@@ -207,13 +207,13 @@ func (h *UserController) GetMany(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid limit")
 		return
 	}
-	users, err := h.service.GetMany(c, limit, offset)
+	users, total, err := h.service.GetMany(c, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	helper.Success(c, users, "users found")
+	helper.Success(c, gin.H{"data": users, "total": total}, "users found")
 }
 
 func (h *UserController) GetByNim(c *gin.Context) {
@@ -239,7 +239,7 @@ func (h *UserController) GetByName(c *gin.Context) {
 	}
 
 	name := c.Query("name")
-	users, err := h.service.GetByName(c, name, limit, offset)
+	users, total, err := h.service.GetByName(c, name, limit, offset)
 	if len(name) > 256 {
 		helper.Error(c, http.StatusBadRequest, "invalid name")
 		return
@@ -249,7 +249,7 @@ func (h *UserController) GetByName(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, users, "users found")
+	helper.Success(c, gin.H{"data": users, "total": total}, "users found")
 }
 
 func (h *UserController) GetByRole(c *gin.Context) {
@@ -260,13 +260,13 @@ func (h *UserController) GetByRole(c *gin.Context) {
 	}
 
 	role := c.Query("role")
-	users, err := h.service.GetByRole(c, role, limit, offset)
+	users, total, err := h.service.GetByRole(c, role, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	helper.Success(c, users, "users found")
+	helper.Success(c, gin.H{"data": users, "total": total}, "users found")
 }
 
 func (h *UserController) ChangePassword(c *gin.Context) {
