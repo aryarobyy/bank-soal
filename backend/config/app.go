@@ -27,6 +27,7 @@ type Controllers struct {
 	ExamSession  *controller.ExamSessionController
 	ExamQuestion *controller.ExamQuestionController
 	Subject      *controller.SubjectController
+	XlsPath      *controller.XlsPathController
 }
 
 func NewApp(db *gorm.DB) *App {
@@ -50,6 +51,7 @@ func NewApp(db *gorm.DB) *App {
 	examSessionRepo := repository.NewExamSessionRepository(db)
 	examQuestionRepo := repository.NewExamQuestionRepository(db)
 	subjectRepo := repository.NewSubjectRepository(db)
+	xlsPathRepo := repository.NewXlsPathRepository(db)
 
 	userService := service.NewUserService(userRepo)
 	examService := service.NewExamService(examRepo, userRepo)
@@ -59,9 +61,10 @@ func NewApp(db *gorm.DB) *App {
 	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo)
 	examQuestionService := service.NewExamQuestionService(examQuestionRepo, questionRepo, examRepo)
 	subjectService := service.NewSubjectService(subjectRepo)
+	xlsPathService := service.NewXlsPathService(xlsPathRepo)
 
 	controllers := &Controllers{
-		User:         controller.NewUserController(userService),
+		User:         controller.NewUserController(userService, xlsPathService),
 		Exam:         controller.NewExamController(examService),
 		Question:     controller.NewQuestionController(questionService),
 		Option:       controller.NewOptionController(optionService),
@@ -69,6 +72,7 @@ func NewApp(db *gorm.DB) *App {
 		ExamSession:  controller.NewExamSessionController(examSessionService),
 		ExamQuestion: controller.NewExamQuestionController(examQuestionService),
 		Subject:      controller.NewSubjectController(subjectService),
+		XlsPath:      controller.NewXlsPathController(xlsPathService),
 	}
 
 	store := middleware.InMemoryStore(&middleware.InMemoryOptions{
@@ -91,6 +95,7 @@ func NewApp(db *gorm.DB) *App {
 
 func setupRoutes(r *gin.Engine, ctrl *Controllers) {
 	r.Static("/storages/images", "./storages/images")
+	r.Static("/storages/files", "./storages/files")
 	route.UserRoutes(r, ctrl.User)
 	route.ExamRoutes(r, ctrl.Exam)
 	route.QuestionRoutes(r, ctrl.Question)
@@ -99,6 +104,7 @@ func setupRoutes(r *gin.Engine, ctrl *Controllers) {
 	route.ExamSessionRoutes(r, ctrl.ExamSession)
 	route.ExamQuestionRoutes(r, ctrl.ExamQuestion)
 	route.SubjectRoutes(r, ctrl.Subject)
+	route.XlsPathRoutes(r, ctrl.XlsPath)
 }
 
 func (a *App) Run(addr string) error {
