@@ -1,21 +1,29 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/xuri/excelize/v2"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
 	"latih.in-be/utils/helper"
 )
 
 type UserController struct {
-	service service.UserService
+	service        service.UserService
+	xlsPathService service.XlsPathService
 }
 
-func NewUserController(s service.UserService) *UserController {
-	return &UserController{service: s}
+func NewUserController(s service.UserService, x service.XlsPathService) *UserController {
+	return &UserController{
+		service:        s,
+		xlsPathService: x,
+	}
 }
 
 func (h *UserController) Register(c *gin.Context) {
@@ -148,25 +156,17 @@ func (h *UserController) Update(c *gin.Context) {
 	}
 
 	user := model.User{
-		Name:    c.PostForm("name"),
-		Email:   email,
-		Nim:     nimPtr,
-		Nip:     nipPtr,
-		Nidn:    nidnPtr,
-		Major:   c.PostForm("major"),
-		Faculty: c.PostForm("faculty"),
-		Status:  model.Status(c.PostForm("status")),
+		Name:         c.PostForm("name"),
+		Email:        email,
+		Nim:          nimPtr,
+		Nip:          nipPtr,
+		Nidn:         nidnPtr,
+		Major:        c.PostForm("major"),
+		Faculty:      c.PostForm("faculty"),
+		Status:       model.Status(c.PostForm("status")),
+		AcademicYear: c.PostForm("academic_year"),
 	}
 
-	academicYearStr := c.PostForm("academic_year")
-	if academicYearStr != "" {
-		academicYear, err := strconv.Atoi(academicYearStr)
-		if err != nil {
-			helper.Error(c, http.StatusBadRequest, "invalid academic_year")
-			return
-		}
-		user.AcademicYear = academicYear
-	}
 	file, _ := c.FormFile("image")
 	if file != nil {
 		imageUrl, err := helper.UploadImage(c, id)
@@ -358,4 +358,74 @@ func (h *UserController) RefreshToken(c *gin.Context) {
 	}
 
 	helper.Success(c, newAccessToken, "token refreshed")
+}
+
+func (h *UserController) BulkInsert(c *gin.Context) {
+	prefix := c.Query("prefix")
+	startStr := c.Query("start")
+	endStr := c.Query("end")
+
+	if len(prefix) != 2 {
+		helper.Error(c, http.StatusBadRequest, "prefix must be 2")
+		return
+	}
+
+	startInt, err := strconv.Atoi(startStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid start")
+		return
+	}
+
+	endInt, err := strconv.Atoi(endStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid end")
+		return
+	}
+
+	prefixes := "G1A" + prefix
+
+	users, err := h.service.BulkInsert(c, prefixes, startInt, endInt)
+	if err != nil {
+		helper.Error(c, 500, err.Error())
+		return
+	}
+
+	f := excelize.NewFile()
+	f.SetCellValue("Sheet1", "A1", "NIM")
+	f.SetCellValue("Sheet1", "B1", "Password")
+
+	for i := range users {
+		row := strconv.Itoa(i + 2)
+		f.SetCellValue("Sheet1", "A"+row, users[i].Nim)
+		f.SetCellValue("Sheet1", "B"+row, users[i].Password)
+	}
+
+	storageDir := "./storages/files"
+	if err := os.MkdirAll(storageDir, os.ModePerm); err != nil {
+		helper.Error(c, http.StatusInternalServerError, "failed to create storage directory")
+		return
+	}
+
+	timestamp := time.Now().Format("20060102_150405")
+	filename := fmt.Sprintf("bulk_users_%s.xlsx", timestamp)
+	filepath := fmt.Sprintf("%s/%s", storageDir, filename)
+
+	if err := f.SaveAs(filepath); err != nil {
+		helper.Error(c, http.StatusInternalServerError, "failed to save xls file")
+		return
+	}
+
+	if err := h.xlsPathService.SaveXlsPath(c, filepath); err != nil {
+		helper.Error(c, http.StatusInternalServerError, "failed to save xls path")
+		return
+	}
+
+	response := map[string]interface{}{
+		"users":    users,
+		"file":     filename,
+		"filepath": filepath,
+		"message":  "users created and xls file saved",
+	}
+
+	helper.Success(c, response, "users created and xls file saved")
 }

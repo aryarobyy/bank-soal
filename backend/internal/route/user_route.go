@@ -28,6 +28,7 @@ func UserRoutes(r *gin.Engine, user *controller.UserController) {
 			usersAuth.PUT("/password", middleware.RoleGuard("admin"), middleware.InputValidate([]string{"new_password"}), user.ChangePassword)
 			usersAuth.DELETE("/:id", user.Delete)
 			usersAuth.PUT("/role", middleware.RoleGuard(model.RoleAdmin, model.RoleSuperAdmin), middleware.InputValidate([]string{"role"}), user.ChangeRole)
+			usersAuth.POST("/generate", middleware.RoleGuard("admin"), user.BulkInsert)
 		}
 	}
 }

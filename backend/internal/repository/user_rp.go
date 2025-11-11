@@ -20,6 +20,7 @@ type UserRepository interface {
 	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, int64, error)
 	ChangePassword(ctx context.Context, id int, password string) error
 	ChangeRole(ctx context.Context, id int, role model.Role) error
+	BulkInsert(ctx context.Context, users []model.User) ([]model.User, error)
 }
 
 type userRepository struct {
@@ -101,7 +102,7 @@ func (r *userRepository) Update(ctx context.Context, user model.User, id int) (*
 	if user.Faculty != "" {
 		updateData["faculty"] = user.Faculty
 	}
-	if user.AcademicYear != 0 {
+	if user.AcademicYear != "" {
 		updateData["academic_year"] = user.AcademicYear
 	}
 	if user.Status != "" {
@@ -258,4 +259,15 @@ func (r *userRepository) ChangeRole(ctx context.Context, id int, role model.Role
 		return err
 	}
 	return nil
+}
+
+func (r *userRepository) BulkInsert(ctx context.Context, users []model.User) ([]model.User, error) {
+	if err := r.db.
+		WithContext(ctx).
+		CreateInBatches(&users, 100). //batch size 100
+		Error; err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }

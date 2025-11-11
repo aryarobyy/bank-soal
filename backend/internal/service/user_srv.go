@@ -26,6 +26,7 @@ type UserService interface {
 	ChangePassword(ctx context.Context, id int, newPassword string) error
 	ChangeRole(ctx context.Context, id int, role model.Role, userRole model.Role) error
 	RefreshToken(ctx context.Context, refreshToken string) (string, error)
+	BulkInsert(ctx context.Context, prefix string, start int, end int) ([]model.BulkUserCredential, error)
 }
 
 type userService struct {
@@ -150,15 +151,34 @@ func (s *userService) Update(ctx context.Context, data model.User, id int) (*mod
 		effectiveRole = oldUser.Role
 	}
 
-	if effectiveRole != "lecturer" {
-		if (data.Nip != nil && *data.Nip != "") || (data.Nidn != nil && *data.Nidn != "") {
-			return nil, fmt.Errorf("only lecturers can have Nip or Nidn")
-		}
-	}
+	roleChanged := effectiveRole != oldUser.Role
 
-	if effectiveRole != "user" {
-		if data.Nim != nil && *data.Nim != "" {
-			return nil, fmt.Errorf("only user can have Nim")
+	if roleChanged {
+		if effectiveRole == "lecturer" {
+			if (data.Nip == nil || *data.Nip == "") && (data.Nidn == nil || *data.Nidn == "") {
+				return nil, fmt.Errorf("lecturer must provide either Nip or Nidn")
+			}
+			data.Nim = nil
+		}
+
+		if effectiveRole == "user" {
+			if data.Nim == nil || *data.Nim == "" {
+				return nil, fmt.Errorf("user must provide Nim")
+			}
+			data.Nip = nil
+			data.Nidn = nil
+		}
+	} else {
+		if effectiveRole != "lecturer" {
+			if (data.Nip != nil && *data.Nip != "") || (data.Nidn != nil && *data.Nidn != "") {
+				return nil, fmt.Errorf("only lecturers can have Nip or Nidn")
+			}
+		}
+
+		if effectiveRole != "user" {
+			if data.Nim != nil && *data.Nim != "" {
+				return nil, fmt.Errorf("only user can have Nim")
+			}
 		}
 	}
 
@@ -317,4 +337,40 @@ func (s *userService) RefreshToken(ctx context.Context, refreshToken string) (st
 	}
 
 	return newAccessToken, nil
+}
+
+func (s *userService) BulkInsert(ctx context.Context, prefix string, start int, end int) ([]model.BulkUserCredential, error) {
+	nims := helper.GenerateNim(prefix, start, end)
+
+	var users []model.User
+	var credentials []model.BulkUserCredential
+
+	for _, nim := range nims {
+		plainPw, _ := helper.GenerateRandomPassword(12)
+		hashed, _ := bcrypt.GenerateFromPassword([]byte(plainPw), bcrypt.DefaultCost)
+
+		users = append(users, model.User{
+			Nim:      &nim,
+			Password: string(hashed),
+		})
+
+		credentials = append(credentials, model.BulkUserCredential{
+			Nim:          nim,
+			Password:     plainPw,
+			Role:         string(model.RoleUser),
+			Major:        "informatika",
+			Faculty:      "teknik",
+			AcademicYear: "20" + prefix, // dua ribu sekian
+		})
+	}
+
+	_, err := s.repo.BulkInsert(ctx, users)
+	if err != nil {
+		if strings.Contains(err.Error(), "1062") {
+			return nil, fmt.Errorf("failed to insert: some data has been registered (duplicate)")
+		}
+		return nil, fmt.Errorf("failed to bulk insert users: %w", err)
+	}
+
+	return credentials, nil
 }
