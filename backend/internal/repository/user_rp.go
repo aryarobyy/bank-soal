@@ -196,7 +196,7 @@ func (r *userRepository) GetByName(ctx context.Context, name string, limit int, 
 	query := r.db.
 		WithContext(ctx).
 		Model(&model.User{}).
-		Where("name = ?", "%"+name+"%")
+		Where("name LIKE ?", "%"+name+"%")
 
 	if err := query.
 		Count(&total).
