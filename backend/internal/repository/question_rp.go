@@ -69,6 +69,7 @@ func (r *questionRepository) GetMany(ctx context.Context, limit int, offset int)
 	}
 
 	if err := r.db.WithContext(ctx).
+		Model(&model.Question{}).
 		Preload("Subject").
 		Preload("Options").
 		Limit(limit).
@@ -86,15 +87,17 @@ func (r *questionRepository) GetByExam(ctx context.Context, examId int, limit in
 		total int64
 	)
 
-	if err := r.db.WithContext(ctx).
+	query := r.db.WithContext(ctx).
 		Model(&model.Question{}).
+		Where("exam_id = ?", examId)
+
+	if err := query.
 		Count(&total).
 		Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := r.db.WithContext(ctx).
-		Where("exam_id = ?", examId).
+	if err := query.
 		Preload("Subject").
 		Preload("Options").
 		Limit(limit).
@@ -164,15 +167,17 @@ func (r *questionRepository) GetByDifficult(ctx context.Context, diff string, li
 		total int64
 	)
 
-	if err := r.db.WithContext(ctx).
+	query := r.db.WithContext(ctx).
 		Model(&model.Question{}).
+		Where("difficulty = ?", diff)
+
+	if err := query.
 		Count(&total).
 		Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := r.db.WithContext(ctx).
-		Where("difficulty = ?", diff).
+	if err := query.
 		Preload("Subject").
 		Preload("Options").
 		Limit(limit).
@@ -190,15 +195,17 @@ func (r *questionRepository) GetByCreatorId(ctx context.Context, creatorId int, 
 		total int64
 	)
 
-	if err := r.db.WithContext(ctx).
+	query := r.db.WithContext(ctx).
 		Model(&model.Question{}).
+		Where("creator_id = ?", creatorId)
+
+	if err := query.
 		Count(&total).
 		Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := r.db.WithContext(ctx).
-		Where("creator_id = ?", creatorId).
+	if err := query.
 		Preload("Subject").
 		Preload("Options").
 		Limit(limit).
@@ -216,15 +223,17 @@ func (r *questionRepository) GetBySubject(ctx context.Context, subjectId int, li
 		total int64
 	)
 
-	if err := r.db.WithContext(ctx).
+	query := r.db.WithContext(ctx).
 		Model(&model.Question{}).
+		Where("subject_id = ?", subjectId)
+
+	if err := query.
 		Count(&total).
 		Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := r.db.WithContext(ctx).
-		Where("subject_id = ?", subjectId).
+	if err := query.
 		Preload("Subject").
 		Preload("Options").
 		Limit(limit).

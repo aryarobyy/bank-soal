@@ -49,6 +49,8 @@ func (r *optionRepository) GetMany(ctx context.Context, qId int, limit int, offs
 	var o []model.Option
 
 	if err := r.db.WithContext(ctx).
+		Limit(limit).
+		Offset(offset).
 		Where("question_id = ?", qId).
 		Error; err != nil {
 		return nil, err

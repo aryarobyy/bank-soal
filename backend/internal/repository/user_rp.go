@@ -155,8 +155,9 @@ func (r *userRepository) GetMany(ctx context.Context, limit int, offset int) ([]
 		users []model.User
 		total int64
 	)
-	if err := r.db.WithContext(ctx).
-		Model(&model.Question{}).
+	if err := r.db.
+		WithContext(ctx).
+		Model(&model.User{}).
 		Count(&total).
 		Error; err != nil {
 		return nil, 0, err
@@ -192,17 +193,18 @@ func (r *userRepository) GetByName(ctx context.Context, name string, limit int, 
 		total int64
 	)
 
-	if err := r.db.WithContext(ctx).
-		Model(&model.Question{}).
+	query := r.db.
+		WithContext(ctx).
+		Model(&model.User{}).
+		Where("name = ?", "%"+name+"%")
+
+	if err := query.
 		Count(&total).
 		Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := r.db.
-		WithContext(ctx).
-		Model(model.User{}).
-		Where("name = ?", name).
+	if err := query.
 		Limit(limit).
 		Offset(offset).
 		Find(&users).
@@ -218,16 +220,18 @@ func (r *userRepository) GetByRole(ctx context.Context, role string, limit int, 
 		total int64
 	)
 
-	if err := r.db.WithContext(ctx).
-		Model(&model.Question{}).
+	query := r.db.
+		WithContext(ctx).
+		Model(model.User{}).
+		Where("role = ?", role)
+
+	if err := query.
 		Count(&total).
 		Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := r.db.
-		WithContext(ctx).
-		Model(model.User{}).Where("role = ?", role).
+	if err := query.
 		Limit(limit).
 		Offset(offset).
 		Find(&users).

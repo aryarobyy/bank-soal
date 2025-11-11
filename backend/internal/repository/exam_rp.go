@@ -115,6 +115,7 @@ func (r *examRepository) GetMany(ctx context.Context, limit int, offset int) ([]
 	}
 
 	if err := r.db.WithContext(ctx).
+		Model(&model.Exam{}).
 		Find(&e).
 		Limit(limit).
 		Offset(offset).
