@@ -42,6 +42,36 @@ func NewQuestionService(repo repository.QuestionRepository, userRepo repository.
 }
 
 func (s *questionService) Create(ctx context.Context, data *model.Question) error {
+	if data.Options == nil {
+		return fmt.Errorf("options can't be null")
+	}
+
+	switch data.Difficulty {
+	case model.DifficultyEasy:
+		if data.Score == 0 {
+			data.Score = 5
+		} else if data.Score < 3 || data.Score > 8 {
+			return fmt.Errorf("score for easy difficulty must be between 3 and 8")
+		}
+
+	case model.DifficultyMedium:
+		if data.Score == 0 {
+			data.Score = 10
+		} else if data.Score < 10 || data.Score > 15 {
+			return fmt.Errorf("score for medium difficulty must be between 10 and 15")
+		}
+
+	case model.DifficultyHard:
+		if data.Score == 0 {
+			data.Score = 20
+		} else if data.Score < 18 || data.Score > 23 {
+			return fmt.Errorf("score for hard difficulty must be between 18 and 23")
+		}
+
+	default:
+		return fmt.Errorf("invalid difficulty level")
+	}
+
 	if err := s.repo.Create(ctx, data); err != nil {
 		return fmt.Errorf("failed to create question: %w", err)
 	}
