@@ -16,6 +16,6 @@ type Question struct {
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 
-	Options []Option `json:"options" gorm:"foreignKey:QuestionId;constraint:OnDelete:CASCADE;"`
+	Options []Option `json:"options" gorm:"foreignKey:QuestionId;constraint:OnDelete:CASCADE;" validate:"required"`
 	Exams   []Exam   `json:"exams" gorm:"many2many:exam_questions;"`
 }
