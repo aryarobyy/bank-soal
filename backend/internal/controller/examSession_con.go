@@ -3,7 +3,6 @@ package controller
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"latih.in-be/internal/model"
@@ -45,7 +44,7 @@ func (h *ExamSessionController) Create(c *gin.Context) {
 }
 
 func (h *ExamSessionController) GetById(c *gin.Context) {
-	idStr := c.Param("id")
+	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
@@ -101,20 +100,13 @@ func (h *ExamSessionController) Delete(c *gin.Context) {
 }
 
 func (h *ExamSessionController) GetMany(c *gin.Context) {
-	userIdVal, exists := c.Get("user_id")
-	if !exists {
-		helper.Error(c, http.StatusUnauthorized, "user id not found in context")
-		return
-	}
-	userId := userIdVal.(int)
-
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid limit")
 		return
 	}
 
-	data, err := h.service.GetMany(c, userId, limit, offset)
+	data, err := h.service.GetMany(c, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -158,11 +150,6 @@ func (h *ExamSessionController) FinishExam(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid request body")
 		return
-	}
-
-	if req.FinishedAt.IsZero() {
-		now := time.Now()
-		req.FinishedAt = now
 	}
 
 	data, err := h.service.FinishExam(c, id, req)

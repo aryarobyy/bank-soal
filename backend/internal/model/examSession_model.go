@@ -10,7 +10,7 @@ type ExamSession struct {
 	FinishedAt *time.Time    `json:"finished_at"`
 	Status     SessionStatus `json:"status" gorm:"default:'in_progress'"`
 	CurrentNo  int           `json:"current_no" gorm:"default:1"`
-	Score      *float64      `json:"score"`
+	Score      int           `json:"score"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -25,7 +25,7 @@ type UpdateExamSession struct {
 	FinishedAt *time.Time    `json:"finished_at"`
 	Status     SessionStatus `json:"status" gorm:"default:'in_progress'"`
 	CurrentNo  int           `json:"current_no" gorm:"not null"`
-	Score      *float64      `json:"score"`
+	Score      int           `json:"score"`
 }
 
 type UpdateCurrNo struct {
@@ -39,7 +39,7 @@ type UpdateStatus struct {
 type FinishExam struct {
 	FinishedAt time.Time     `json:"finished_at"`
 	Status     SessionStatus `json:"status" gorm:"default:'finished'"`
-	Score      *float64      `json:"score"`
+	Score      int           `json:"score"`
 }
 
 type ESessionResponse struct {
