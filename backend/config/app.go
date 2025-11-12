@@ -28,6 +28,7 @@ type Controllers struct {
 	ExamQuestion *controller.ExamQuestionController
 	Subject      *controller.SubjectController
 	XlsPath      *controller.XlsPathController
+	UserAnswer   *controller.UserAnswerController
 }
 
 func NewApp(db *gorm.DB) *App {
@@ -52,16 +53,18 @@ func NewApp(db *gorm.DB) *App {
 	examQuestionRepo := repository.NewExamQuestionRepository(db)
 	subjectRepo := repository.NewSubjectRepository(db)
 	xlsPathRepo := repository.NewXlsPathRepository(db)
+	userAnswerRepo := repository.NewUserAnswerRepository(db)
 
 	userService := service.NewUserService(userRepo)
-	examService := service.NewExamService(examRepo, userRepo)
+	examService := service.NewExamService(examRepo, userRepo, questionRepo)
 	questionService := service.NewQuestionService(questionRepo, userRepo, optionRepo)
 	optionService := service.NewOptionService(optionRepo)
 	examScoreService := service.NewExamScoreService(examScoreRepo)
-	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo)
+	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo, userAnswerRepo)
 	examQuestionService := service.NewExamQuestionService(examQuestionRepo, questionRepo, examRepo)
 	subjectService := service.NewSubjectService(subjectRepo)
 	xlsPathService := service.NewXlsPathService(xlsPathRepo)
+	userAnswerService := service.NewUserAnswerService(userAnswerRepo, optionRepo)
 
 	controllers := &Controllers{
 		User:         controller.NewUserController(userService, xlsPathService),
@@ -73,6 +76,7 @@ func NewApp(db *gorm.DB) *App {
 		ExamQuestion: controller.NewExamQuestionController(examQuestionService),
 		Subject:      controller.NewSubjectController(subjectService),
 		XlsPath:      controller.NewXlsPathController(xlsPathService),
+		UserAnswer:   controller.NewUserAnswerController(userAnswerService),
 	}
 
 	store := middleware.InMemoryStore(&middleware.InMemoryOptions{
@@ -105,6 +109,7 @@ func setupRoutes(r *gin.Engine, ctrl *Controllers) {
 	route.ExamQuestionRoutes(r, ctrl.ExamQuestion)
 	route.SubjectRoutes(r, ctrl.Subject)
 	route.XlsPathRoutes(r, ctrl.XlsPath)
+	route.UserAnswerRoutes(r, ctrl.UserAnswer)
 }
 
 func (a *App) Run(addr string) error {

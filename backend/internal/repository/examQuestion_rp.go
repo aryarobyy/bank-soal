@@ -11,6 +11,7 @@ type ExamQuestionRepository interface {
 	AddQuestionToExam(ctx context.Context, examId int, questionIds []int) error
 	UpdateQuestionsInExam(ctx context.Context, examId int, questionIds []int) error
 	RemoveQuestionsFromExam(ctx context.Context, examId int, questionIds []int) error
+	GetByExamId(ctx context.Context, examId int) ([]model.ExamQuestion, error)
 }
 
 type examQuestionRepository struct {
@@ -85,4 +86,17 @@ func (r *examQuestionRepository) RemoveQuestionsFromExam(ctx context.Context, ex
 		Model(&exam).
 		Association("Questions").
 		Delete(&questions)
+}
+
+func (r *examQuestionRepository) GetByExamId(ctx context.Context, examId int) ([]model.ExamQuestion, error) {
+	var examQuestions []model.ExamQuestion
+
+	if err := r.db.WithContext(ctx).
+		Preload("Questions").
+		Where("exam_id = ?", examId).
+		Find(&examQuestions).Error; err != nil {
+		return nil, err
+	}
+
+	return examQuestions, nil
 }
