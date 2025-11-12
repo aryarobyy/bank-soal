@@ -174,7 +174,7 @@ func (h *UserAnswerController) GetByQuestionId(c *gin.Context) {
 	helper.Success(c, gin.H{"data": data, "total": total}, "user answers found")
 }
 
-func (h *UserAnswerController) GetByUserId(c *gin.Context) {
+func (h *UserAnswerController) GetUserAnswer(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	idStr := c.Query("user_id")
@@ -184,13 +184,20 @@ func (h *UserAnswerController) GetByUserId(c *gin.Context) {
 		return
 	}
 
+	sessionIdStr := c.Query("session_id")
+	sessionId, err := strconv.Atoi(sessionIdStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid session id")
+		return
+	}
+
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid limit")
 		return
 	}
 
-	data, total, err := h.service.GetByUserId(ctx, id, limit, offset)
+	data, total, err := h.service.GetUserAnswer(ctx, id, sessionId, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return

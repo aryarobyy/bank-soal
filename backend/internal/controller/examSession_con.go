@@ -146,13 +146,14 @@ func (h *ExamSessionController) FinishExam(c *gin.Context) {
 		return
 	}
 
-	var req model.FinishExam
-	if err := c.ShouldBindJSON(&req); err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid request body")
+	userIdVal, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "user id not found in context %w")
 		return
 	}
+	userId := userIdVal.(int)
 
-	data, err := h.service.FinishExam(c, id, req)
+	data, err := h.service.FinishExam(c, userId, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return

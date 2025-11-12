@@ -141,10 +141,6 @@ func (r *examSessionRepository) UpdateCurrNo(ctx context.Context, id int, no mod
 }
 
 func (r *examSessionRepository) FinishExam(ctx context.Context, id int, e model.FinishExam) (*model.ExamSession, error) {
-	if e.Score == 0 {
-		return nil, fmt.Errorf("invalid status")
-	}
-
 	if err := r.db.WithContext(ctx).
 		Model(&model.ExamSession{}).
 		Where("id = ?", id).

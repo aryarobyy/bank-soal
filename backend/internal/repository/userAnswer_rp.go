@@ -16,7 +16,8 @@ type UserAnswerRepository interface {
 	Delete(ctx context.Context, id int) error
 	GetByExamSessionId(ctx context.Context, examSessionId int, limit int, offset int) ([]model.UserAnswer, int64, error)
 	GetByQuestionId(ctx context.Context, questionId int, limit int, offset int) ([]model.UserAnswer, int64, error)
-	GetByUserId(ctx context.Context, userId int, limit int, offset int) ([]model.UserAnswer, int64, error)
+	GetUserAnswer(ctx context.Context, userId int, examSessionId int, limit int, offset int) ([]model.UserAnswer, int64, error)
+	GetAllUserAnswers(ctx context.Context, userId int, examSessionId int) ([]model.UserAnswer, error)
 }
 
 type userAnswerRepository struct {
@@ -164,7 +165,7 @@ func (r *userAnswerRepository) GetByQuestionId(ctx context.Context, questionId i
 	return userAnswers, total, nil
 }
 
-func (r *userAnswerRepository) GetByUserId(ctx context.Context, userId int, limit int, offset int) ([]model.UserAnswer, int64, error) {
+func (r *userAnswerRepository) GetUserAnswer(ctx context.Context, userId int, examSessionId int, limit int, offset int) ([]model.UserAnswer, int64, error) {
 	var (
 		userAnswers []model.UserAnswer
 		total       int64
@@ -172,7 +173,7 @@ func (r *userAnswerRepository) GetByUserId(ctx context.Context, userId int, limi
 
 	query := r.db.WithContext(ctx).
 		Model(&model.UserAnswer{}).
-		Where("user_id = ?", userId)
+		Where("user_id = ? AND exam_session_id = ?", userId, examSessionId)
 
 	if err := query.
 		Count(&total).
@@ -188,4 +189,16 @@ func (r *userAnswerRepository) GetByUserId(ctx context.Context, userId int, limi
 	}
 
 	return userAnswers, total, nil
+}
+
+func (r *userAnswerRepository) GetAllUserAnswers(ctx context.Context, userId int, examSessionId int) ([]model.UserAnswer, error) {
+	var userAnswers []model.UserAnswer
+
+	if err := r.db.WithContext(ctx).
+		Where("user_id = ? AND exam_session_id = ?", userId, examSessionId).
+		Find(&userAnswers).Error; err != nil {
+		return nil, err
+	}
+
+	return userAnswers, nil
 }

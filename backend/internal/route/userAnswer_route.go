@@ -22,7 +22,7 @@ func UserAnswerRoutes(r *gin.Engine, userAnswer *controller.UserAnswerController
 			auth.DELETE("/:id", middleware.RoleGuard("admin", "lecturer"), userAnswer.Delete)
 			auth.GET("/session", userAnswer.GetByExamSessionId)
 			auth.GET("/question", userAnswer.GetByQuestionId)
-			auth.GET("/user", userAnswer.GetByUserId)
+			auth.GET("/user", userAnswer.GetUserAnswer)
 		}
 	}
 }
