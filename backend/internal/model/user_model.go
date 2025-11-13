@@ -26,15 +26,16 @@ type LoginCredential struct {
 }
 
 type RegisterCredential struct {
-	Email    string `json:"email,omitempty" gorm:"unique;default:null"`
-	Password string `json:"password" validate:"required,min=6"`
-	Name     string `json:"name" validate:"required"`
-	Nim      string `json:"nim"`
-	Nip      string `json:"nip,omitempty"`
-	Nidn     string `json:"nidn,omitempty"`
-	Major    string `json:"major" validate:"required" gorm:"default:informatika"`
-	Faculty  string `json:"faculty" validate:"required" gorm:"default:teknik"`
-	Role     string `json:"role" gorm:"default:user"`
+	Email        string `json:"email,omitempty" gorm:"unique;default:null"`
+	Password     string `json:"password" validate:"required,min=6"`
+	Name         string `json:"name" validate:"required"`
+	Nim          string `json:"nim"`
+	Nip          string `json:"nip,omitempty"`
+	Nidn         string `json:"nidn,omitempty"`
+	Major        string `json:"major" validate:"required" gorm:"default:informatika"`
+	Faculty      string `json:"faculty" validate:"required" gorm:"default:teknik"`
+	Role         string `json:"role" gorm:"default:user"`
+	AcademicYear string `json:"academic_year,omitempty" validate:"len=4"`
 }
 
 type ChangePasswordCredential struct {
