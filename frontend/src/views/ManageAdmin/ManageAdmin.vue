@@ -95,26 +95,18 @@
               <label class="block mb-1 text-sm font-medium text-gray-700">Password</label>
               <input v-model="form.password" type="password" required class="w-full p-2 border rounded-md"/>
             </div>
-            <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700">NIM/NIDN</label>
-              <input v-model="form.nim" type="text" required class="w-full p-2 border rounded-md" placeholder="Gunakan 'N/A' jika tidak ada"/>
-            </div>
+            
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
-              <input v-model="form.major" type="text" required class="w-full p-2 border rounded-md" placeholder="Gunakan 'N/A' jika tidak ada"/>
+              <input v-model="form.major" type="text" class="w-full p-2 border rounded-md" placeholder="Opsional"/>
             </div>
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas (Faculty)</label>
-              <input v-model="form.faculty" type="text" required class="w-full p-2 border rounded-md" placeholder="Gunakan 'N/A' jika tidak ada"/>
+              <input v-model="form.faculty" type="text" class="w-full p-2 border rounded-md" placeholder="Opsional"/>
             </div>
           </template>
 
           <template v-else>
-            <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700">Password Baru</label>
-              <input v-model="form.password" type="password" class="w-full p-2 border rounded-md" placeholder="Kosongkan jika tidak ingin diubah"/>
-            </div>
-            
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Ubah Role</label>
               <select v-model="form.role" class="w-full p-2 border rounded-md bg-white">
@@ -152,8 +144,8 @@ import {
   register,
   updateUser,
   deleteUser,
-  changePassword,
-  changeRole, // <-- Impor provider baru
+  // changePassword, // ## DIHAPUS ##
+  changeRole,
 } from "../../provider/user.provider.js";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 
@@ -163,9 +155,8 @@ const error = ref(null);
 const showModal = ref(false);
 const editMode = ref(false);
 
-// ## PERUBAHAN 2: Menambahkan ref baru ##
 const availableRoles = ref(['admin', 'lecturer', 'user']);
-const originalAdminData = ref(null); // Untuk menyimpan data asli saat edit
+const originalAdminData = ref(null); 
 
 const initialFormState = {
   id: null,
@@ -173,7 +164,7 @@ const initialFormState = {
   email: "",
   password: "",
   role: "admin", 
-  nim: "",       
+  nim: null, 
   major: "",   
   faculty: ""  
 };
@@ -199,16 +190,15 @@ onMounted(fetchAdmins);
 const openAddModal = () => {
   editMode.value = false;
   form.value = { ...initialFormState };
-  originalAdminData.value = null; // Reset data original
+  originalAdminData.value = null; 
   showModal.value = true;
 };
 
 const closeModal = () => {
   showModal.value = false;
-  originalAdminData.value = null; // Reset data original
+  originalAdminData.value = null; 
 };
 
-// ## PERUBAHAN 3: Memperbarui fungsi simpanAdmin ##
 const simpanAdmin = async () => {
   try {
     const userId = form.value.id;
@@ -225,41 +215,27 @@ const simpanAdmin = async () => {
         alert("Error: ID admin tidak ditemukan."); return;
       }
       
-      // 1. Update Nama/Email (Logika Lama)
       const dataToUpdate = { name: form.value.name, email: form.value.email };
       await updateUser(dataToUpdate, userId);
 
-      // 2. Update Password (Logika Lama)
-      let passwordErrorMessage = "";
-      if (form.value.password && form.value.password.trim() !== "") {
-        try {
-          await changePassword(userId, form.value.password, adminId);
-        } catch (passwordError) {
-          console.warn("Gagal mengganti password:", passwordError);
-          passwordErrorMessage = passwordError.response?.data?.message || "Gagal ganti password (backend error)";
-        }
-      }
-
-      // 3. LOGIKA BARU: Update Role
+      // ## BLOK GANTI PASSWORD DIHAPUS ##
+      
       let roleErrorMessage = "";
-      const originalRole = originalAdminData.value?.role; // Ambil role asli
+      const originalRole = originalAdminData.value?.role; 
       const newRole = form.value.role;
 
-      // Cek jika role berubah
       if (newRole && originalRole && newRole !== originalRole) {
         try {
-          await changeRole(userId, adminId, newRole); // Panggil provider
+          await changeRole(userId, adminId, newRole); 
         } catch (roleError) {
           console.warn("Gagal mengganti role:", roleError);
-          roleErrorMessage = roleError.response?.data?.message || "Gagal ganti role (backend error)";
+          roleErrorMessage = roleError.response?.data?.message || ")";
         }
       }
-      // --- AKHIR LOGIKA BARU ---
 
-      // Gabungkan pesan error jika ada
       let finalMessage = "Data admin berhasil diperbarui!";
       let errors = [];
-      if (passwordErrorMessage) errors.push(passwordErrorMessage);
+      // ## Error password dihapus dari sini ##
       if (roleErrorMessage) errors.push(roleErrorMessage);
 
       if (errors.length > 0) {
@@ -268,15 +244,15 @@ const simpanAdmin = async () => {
       alert(finalMessage);
 
     } else {
-      // --- MODE TAMBAH --- (Logika Lama)
+      // --- MODE TAMBAH ---
       const dataToCreate = {
         name: form.value.name,
         email: form.value.email,
         password: form.value.password,
         role: "admin", 
-        nim: form.value.nim || "N/A", 
-        major: form.value.major || "N/A",  
-        faculty: form.value.faculty || "N/A"
+        nim: null, 
+        major: form.value.major.trim() || null, 
+        faculty: form.value.faculty.trim() || null
       };
       await register(dataToCreate);
       alert("Admin baru berhasil ditambahkan!");
@@ -291,13 +267,15 @@ const simpanAdmin = async () => {
 
 const editAdmin = (admin) => {
   editMode.value = true;
-  originalAdminData.value = { ...admin }; // Simpan data asli
+  originalAdminData.value = { ...admin }; 
   const userId = admin.id || admin.ID || admin._id;
   form.value = { 
     ...initialFormState, 
-    ...admin,            
+    ...admin,
+    major: admin.major || "", 
+    faculty: admin.faculty || "", 
     id: userId,
-    password: "" 
+    password: ""
   };
   showModal.value = true;
 };
@@ -321,7 +299,6 @@ const hapusAdmin = async (admin) => {
 };
 
 const roleClass = (role) => {
-  // Perbarui ini untuk menangani role baru jika perlu
   if (role === 'admin') return 'bg-red-100 text-red-800';
   if (role === 'lecturer') return 'bg-green-100 text-green-800';
   if (role === 'user') return 'bg-blue-100 text-blue-800';

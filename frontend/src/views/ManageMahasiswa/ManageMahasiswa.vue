@@ -120,8 +120,8 @@
               <input
                 v-model="form.nim"
                 type="text"
-                required
                 class="w-full p-2 border rounded-md"
+                placeholder="Wajib diisi jika role 'user'"
               />
             </div>
             <div class="mb-3">
@@ -131,8 +131,8 @@
               <input
                 v-model="form.major"
                 type="text"
-                required
                 class="w-full p-2 border rounded-md"
+                placeholder="Wajib diisi jika role 'user'"
               />
             </div>
             <div class="mb-3">
@@ -142,23 +142,64 @@
               <input
                 v-model="form.faculty"
                 type="text"
-                required
                 class="w-full p-2 border rounded-md"
+                placeholder="Wajib diisi jika role 'user'"
               />
             </div>
           </template>
           
           <template v-else>
             <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700">NIM</label>
-              <input
-                v-model="form.nim"
-                type="text"
-                required
-                disabled 
-                class="w-full p-2 border rounded-md bg-gray-100 cursor-not-allowed"
-              />
+              <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
+              <select v-model="form.role" required class="w-full p-2 border rounded-md bg-white">
+                <option value="user">Mahasiswa (user)</option>
+                <option value="lecturer">Dosen (lecturer)</option>
+                </select>
             </div>
+            
+            <div v-if="form.role === 'user'">
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700">NIM</label>
+                <input
+                  v-model="form.nim"
+                  type="text"
+                  class="w-full p-2 border rounded-md" 
+                  placeholder="Wajib diisi untuk mahasiswa"
+                />
+              </div>
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700"
+                  >Jurusan (Major)</label
+                >
+                <input
+                  v-model="form.major"
+                  type="text"
+                  class="w-full p-2 border rounded-md"
+                />
+              </div>
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700"
+                  >Fakultas (Faculty)</label
+                >
+                <input
+                  v-model="form.faculty"
+                  type="text"
+                  class="w-full p-2 border rounded-md"
+                />
+              </div>
+            </div>
+
+            <div v-if="form.role === 'lecturer'">
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700">NIP</label>
+                <input v-model="form.nip" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk dosen"/>
+              </div>
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700">NIDN</label>
+                <input v-model="form.nidn" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk dosen"/>
+              </div>
+            </div>
+
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700"
                 >Password Baru (Opsional)</label
@@ -172,17 +213,16 @@
             </div>
           </template>
 
-          <div class="mb-3">
+          <div class="mb-3" v-if="!editMode">
             <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
             <select
               v-model="form.role"
               required
               class="w-full p-2 border rounded-md bg-white"
             >
-              <option value="user">Mahasiswa (user)</option>
+              <option value="user" selected>Mahasiswa (user)</option>
               <option value="lecturer">Dosen (lecturer)</option>
-              <option value="admin">Admin</option>
-            </select>
+              </select>
           </div>
 
           <div class="flex justify-end gap-2 mt-4">
@@ -208,9 +248,6 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-// ## 1. HAPUS `useLocalStorage` ##
-// import { useLocalStorage } from "../../hooks/useLocalStorage.js";
-// ## 2. IMPOR `useGetCurrentUser` (state global) ##
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import {
   getUsersByRole,
@@ -226,14 +263,15 @@ const loading = ref(true);
 const error = ref(null);
 const showModal = ref(false);
 const editMode = ref(false);
+const originalRole = ref(null); // <-- Ref untuk menyimpan role asli
 
 const initialFormState = {
   id: null, name: "", email: "", password: "",
   role: "user", nim: "", major: "", faculty: "",
+  nip: "", nidn: "" // Tambahkan field Dosen
 };
 
 const form = ref({ ...initialFormState });
-// ## 3. DAPATKAN PENGGUNA (Admin) DARI STATE GLOBAL ##
 const { user: storedUser } = useGetCurrentUser();
 
 const fetchMahasiswa = async () => {
@@ -255,17 +293,19 @@ onMounted(() => {
 
 const openAddModal = () => {
   editMode.value = false;
-  form.value = { ...initialFormState };
+  form.value = { ...initialFormState, role: "user" }; // Pastikan default role 'user'
+  originalRole.value = null; // Reset
   showModal.value = true;
 };
 
 const closeModal = () => {
   showModal.value = false;
+  originalRole.value = null; // Reset
 };
 
+// ## PERBAIKAN 2: Logika simpanMahasiswa diperbarui TOTAL ##
 const simpanMahasiswa = async () => {
   const userId = form.value.id;
-  // ## 4. 'adminId' SEKARANG DIAMBIL DARI STATE GLOBAL 'storedUser' ##
   const adminId = storedUser.value?.id || storedUser.value?.ID;
 
   if (!adminId) {
@@ -280,37 +320,62 @@ const simpanMahasiswa = async () => {
       return;
     }
 
+    const roleChanged = form.value.role !== originalRole.value;
     let passwordErrorMessage = ""; 
     
     try {
-      // Panggil changeRole TERLEBIH DAHULU
-      await changeRole(userId, adminId, form.value.role);
-
+      // 1. Siapkan payload dasar
       const dataToUpdate = { 
         name: form.value.name, 
         email: form.value.email,
-        // 'nim' tidak dikirim karena tidak boleh diubah (immutable)
       };
-      
-      if (form.value.role === 'user') {
-        dataToUpdate.major = form.value.major;
-        dataToUpdate.faculty = form.value.faculty;
+
+      // 2. Logika jika Role DIUBAH
+      if (roleChanged) {
+        // Panggil changeRole PERTAMA
+        await changeRole(userId, adminId, form.value.role);
+        
+        // Atur payload berdasarkan ROLE BARU
+        if (form.value.role === 'user') {
+          dataToUpdate.nim = form.value.nim || null;
+          dataToUpdate.major = form.value.major || null;
+          dataToUpdate.faculty = form.value.faculty || null;
+          dataToUpdate.nip = null; // Bersihkan data dosen
+          dataToUpdate.nidn = null;
+        } else if (form.value.role === 'lecturer') {
+          dataToUpdate.nip = form.value.nip || null;
+          dataToUpdate.nidn = form.value.nidn || null;
+          dataToUpdate.nim = null; // Bersihkan data mahasiswa
+          dataToUpdate.major = null;
+          dataToUpdate.faculty = null;
+        }
+      }
+      // 3. Logika jika Role TIDAK DIUBAH
+      else {
+        // Hanya kirim field yang relevan dengan role saat ini
+        if (form.value.role === 'user') {
+          dataToUpdate.nim = form.value.nim;
+          dataToUpdate.major = form.value.major;
+          dataToUpdate.faculty = form.value.faculty;
+        }
+        // (Kita tidak perlu menangani 'lecturer' di sini karena ini ManageMahasiswa)
       }
       
+      // 4. Panggil updateUser
       await updateUser(dataToUpdate, userId);
 
-      // Coba ganti password HANYA JIKA diisi
+      // 5. Coba ganti password (jika diisi)
       if (form.value.password && form.value.password.trim() !== "") {
         try {
           await changePassword(userId, form.value.password, adminId);
         } catch (passwordError) {
-          console.warn("Gagal mengganti password (API backend belum siap):", passwordError);
-          passwordErrorMessage = passwordError.response?.data?.message || "Gagal ganti password (backend error)";
+          console.warn("Gagal mengganti password:", passwordError);
+          passwordErrorMessage = passwordError.response?.data?.message || "Gagal ganti password";
         }
       }
 
       if (passwordErrorMessage) {
-        alert(`Data (Nama, Email, Role) berhasil diperbarui.\n\nInfo: ${passwordErrorMessage}`);
+        alert(`Data berhasil diperbarui.\n\nInfo: ${passwordErrorMessage}`);
       } else {
         alert("Data berhasil diperbarui!");
       }
@@ -322,6 +387,7 @@ const simpanMahasiswa = async () => {
       console.error("Gagal menyimpan data (Update/Role):", err);
       const errorMsg = err.response?.data?.message || "Terjadi kesalahan saat menyimpan data.";
       alert(errorMsg);
+      fetchMahasiswa();
     }
 
   } else {
@@ -332,12 +398,24 @@ const simpanMahasiswa = async () => {
         email: form.value.email,
         password: form.value.password,
         role: form.value.role,
-        nim: form.value.nim,
-        major: form.value.major,
-        faculty: form.value.faculty,
       };
+
+      if (form.value.role === 'user') {
+        dataToCreate.nim = form.value.nim || null;
+        dataToCreate.major = form.value.major || null;
+        dataToCreate.faculty = form.value.faculty || null;
+        dataToCreate.nip = null;
+        dataToCreate.nidn = null;
+      } else if (form.value.role === 'lecturer') {
+        dataToCreate.nip = form.value.nip || null;
+        dataToCreate.nidn = form.value.nidn || null;
+        dataToCreate.nim = null;
+        dataToCreate.major = null;
+        dataToCreate.faculty = null;
+      }
+
       await register(dataToCreate);
-      alert("Mahasiswa baru berhasil ditambahkan!");
+      alert("Akun baru berhasil ditambahkan!");
       closeModal();
       fetchMahasiswa();
     } catch (err) {
@@ -348,13 +426,21 @@ const simpanMahasiswa = async () => {
   }
 };
 
+// ## PERBAIKAN 3: Simpan Role Asli saat Buka Modal ##
 const openEditModal = (mhs) => {
   editMode.value = true;
+  originalRole.value = mhs.role; // <-- Simpan role asli
   const mhsData = { ...mhs };
   const userId = mhs.id || mhs.ID || mhs._id;
   form.value = {
     ...initialFormState,
     ...mhsData,
+    // Konversi null dari DB menjadi string kosong untuk v-model
+    nim: mhs.nim || "",
+    major: mhs.major || "", 
+    faculty: mhs.faculty || "",
+    nip: mhs.nip || "",
+    nidn: mhs.nidn || "",
     id: userId,
     password: "", 
   };
@@ -362,6 +448,7 @@ const openEditModal = (mhs) => {
 };
 
 const hapusMahasiswa = async (mhs) => {
+  // (Logika hapus tidak berubah)
   const userId = mhs.id || mhs.ID || mhs._id;
   if (!userId) {
     alert("Error: ID pengguna tidak ditemukan. Tidak dapat menghapus.");

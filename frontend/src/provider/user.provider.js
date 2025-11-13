@@ -34,7 +34,7 @@ export const getUserById = async (id) => {
 
 export const getUsers = async () => {
   const res = await ApiHandler.get(`${USER}/`);
-  return res.data;
+  return res.data.data;
 };
 
 export const getUserByName = async (name) => {
@@ -54,7 +54,7 @@ export const deleteUser = async (id) => {
  */
 export const getUsersByRole = async (role) => {
   const res = await ApiHandler.get(`${USER}/role?role=${role}`);
-  return res.data;
+  return res.data.data;
 };
 
 export const changeRole = async (userId, adminId, role) => {

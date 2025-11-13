@@ -63,13 +63,13 @@ func (h *ExamController) GetMany(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid limit")
 		return
 	}
-	data, err := h.service.GetMany(c, limit, offset)
+	data, total, err := h.service.GetMany(c, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
 }
 
 func (h *ExamController) Update(c *gin.Context) {

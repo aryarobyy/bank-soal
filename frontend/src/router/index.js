@@ -32,14 +32,16 @@ import CreateSoal from '../views/question/CreateSoal.vue'
 import CreateManualSoal from '../views/question/CreateManualSoal.vue'
 import UploadJsonSoal from '../views/question/UploadJsonSoal.vue'
 
-// Halaman Ujian
+// Halaman Ujian (yang akan dipakai bersama)
 import ManageExam from '../views/exam/ManageExam.vue'
 import CreateExamView from '../views/exam/CreateExamView.vue'
 import ExamReports from '../views/exam/ExamReports.vue'
+// ## 1. Impor 2 Halaman Baru Anda ##
+import ExamDetail from '../views/exam/ExamDetail.vue'
+import ExamEdit from '../views/exam/ExamEdit.vue'
 
 // Halaman Super Admin
 import SuperAdminDashboard from '../views/SuperAdmin/SuperAdminDashboard.vue'
-// ## 1. Impor halaman ManageAdmin baru Anda ##
 import ManageAdmin from '../views/ManageAdmin/ManageAdmin.vue'
 
 
@@ -53,8 +55,17 @@ const soalRoutes = [
   { path: 'upload-json', name: 'SoalUploadJson', component: UploadJsonSoal, }
 ]
 
+// ## 2. Buat Grup Rute Ujian (BARU) ##
+const examRoutes = [
+  { path: '', name: 'ManageExam', component: ManageExam },
+  { path: 'create', name: 'CreateExam', component: CreateExamView },
+  { path: 'detail/:id', name: 'ExamDetail', component: ExamDetail },
+  { path: 'edit/:id', name: 'ExamEdit', component: ExamEdit }
+]
+
 const routes = [
   // --- Rute Autentikasi & Pengguna Umum ---
+  // (Tidak ada perubahan di sini)
   { path: '/login', name: 'login', component: LoginView },
   { path: '/register', name: 'register', component: RegisterView },
   { path: '/forgot-password', name: 'ForgotPassword', component: ForgotPassword },
@@ -82,6 +93,12 @@ const routes = [
         path: 'soal',
         component: RouterWrapper, 
         children: soalRoutes.map(route => ({ ...route, name: `Dosen${route.name}` })) 
+      },
+      // ## 3. Tambahkan Rute Ujian ke Dosen (BARU) ##
+      {
+        path: 'exam', // akan menjadi /dosen/exam
+        component: RouterWrapper,
+        children: examRoutes.map(route => ({ ...route, name: `Dosen${route.name}` }))
       }
     ]
   },
@@ -101,15 +118,11 @@ const routes = [
         component: RouterWrapper, 
         children: soalRoutes.map(route => ({ ...route, name: `Admin${route.name}` }))
       },
+      // ## 4. Ganti Rute Ujian Admin dengan Grup Rute (DIPERBARUI) ##
       {
-        path: 'ujian',
-        name: 'AdminManageExam',
-        component: ManageExam
-      },
-      {
-        path: 'ujian/create', 
-        name: 'AdminCreateExam',
-        component: CreateExamView
+        path: 'ujian', // akan menjadi /admin/ujian
+        component: RouterWrapper,
+        children: examRoutes.map(route => ({ ...route, name: `Admin${route.name}` }))
       },
       {
         path: 'reports',
@@ -119,31 +132,30 @@ const routes = [
       { 
         path: 'update-profile', 
         name: 'AdminUpdateProfile', 
-        component: UpdateProfile // Gunakan komponen yang sama
+        component: UpdateProfile
       }
     ]
   },
 
   // --- Rute Super Admin ---
+  // (Tidak ada perubahan di sini)
   {
     path: '/superadmin',
     component: SuperAdminLayout, 
-    redirect: '/superadmin/dashboard', // Arahkan ke dashboard
+    redirect: '/superadmin/dashboard',
     children: [
       {
-        path: 'dashboard', // Sesuai permintaan Anda
+        path: 'dashboard', 
         name: 'SuperAdminDashboard',
-        component: SuperAdminDashboard, // Halaman "Login Aktivitas"
-        meta: { title: 'Dashboard Aktivitas' } // Judul Halaman
+        component: SuperAdminDashboard, 
+        meta: { title: 'Dashboard Aktivitas' }
       },
       {
-        path: 'admins', // Sesuai permintaan Anda
+        path: 'admins', 
         name: 'SuperAdminManageAdmins',
-        component: ManageAdmin, // Halaman "Kelola Admin" baru
-        meta: { title: 'Manajemen Admin' } // Judul Halaman
+        component: ManageAdmin,
+        meta: { title: 'Manajemen Admin' }
       },
-      
-      // Hapus rute logs dan profile yang tidak ada di sidebar baru
     ]
   }
 ]

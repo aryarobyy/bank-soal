@@ -39,13 +39,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-// ## 5. Impor ikon baru ##
 import { BookOpen, FileText } from 'lucide-vue-next';
-// ## 6. Impor provider Ujian dan Soal ##
 import { getAllExam } from '../../provider/exam.provider';
 import { getmanyQuestions } from '../../provider/question.provider';
 
-// ## 7. State reaktif diperbarui ##
 const stats = ref({
   totalExam: 0,
   totalSoal: 0,
@@ -53,27 +50,34 @@ const stats = ref({
 const loading = ref(true);
 const error = ref(null);
 
-// ## 8. Fungsi fetch data diperbarui total ##
 const fetchDashboardData = async () => {
   try {
-    // Kita gunakan Promise.allSettled untuk jaga-jaga jika satu API gagal
     const [examResult, questionResult] = await Promise.allSettled([
-      getAllExam(),
-      getmanyQuestions(1, 0) // Panggil 1 soal untuk dapat total
+      // ## PERUBAHAN 1: Panggil TANPA parameter ##
+      // agar mengikuti limit default (misal: 10)
+      getAllExam(), 
+      getmanyQuestions(1, 0) // Biarkan ini, karena total soal sudah benar
     ]);
 
     // Cek hasil Panggilan Ujian
     if (examResult.status === 'fulfilled') {
-      stats.value.totalExam = (examResult.value.data || []).length;
+      // ## PERUBAHAN 2: LOGIKA IDENTIK DENGAN ADMIN DASHBOARD ##
+      // 'examResult.value' adalah { data: [...], total: 48 }
+      // Kita ambil array 'data' di dalamnya
+      const examList = examResult.value.data || [];
+      
+      // Kita hitung panjang array (length), BUKAN total
+      stats.value.totalExam = examList.length;
+      
     } else {
       console.error("Gagal mengambil data ujian:", examResult.reason);
-      if (!error.value) error.value = "Gagal memuat data ujian."; // Tampilkan error pertama
+      if (!error.value) error.value = "Gagal memuat data ujian.";
       stats.value.totalExam = 'N/A';
     }
 
-    // Cek hasil Panggilan Soal
+    // Cek hasil Panggilan Soal (Ini tetap menggunakan logika .total)
     if (questionResult.status === 'fulfilled') {
-      stats.value.totalSoal = questionResult.value.data.total || 0;
+      stats.value.totalSoal = questionResult.value.total || 0;
     } else {
       console.error("Gagal mengambil data soal:", questionResult.reason);
       if (!error.value) error.value = "Gagal memuat data soal.";
@@ -88,9 +92,6 @@ const fetchDashboardData = async () => {
   }
 };
 
-// ## 9. roleClass() dihapus karena tidak terpakai ##
-
-// Panggil fungsi fetch saat komponen dimuat
 onMounted(() => {
   fetchDashboardData();
 });

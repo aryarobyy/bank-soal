@@ -8,17 +8,17 @@ import (
 )
 
 type QuestionRepository interface {
-	Create(ctx context.Context, q model.Question) error
+	Create(ctx context.Context, q *model.Question) error
 	GetById(ctx context.Context, id int) (*model.Question, error)
-	GetMany(ctx context.Context, limit int, offset int) ([]model.Question, error)
-	GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.Question, int64, error)
+	GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, int64, error)
 	Update(ctx context.Context, q model.Question, id int) (*model.Question, error)
 	Delete(ctx context.Context, id int) error
 	CreateWithOptions(ctx context.Context, question model.Question) error
 	CreateBatch(ctx context.Context, q []model.Question) error
-	GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, error)
-	GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, error)
-	GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, error)
+	GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, int64, error)
+	GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, int64, error)
+	GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, int64, error)
 }
 
 type questionRepository struct {
@@ -29,13 +29,17 @@ func NewQuestionRepository(db *gorm.DB) QuestionRepository {
 	return &questionRepository{db: db}
 }
 
-func (r *questionRepository) Create(ctx context.Context, q model.Question) error {
-	if err := r.db.
-		WithContext(ctx).
-		Create(&q).
-		Error; err != nil {
+func (r *questionRepository) Create(ctx context.Context, q *model.Question) error {
+	if err := r.db.WithContext(ctx).Create(q).Error; err != nil {
 		return err
 	}
+
+	if err := r.db.WithContext(ctx).
+		Preload("Subject").
+		First(q, q.Id).Error; err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -51,33 +55,58 @@ func (r *questionRepository) GetById(ctx context.Context, id int) (*model.Questi
 	return &q, nil
 }
 
-func (r *questionRepository) GetMany(ctx context.Context, limit int, offset int) ([]model.Question, error) {
-	var q []model.Question
+func (r *questionRepository) GetMany(ctx context.Context, limit int, offset int) ([]model.Question, int64, error) {
+	var (
+		q     []model.Question
+		total int64
+	)
+
 	if err := r.db.WithContext(ctx).
+		Model(&model.Question{}).
+		Count(&total).
+		Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := r.db.WithContext(ctx).
+		Model(&model.Question{}).
 		Preload("Subject").
 		Preload("Options").
 		Limit(limit).
 		Offset(offset).
 		Find(&q).
 		Error; err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return q, nil
+	return q, total, nil
 }
 
-func (r *questionRepository) GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, error) {
-	var q []model.Question
-	if err := r.db.WithContext(ctx).
-		Where("exam_id = ?", examId).
+func (r *questionRepository) GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, int64, error) {
+	var (
+		q     []model.Question
+		total int64
+	)
+
+	query := r.db.WithContext(ctx).
+		Model(&model.Question{}).
+		Where("exam_id = ?", examId)
+
+	if err := query.
+		Count(&total).
+		Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.
 		Preload("Subject").
 		Preload("Options").
 		Limit(limit).
 		Offset(offset).
 		Find(&q).
 		Error; err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return q, nil
+	return q, total, nil
 }
 
 func (r *questionRepository) Update(ctx context.Context, q model.Question, id int) (*model.Question, error) {
@@ -95,6 +124,7 @@ func (r *questionRepository) Delete(ctx context.Context, id int) error {
 	if err := r.db.WithContext(ctx).
 		Where("id = ?", id).
 		Delete(&model.Question{}).
+		Delete(id).
 		Error; err != nil {
 		return err
 	}
@@ -131,47 +161,86 @@ func (r *questionRepository) CreateBatch(ctx context.Context, q []model.Question
 	return nil
 }
 
-func (r *questionRepository) GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, error) {
-	var q []model.Question
-	if err := r.db.WithContext(ctx).
-		Where("difficulty = ?", diff).
+func (r *questionRepository) GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, int64, error) {
+	var (
+		q     []model.Question
+		total int64
+	)
+
+	query := r.db.WithContext(ctx).
+		Model(&model.Question{}).
+		Where("difficulty = ?", diff)
+
+	if err := query.
+		Count(&total).
+		Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.
 		Preload("Subject").
 		Preload("Options").
 		Limit(limit).
 		Offset(offset).
 		Find(&q).
 		Error; err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return q, nil
+	return q, total, nil
 }
 
-func (r *questionRepository) GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, error) {
-	var q []model.Question
-	if err := r.db.WithContext(ctx).
-		Where("creator_id = ?", creatorId).
+func (r *questionRepository) GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, int64, error) {
+	var (
+		q     []model.Question
+		total int64
+	)
+
+	query := r.db.WithContext(ctx).
+		Model(&model.Question{}).
+		Where("creator_id = ?", creatorId)
+
+	if err := query.
+		Count(&total).
+		Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.
 		Preload("Subject").
 		Preload("Options").
 		Limit(limit).
 		Offset(offset).
 		Find(&q).
 		Error; err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return q, nil
+	return q, total, nil
 }
 
-func (r *questionRepository) GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, error) {
-	var q []model.Question
-	if err := r.db.WithContext(ctx).
-		Where("subject_id = ?", subjectId).
+func (r *questionRepository) GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, int64, error) {
+	var (
+		q     []model.Question
+		total int64
+	)
+
+	query := r.db.WithContext(ctx).
+		Model(&model.Question{}).
+		Where("subject_id = ?", subjectId)
+
+	if err := query.
+		Count(&total).
+		Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.
 		Preload("Subject").
 		Preload("Options").
 		Limit(limit).
 		Offset(offset).
 		Find(&q).
 		Error; err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return q, nil
+	return q, total, nil
 }

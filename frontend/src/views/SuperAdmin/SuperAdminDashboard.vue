@@ -121,7 +121,7 @@ const fetchDashboardData = async () => {
 
     // Cek hasil Panggilan Soal
     if (questionResult.status === 'fulfilled') {
-      stats.value.totalSoal = questionResult.value.data.total || 0;
+      stats.value.totalSoal = questionResult.value.total || 0;
     } else {
        console.error("Gagal mengambil data soal:", questionResult.reason);
        if (!errorStats.value) errorStats.value = "Gagal memuat data soal.";

@@ -1,117 +1,158 @@
 <template>
-  <div
-    class="min-h-screen bg-[#e8edff] flex flex-col items-center justify-center"
-  >
-    <div
-      class="absolute top-0 left-0 right-0 flex justify-between items-center px-8 py-4"
-    >
-      <h1 class="text-3xl font-bold text-[#2a4dff]">Latih.in</h1>
-      <div class="flex space-x-6 text-[#2a4dff] font-semibold">
-        <router-link to="/admin/dashboard" class="hover:underline">Home</router-link>
-        <router-link to="/admin/dashboard" class="hover:underline"
-          >Dashboard</router-link
-        >
-        <i class="fas fa-user text-xl"></i>
-      </div>
-    </div>
+  <div class="flex justify-center items-center min-h-screen bg-gray-50">
+    <div class="bg-white rounded-xl shadow-md p-8 w-full max-w-2xl">
+      <h2 class="text-2xl font-bold text-primary mb-6">Buat Ujian Baru</h2>
 
-    <div class="bg-white rounded-2xl shadow-lg p-8 w-[400px] text-center">
-      <h2 class="text-lg font-bold text-[#2a4dff] mb-6">Name Exam</h2>
-
-      <div class="space-y-4">
+      <form @submit.prevent="handleSubmit" class="space-y-4">
         <div>
-          <label class="block text-left font-semibold mb-1">Pilih Soal</label>
+          <label class="font-semibold text-gray-700">Nama Ujian</label>
+          <input
+            v-model="form.title"
+            type="text"
+            class="w-full border rounded-lg p-2 bg-gray-50"
+            required
+          />
+        </div>
+
+        <div>
+          <label class="font-semibold text-gray-700">Deskripsi</label>
+          <textarea
+            v-model="form.description"
+            rows="3"
+            class="w-full border rounded-lg p-2 bg-gray-50"
+          ></textarea>
+        </div>
+
+        <div>
+          <label class="font-semibold text-gray-700">Tingkat Kesulitan</label>
           <select
-            v-model="selectedQuestion"
-            class="w-full border rounded-lg p-2"
+            v-model="form.difficulty"
+            class="w-full border rounded-lg p-2 bg-gray-50"
+            required
           >
-            <option disabled value="">-- Pilih Soal --</option>
-            <option
-              v-for="question in questions"
-              :key="question.id"
-              :value="question.id"
-            >
-              {{ question.name }}
-            </option>
+            <option disabled value="">Pilih kesulitan</option>
+            <option value="easy">Mudah</option>
+            <option value="medium">Sedang</option>
+            <option value="hard">Sulit</option>
           </select>
         </div>
 
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="font-semibold text-gray-700">Tanggal Mulai</label>
+            <input
+              v-model="form.started_at"
+              type="datetime-local"
+              class="w-full border rounded-lg p-2 bg-gray-50"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="font-semibold text-gray-700">Tanggal Berakhir</label>
+            <input
+              v-model="form.finished_at"
+              type="datetime-local"
+              class="w-full border rounded-lg p-2 bg-gray-50"
+              required
+            />
+          </div>
+        </div>
+
         <div>
-          <label class="block text-left font-semibold mb-1"
-            >Waktu Pengerjaan (menit)</label
-          >
+          <label class="font-semibold text-gray-700">Durasi (menit)</label>
           <input
-            v-model="duration"
+            v-model.number="form.long_time"
             type="number"
-            placeholder="Masukkan waktu"
-            class="w-full border rounded-lg p-2"
+            min="1"
+            class="w-full border rounded-lg p-2 bg-gray-50"
+            required
           />
         </div>
-      </div>
 
-      <div class="mt-6 flex justify-center gap-4">
         <button
-          @click="handleCancel"
-          type="button" 
-          class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition"
+          type="submit"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg py-2 transition"
+          :disabled="loading"
         >
-          Cancel
+          {{ loading ? "Menyimpan..." : "Simpan Ujian" }}
         </button>
-        <button
-          @click="createExam"
-          type="button"
-          class="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600 transition"
-        >
-          Create
-        </button>
+      </form>
+
+      <div
+        v-if="showPopup"
+        class="mt-6 text-center bg-green-100 text-green-800 border border-green-300 rounded-lg p-3"
+      >
+        {{ popupMessage }}
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed } from "vue"; // Impor computed
+import { useRoute, useRouter } from "vue-router"; // Impor useRoute
+// Pastikan path provider Anda sudah benar
+import { createExam } from "../../provider/exam.provider.js";
+import { useGetCurrentUser } from "../../hooks/useGetCurrentUser.js";
 
 const router = useRouter();
-const selectedQuestion = ref("");
-const duration = ref("");
+const route = useRoute(); // Tambahkan route
+const { user } = useGetCurrentUser();
 
-// Data dummy daftar soal
-const questions = ref([
-  { id: 1, name: "Soal Logika Dasar" },
-  { id: 2, name: "Soal Algoritma" },
-  { id: 3, name: "Soal Database" },
-]);
+// Tambahkan computed isAdminRoute
+const isAdminRoute = computed(() => route.path.startsWith('/admin'));
 
-const createExam = () => {
-  if (!selectedQuestion.value || !duration.value) {
-    alert("Harap isi semua field!");
+const form = ref({
+  title: "",
+  description: "",
+  difficulty: "",
+  started_at: "",
+  finished_at: "",
+  long_time: "",
+});
+
+const loading = ref(false);
+const showPopup = ref(false);
+const popupMessage = ref("");
+
+const handleSubmit = async () => {
+  if (!user?.value) {
+    alert("User belum login!");
     return;
   }
 
-  // Simulasi simpan data ujian
-  console.log("Ujian dibuat:", {
-    soal_id: selectedQuestion.value,
-    waktu: duration.value,
-  });
+  loading.value = true;
 
-  alert("Ujian berhasil dibuat!");
-  
-  // Kembali ke halaman daftar ujian admin
-  router.push({ name: "AdminManageExam" }); 
-};
+  const payload = {
+    title: form.value.title.trim(),
+    description: form.value.description.trim(),
+    difficulty: form.value.difficulty.toLowerCase(),
+    started_at: new Date(form.value.started_at).toISOString(),
+    finished_at: new Date(form.value.finished_at).toISOString(),
+    long_time: Number(form.value.long_time),
+    creator_id: user.value.id,
+  };
 
-// ## TAMBAHKAN FUNGSI INI ##
-// Fungsi untuk tombol Cancel
-const handleCancel = () => {
-  // Kembali ke halaman daftar ujian admin
-  router.push({ name: "AdminManageExam" });
+  try {
+    await createExam(payload);
+    popupMessage.value = "✅ Ujian berhasil dibuat!";
+    showPopup.value = true;
+
+    // Navigasi dinamis
+    const returnRouteName = isAdminRoute.value ? 'AdminManageExam' : 'DosenManageExam';
+    
+    setTimeout(() => {
+      router.push({ name: returnRouteName });
+    }, 800);
+  } catch (err) {
+    console.error(err);
+    // Coba akses pesan error yang lebih spesifik jika ada
+    const errorMsg = err.response?.data?.message || "Terjadi kesalahan";
+    popupMessage.value = `❌ Gagal membuat ujian. ${errorMsg} `;
+    showPopup.value = true;
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
-
-<style scoped>
-option[disabled] {
-  color: #aaa;
-}
-</style>

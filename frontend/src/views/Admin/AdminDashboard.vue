@@ -102,7 +102,7 @@ const fetchDashboardData = async () => {
 
     const userList = userResponse.data || [];
     const examList = examResponse.data || []; // <-- Dikembalikan
-    const totalQuestions = questionResponse.data.total || 0;
+    const totalQuestions = questionResponse.total || 0;
 
     // Menghitung statistik
     stats.value.totalUsers = userList.length;

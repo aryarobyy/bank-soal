@@ -13,7 +13,9 @@ type ExamRepository interface {
 	GetById(ctx context.Context, id int) (*model.Exam, error)
 	Update(ctx context.Context, e model.Exam, id int) (*model.Exam, error)
 	Delete(ctx context.Context, id int) error
-	GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, int64, error)
+	StartSession(ctx context.Context, id int) (*model.Exam, error)
+	UpdateScore(ctx context.Context, examId int, score int) error
 }
 
 type examRepository struct {
@@ -100,14 +102,47 @@ func (r *examRepository) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (r *examRepository) GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, error) {
-	var e []model.Exam
+func (r *examRepository) GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, int64, error) {
+	var (
+		e     []model.Exam
+		total int64
+	)
+
 	if err := r.db.WithContext(ctx).
-		Find(&e).
+		Model(&model.Question{}).
+		Count(&total).
+		Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := r.db.WithContext(ctx).
+		Model(&model.Exam{}).
 		Limit(limit).
 		Offset(offset).
+		Find(&e).
 		Error; err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return e, nil
+	return e, total, nil
+}
+
+func (r *examRepository) StartSession(ctx context.Context, id int) (*model.Exam, error) {
+	var exam model.Exam
+	if err := r.db.WithContext(ctx).
+		Preload("Questions.Options").
+		First(&exam, id).Error; err != nil {
+		return nil, fmt.Errorf("failed to load exam with questions: %w", err)
+	}
+	return &exam, nil
+}
+
+func (r *examRepository) UpdateScore(ctx context.Context, examId int, score int) error {
+	if err := r.db.WithContext(ctx).
+		Model(&model.Exam{}).
+		Where("id = ?", examId).
+		Update("score", score).
+		Error; err != nil {
+		return fmt.Errorf("failed to update exam: %w", err)
+	}
+	return nil
 }
