@@ -158,26 +158,30 @@ func (s *userService) Update(ctx context.Context, data model.User, id int) (*mod
 			if (data.Nip == nil || *data.Nip == "") && (data.Nidn == nil || *data.Nidn == "") {
 				return nil, fmt.Errorf("lecturer must provide either Nip or Nidn")
 			}
-			data.Nim = nil
+			emptyNim := ""
+			data.Nim = &emptyNim
 		}
 
 		if effectiveRole == "user" {
 			if data.Nim == nil || *data.Nim == "" {
 				return nil, fmt.Errorf("user must provide Nim")
 			}
-			data.Nip = nil
-			data.Nidn = nil
+			emptyStr := ""
+			data.Nip = &emptyStr
+			data.Nidn = &emptyStr
 		}
+
+		data.Role = effectiveRole
 	} else {
-		if effectiveRole != "lecturer" {
-			if (data.Nip != nil && *data.Nip != "") || (data.Nidn != nil && *data.Nidn != "") {
-				return nil, fmt.Errorf("only lecturers can have Nip or Nidn")
+		if effectiveRole == "lecturer" {
+			if data.Nim != nil && *data.Nim != "" {
+				return nil, fmt.Errorf("only user can have Nim")
 			}
 		}
 
-		if effectiveRole != "user" {
-			if data.Nim != nil && *data.Nim != "" {
-				return nil, fmt.Errorf("only user can have Nim")
+		if effectiveRole == "user" {
+			if (data.Nip != nil && *data.Nip != "") || (data.Nidn != nil && *data.Nidn != "") {
+				return nil, fmt.Errorf("only lecturers can have Nip or Nidn")
 			}
 		}
 	}

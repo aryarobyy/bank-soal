@@ -161,6 +161,7 @@ func (h *UserController) Update(c *gin.Context) {
 		Nim:          nimPtr,
 		Nip:          nipPtr,
 		Nidn:         nidnPtr,
+		Role:         model.Role(c.PostForm("role")),
 		Major:        c.PostForm("major"),
 		Faculty:      c.PostForm("faculty"),
 		Status:       model.Status(c.PostForm("status")),
