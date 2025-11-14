@@ -26,7 +26,7 @@ type UserService interface {
 	ChangePassword(ctx context.Context, id int, newPassword string) error
 	ChangeRole(ctx context.Context, id int, role model.Role, userRole model.Role) error
 	RefreshToken(ctx context.Context, refreshToken string) (string, error)
-	BulkInsert(ctx context.Context, prefix string, start int, end int) ([]model.BulkUserCredential, error)
+	BulkInsert(ctx context.Context, batchUser model.BulkUserCredential, prefix string, start int, end int) ([]model.BulkUserOutput, error)
 }
 
 type userService struct {
@@ -343,28 +343,28 @@ func (s *userService) RefreshToken(ctx context.Context, refreshToken string) (st
 	return newAccessToken, nil
 }
 
-func (s *userService) BulkInsert(ctx context.Context, prefix string, start int, end int) ([]model.BulkUserCredential, error) {
+func (s *userService) BulkInsert(ctx context.Context, batchUser model.BulkUserCredential, prefix string, start int, end int) ([]model.BulkUserOutput, error) {
 	nims := helper.GenerateNim(prefix, start, end)
 
 	var users []model.User
-	var credentials []model.BulkUserCredential
+	var credentials []model.BulkUserOutput
 
 	for _, nim := range nims {
 		plainPw, _ := helper.GenerateRandomPassword(12)
 		hashed, _ := bcrypt.GenerateFromPassword([]byte(plainPw), bcrypt.DefaultCost)
 
 		users = append(users, model.User{
-			Nim:      &nim,
-			Password: string(hashed),
+			Nim:          &nim,
+			Password:     string(hashed),
+			Role:         model.RoleUser,
+			Major:        batchUser.Major,
+			Faculty:      batchUser.Faculty,
+			AcademicYear: batchUser.AcademicYear,
 		})
 
-		credentials = append(credentials, model.BulkUserCredential{
-			Nim:          nim,
-			Password:     plainPw,
-			Role:         string(model.RoleUser),
-			Major:        "informatika",
-			Faculty:      "teknik",
-			AcademicYear: "20" + prefix, // dua ribu sekian
+		credentials = append(credentials, model.BulkUserOutput{
+			Nim:      nim,
+			Password: plainPw,
 		})
 	}
 

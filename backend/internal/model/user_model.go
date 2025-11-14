@@ -29,7 +29,7 @@ type RegisterCredential struct {
 	Email        string `json:"email,omitempty" gorm:"unique;default:null"`
 	Password     string `json:"password" validate:"required,min=6"`
 	Name         string `json:"name" validate:"required"`
-	Nim          string `json:"nim"`
+	Nim          string `json:"nim,omitempty"`
 	Nip          string `json:"nip,omitempty"`
 	Nidn         string `json:"nidn,omitempty"`
 	Major        string `json:"major" validate:"required" gorm:"default:informatika"`
@@ -53,4 +53,9 @@ type BulkUserCredential struct {
 	Major        string `json:"major"`
 	Faculty      string `json:"faculty"`
 	AcademicYear string `json:"academic_year"`
+}
+
+type BulkUserOutput struct {
+	Nim      string `json:"nim"`
+	Password string `json:"password"`
 }
