@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"latih.in-be/internal/controller"
 	"latih.in-be/internal/middleware"
+	"latih.in-be/internal/model"
 )
 
 func ExamRoutes(r *gin.Engine, exam *controller.ExamController) {
@@ -15,13 +16,13 @@ func ExamRoutes(r *gin.Engine, exam *controller.ExamController) {
 		auth := routes.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			auth.POST("/", middleware.RoleGuard("admin", "lecturer"),
+			auth.POST("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer),
 				middleware.InputValidate([]string{"title", "creator_id", "long_time", "started_at", "finished_at"}),
 				exam.Create)
 			auth.GET("/", exam.GetMany)
 			auth.GET("/id", exam.GetById)
-			auth.PUT("/:id", middleware.RoleGuard("admin", "lecturer"), exam.Update)
-			auth.DELETE("/:id", middleware.RoleGuard("admin", "lecturer"), exam.Delete)
+			auth.PUT("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), exam.Update)
+			auth.DELETE("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), exam.Delete)
 		}
 	}
 }
