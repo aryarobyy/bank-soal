@@ -1,5 +1,6 @@
 <template>
   <div class="bg-white rounded-lg shadow-md p-6">
+    <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-xl font-bold">Manajemen Ujian</h2>
       <router-link
@@ -29,7 +30,7 @@
         <input
           type="text"
           v-model="search"
-          placeholder="Search your file"
+          placeholder="Search your exam"
           class="w-full p-2 outline-none"
         />
       </div>
@@ -44,40 +45,71 @@
           <tr class="text-left border-b text-sm font-bold">
             <th class="p-2">Nama Ujian</th>
             <th class="p-2">Status</th>
-            <th class="p-2">Actions</th>
+            <th class="p-2 text-center">Actions</th>
           </tr>
         </thead>
 
         <tbody>
           <tr
-            v-for="exam in filteredExams"
+            v-for="exam in paginatedExams"
             :key="exam.id"
             class="border-b hover:bg-gray-100 transition"
           >
             <td class="p-2">{{ exam.title }}</td>
             <td class="p-2">{{ statusText(exam.status) }}</td>
-            <td class="p-2 flex items-center gap-3">
-              <button class="text-blue-600 text-sm">👁️ View Details</button>
-              <button class="text-gray-500 text-sm">✏️</button>
-              <button @click="removeExam(exam.id)" class="text-red-600 text-sm">
-                🗑️
+            <td class="p-2 flex items-center justify-center gap-3">
+              <!-- View Details -->
+              <router-link
+                :to="`/dosen/exam/detail/${exam.id}`"
+                class="text-blue-600 hover:underline text-sm"
+              >
+                👁️ View Details
+              </router-link>
+
+              <!-- Delete -->
+              <button
+                @click="removeExam(exam.id)"
+                class="text-red-600 hover:text-red-800 text-sm"
+              >
+                🗑️ Delete
               </button>
             </td>
           </tr>
 
-          <tr v-if="filteredExams.length === 0">
+          <tr v-if="paginatedExams.length === 0">
             <td colspan="3" class="text-center p-4 text-gray-500">
               Tidak ada ujian
             </td>
           </tr>
         </tbody>
       </table>
+
+      <!-- Pagination -->
+      <div class="flex justify-center items-center mt-6 gap-3">
+        <button
+          @click="prevPage"
+          :disabled="page === 1"
+          class="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Prev
+        </button>
+
+        <span>Halaman {{ page }} dari {{ totalPages }}</span>
+
+        <button
+          @click="nextPage"
+          :disabled="page === totalPages"
+          class="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { getAllExam, deleteExam } from "@/provider/exam.provider";
 import { useGetCurrentUser } from "@/hooks/useGetCurrentUser";
 
@@ -85,30 +117,73 @@ const exams = ref([]);
 const search = ref("");
 const sortBy = ref("Last Modified");
 const statusFilter = ref("");
+const page = ref(1);
+const limit = 10;
 
 const { user } = useGetCurrentUser();
 
+// ✅ Ambil data ujian dari backend
 const loadExams = async () => {
-  const res = await getAllExam();
-  // Kalau backend return array full, filter untuk dosen ini saja
-  exams.value = res.data.filter((e) => e.creator_id === user.value.id);
+  try {
+    const offset = (page.value - 1) * limit;
+    const result = await getAllExam(limit, offset);
+
+    // backend return array langsung / dalam data.data
+    const data = Array.isArray(result) ? result : result?.data || [];
+
+    // filter berdasarkan creator
+    exams.value = data.filter((e) => e.creator_id === user.value.id);
+  } catch (err) {
+    console.error("Gagal memuat data ujian:", err);
+    exams.value = [];
+  }
 };
 
+// ✅ Jalankan saat pertama kali dibuka
 onMounted(loadExams);
+
+// ✅ Reload data setiap kali halaman berubah
+watch(page, loadExams);
 
 const filteredExams = computed(() => {
   let data = [...exams.value];
 
+  // Filter pencarian
   if (search.value)
     data = data.filter((e) =>
       e.title.toLowerCase().includes(search.value.toLowerCase())
     );
 
+  // Filter status ujian
   if (statusFilter.value)
     data = data.filter((e) => e.status === statusFilter.value);
 
+  // Urutkan
+  if (sortBy.value === "A-Z")
+    data.sort((a, b) => a.title.localeCompare(b.title));
+  else if (sortBy.value === "Z-A")
+    data.sort((a, b) => b.title.localeCompare(a.title));
+
   return data;
 });
+
+const totalPages = computed(() =>
+  Math.ceil(filteredExams.value.length / limit)
+);
+
+const paginatedExams = computed(() => {
+  const start = (page.value - 1) * limit;
+  const end = start + limit;
+  return filteredExams.value.slice(start, end);
+});
+
+const nextPage = () => {
+  if (page.value < totalPages.value) page.value++;
+};
+
+const prevPage = () => {
+  if (page.value > 1) page.value--;
+};
 
 const statusText = (status) => {
   if (status === "not_started") return "Not Started";
@@ -117,9 +192,17 @@ const statusText = (status) => {
   return "-";
 };
 
+// ✅ Hapus ujian dengan notifikasi & refresh otomatis
 const removeExam = async (id) => {
-  if (!confirm("Hapus ujian ini?")) return;
-  await deleteExam(id);
-  loadExams();
+  if (!confirm("Apakah kamu yakin ingin menghapus ujian ini?")) return;
+
+  try {
+    await deleteExam(id);
+    alert("✅ Ujian berhasil dihapus!");
+    loadExams();
+  } catch (error) {
+    console.error("Gagal menghapus ujian:", error);
+    alert("❌ Gagal menghapus ujian. Coba lagi nanti.");
+  }
 };
 </script>

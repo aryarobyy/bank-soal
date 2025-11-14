@@ -26,15 +26,18 @@ type Controllers struct {
 	ExamScore    *controller.ExamScoreController
 	ExamSession  *controller.ExamSessionController
 	ExamQuestion *controller.ExamQuestionController
-	Subject      *controller.SubjectController
 }
 
 func NewApp(db *gorm.DB) *App {
 	router := gin.Default()
 
-	// ✅ CORS untuk mengizinkan FE akses BE
+	// 🚫 Matikan auto redirect untuk mencegah CORS preflight error
+	//router.RedirectTrailingSlash = false
+	//router.RedirectFixedPath = false
+
+	// ✅ Setup CORS
 	corsConfig := cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"}, // FE URL
+		AllowOrigins:     []string{"http://localhost:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -43,14 +46,7 @@ func NewApp(db *gorm.DB) *App {
 	}
 	router.Use(cors.New(corsConfig))
 
-	// ✅ Rate limiter tetap digunakan
-	store := middleware.InMemoryStore(&middleware.InMemoryOptions{
-		Rate:  10 * time.Second,
-		Limit: 5,
-	})
-	router.Use(middleware.RateLimiter(store, nil))
-
-	// Repository
+	// ✅ Repositories
 	userRepo := repository.NewUserRepository(db)
 	examRepo := repository.NewExamRepository(db)
 	questionRepo := repository.NewQuestionRepository(db)
@@ -58,9 +54,8 @@ func NewApp(db *gorm.DB) *App {
 	examScoreRepo := repository.NewExamScoreRepository(db)
 	examSessionRepo := repository.NewExamSessionRepository(db)
 	examQuestionRepo := repository.NewExamQuestionRepository(db)
-	subjectRepo := repository.NewSubjectRepository(db)
 
-	// Service
+	// ✅ Services
 	userService := service.NewUserService(userRepo)
 	examService := service.NewExamService(examRepo, userRepo)
 	questionService := service.NewQuestionService(questionRepo, userRepo, optionRepo)
@@ -68,9 +63,8 @@ func NewApp(db *gorm.DB) *App {
 	examScoreService := service.NewExamScoreService(examScoreRepo)
 	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo)
 	examQuestionService := service.NewExamQuestionService(examQuestionRepo, questionRepo, examRepo)
-	subjectService := service.NewSubjectService(subjectRepo)
 
-	// Controller
+	// ✅ Controllers
 	controllers := &Controllers{
 		User:         controller.NewUserController(userService),
 		Exam:         controller.NewExamController(examService),
@@ -79,10 +73,16 @@ func NewApp(db *gorm.DB) *App {
 		ExamScore:    controller.NewExamScoreController(examScoreService),
 		ExamSession:  controller.NewExamSessionController(examSessionService),
 		ExamQuestion: controller.NewExamQuestionController(examQuestionService),
-		Subject:      controller.NewSubjectController(subjectService),
 	}
 
-	// Routes
+	// ✅ Rate limiter (setelah CORS)
+	store := middleware.InMemoryStore(&middleware.InMemoryOptions{
+		Rate:  10 * time.Second, // 10 detik
+		Limit: 5,                // maks 5 request
+	})
+	router.Use(middleware.RateLimiter(store, nil))
+
+	// ✅ Setup routes
 	setupRoutes(router, controllers)
 
 	return &App{
@@ -100,7 +100,6 @@ func setupRoutes(r *gin.Engine, ctrl *Controllers) {
 	route.ExamScoreRoutes(r, ctrl.ExamScore)
 	route.ExamSessionRoutes(r, ctrl.ExamSession)
 	route.ExamQuestionRoutes(r, ctrl.ExamQuestion)
-	route.SubjectRoutes(r, ctrl.Subject)
 }
 
 func (a *App) Run(addr string) error {
