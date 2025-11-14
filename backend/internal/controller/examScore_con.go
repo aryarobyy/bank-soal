@@ -19,13 +19,15 @@ func NewExamScoreController(s service.ExamScoreService) *ExamScoreController {
 }
 
 func (h *ExamScoreController) Create(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var data model.ExamScore
 	if err := c.ShouldBindJSON(&data); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := h.service.Create(c.Request.Context(), data); err != nil {
+	if err := h.service.Create(ctx, data); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -33,6 +35,8 @@ func (h *ExamScoreController) Create(c *gin.Context) {
 }
 
 func (h *ExamScoreController) GetById(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -40,7 +44,7 @@ func (h *ExamScoreController) GetById(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.GetById(c.Request.Context(), id)
+	data, err := h.service.GetById(ctx, id)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -50,6 +54,8 @@ func (h *ExamScoreController) GetById(c *gin.Context) {
 }
 
 func (h *ExamScoreController) GetMany(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Query("exam_id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -63,7 +69,7 @@ func (h *ExamScoreController) GetMany(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.GetMany(c, id, limit, offset)
+	data, err := h.service.GetMany(ctx, id, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -73,6 +79,8 @@ func (h *ExamScoreController) GetMany(c *gin.Context) {
 }
 
 func (h *ExamScoreController) Update(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -86,7 +94,7 @@ func (h *ExamScoreController) Update(c *gin.Context) {
 		return
 	}
 
-	updatedData, err := h.service.Update(c, data, id)
+	updatedData, err := h.service.Update(ctx, data, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -95,13 +103,15 @@ func (h *ExamScoreController) Update(c *gin.Context) {
 }
 
 func (h *ExamScoreController) Delete(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid user id")
 		return
 	}
-	err = h.service.Delete(c, id)
+	err = h.service.Delete(ctx, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return

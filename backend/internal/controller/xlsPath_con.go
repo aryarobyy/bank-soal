@@ -18,6 +18,8 @@ func NewXlsPathController(s service.XlsPathService) *XlsPathController {
 }
 
 func (h *XlsPathController) GetById(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -25,7 +27,7 @@ func (h *XlsPathController) GetById(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.GetById(c, id)
+	data, err := h.service.GetById(ctx, id)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -35,13 +37,15 @@ func (h *XlsPathController) GetById(c *gin.Context) {
 }
 
 func (h *XlsPathController) GetMany(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid limit and offset")
 		return
 	}
 
-	data, err := h.service.GetMany(c, limit, offset)
+	data, err := h.service.GetMany(ctx, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -51,13 +55,15 @@ func (h *XlsPathController) GetMany(c *gin.Context) {
 }
 
 func (h *XlsPathController) Delete(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
-	err = h.service.Delete(c, id)
+	err = h.service.Delete(ctx, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
