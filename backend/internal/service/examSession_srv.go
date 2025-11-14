@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 	"latih.in-be/internal/model"
@@ -14,20 +15,32 @@ type ExamSessionService interface {
 	GetById(ctx context.Context, id int) (*model.ExamSession, error)
 	Update(ctx context.Context, id int, e model.UpdateExamSession) (*model.ExamSession, error)
 	Delete(ctx context.Context, id int) error
-	GetMany(ctx context.Context, userId int, limit int, offset int) ([]model.ExamSession, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.ExamSession, error)
 	UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error)
-	FinishExam(ctx context.Context, id int, e model.FinishExam) (*model.ExamSession, error)
+	FinishExam(ctx context.Context, userId int, id int) (*model.ExamSession, error)
 }
 
 type examSessionService struct {
-	repo     repository.ExamSessionRepository
-	examRepo repository.ExamRepository
+	repo             repository.ExamSessionRepository
+	examRepo         repository.ExamRepository
+	answerRepo       repository.UserAnswerRepository
+	questionRepo     repository.QuestionRepository
+	examQuestionRepo repository.ExamQuestionRepository
 }
 
-func NewExamSessionService(repo repository.ExamSessionRepository, examRepo repository.ExamRepository) ExamSessionService {
+func NewExamSessionService(
+	repo repository.ExamSessionRepository,
+	examRepo repository.ExamRepository,
+	answerRepo repository.UserAnswerRepository,
+	questionRepo repository.QuestionRepository,
+	examQuestionRepo repository.ExamQuestionRepository,
+) ExamSessionService {
 	return &examSessionService{
-		repo:     repo,
-		examRepo: examRepo,
+		repo:             repo,
+		examRepo:         examRepo,
+		answerRepo:       answerRepo,
+		questionRepo:     questionRepo,
+		examQuestionRepo: examQuestionRepo,
 	}
 }
 
@@ -48,7 +61,8 @@ func (s *examSessionService) Create(ctx context.Context, e model.ExamSession, us
 	if err != nil {
 		return session, fmt.Errorf("failed to load exam questions: %w", err)
 	}
-	fmt.Println(exam)
+
+	println(exam)
 	return session, nil
 }
 
@@ -78,8 +92,8 @@ func (s *examSessionService) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *examSessionService) GetMany(ctx context.Context, userId int, limit int, offset int) ([]model.ExamSession, error) {
-	data, err := s.repo.GetMany(ctx, userId, limit, offset)
+func (s *examSessionService) GetMany(ctx context.Context, limit int, offset int) ([]model.ExamSession, error) {
+	data, err := s.repo.GetMany(ctx, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get sessions: %w", err)
 	}
@@ -94,17 +108,30 @@ func (s *examSessionService) UpdateCurrNo(ctx context.Context, id int, no model.
 	return updated, nil
 }
 
-func (s *examSessionService) FinishExam(ctx context.Context, id int, e model.FinishExam) (*model.ExamSession, error) {
+func (s *examSessionService) FinishExam(ctx context.Context, userId int, id int) (*model.ExamSession, error) {
 	session, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find session: %w", err)
 	}
 
-	session.FinishedAt = &e.FinishedAt
-	session.Score = e.Score
+	userScore, maxScore, err := s.calculateScore(ctx, userId, id, session.ExamId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate score: %w", err)
+	}
+
+	var percentageScore float64
+	if maxScore > 0 {
+		percentageScore = (float64(userScore) / float64(maxScore)) * 100
+	}
+
+	now := time.Now()
+	session.FinishedAt = &now
+	session.Score = int(percentageScore)
+	session.Status = model.SessionFinished
 
 	data := model.FinishExam{
 		FinishedAt: *session.FinishedAt,
+		Status:     session.Status,
 		Score:      session.Score,
 	}
 
@@ -114,4 +141,38 @@ func (s *examSessionService) FinishExam(ctx context.Context, id int, e model.Fin
 	}
 
 	return updated, nil
+}
+
+func (s *examSessionService) calculateScore(ctx context.Context, userId, sessionId int, examId int) (int, int, error) {
+	userAnswers, err := s.answerRepo.GetAllUserAnswers(ctx, userId, sessionId)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to get user answers: %w", err)
+	}
+
+	examQuestions, err := s.examQuestionRepo.GetByExamId(ctx, examId)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to get exam questions: %w", err)
+	}
+
+	maxScore := 0
+	for _, eq := range examQuestions {
+		question, err := s.questionRepo.GetById(ctx, eq.QuestionId)
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to get question %d: %w", eq.QuestionId, err)
+		}
+		maxScore += question.Score
+	}
+
+	userScore := 0
+	for _, answer := range userAnswers {
+		if answer.IsCorrect {
+			question, err := s.questionRepo.GetById(ctx, answer.QuestionId)
+			if err != nil {
+				return 0, 0, fmt.Errorf("failed to get question %d: %w", answer.QuestionId, err)
+			}
+			userScore += question.Score
+		}
+	}
+
+	return userScore, maxScore, nil
 }

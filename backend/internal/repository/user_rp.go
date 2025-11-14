@@ -20,6 +20,7 @@ type UserRepository interface {
 	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, int64, error)
 	ChangePassword(ctx context.Context, id int, password string) error
 	ChangeRole(ctx context.Context, id int, role model.Role) error
+	BulkInsert(ctx context.Context, users []model.User) ([]model.User, error)
 }
 
 type userRepository struct {
@@ -101,7 +102,7 @@ func (r *userRepository) Update(ctx context.Context, user model.User, id int) (*
 	if user.Faculty != "" {
 		updateData["faculty"] = user.Faculty
 	}
-	if user.AcademicYear != 0 {
+	if user.AcademicYear != "" {
 		updateData["academic_year"] = user.AcademicYear
 	}
 	if user.Status != "" {
@@ -154,8 +155,9 @@ func (r *userRepository) GetMany(ctx context.Context, limit int, offset int) ([]
 		users []model.User
 		total int64
 	)
-	if err := r.db.WithContext(ctx).
-		Model(&model.Question{}).
+	if err := r.db.
+		WithContext(ctx).
+		Model(&model.User{}).
 		Count(&total).
 		Error; err != nil {
 		return nil, 0, err
@@ -191,17 +193,18 @@ func (r *userRepository) GetByName(ctx context.Context, name string, limit int, 
 		total int64
 	)
 
-	if err := r.db.WithContext(ctx).
-		Model(&model.Question{}).
+	query := r.db.
+		WithContext(ctx).
+		Model(&model.User{}).
+		Where("name LIKE ?", "%"+name+"%")
+
+	if err := query.
 		Count(&total).
 		Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := r.db.
-		WithContext(ctx).
-		Model(model.User{}).
-		Where("name = ?", name).
+	if err := query.
 		Limit(limit).
 		Offset(offset).
 		Find(&users).
@@ -217,16 +220,18 @@ func (r *userRepository) GetByRole(ctx context.Context, role string, limit int, 
 		total int64
 	)
 
-	if err := r.db.WithContext(ctx).
-		Model(&model.Question{}).
+	query := r.db.
+		WithContext(ctx).
+		Model(model.User{}).
+		Where("role = ?", role)
+
+	if err := query.
 		Count(&total).
 		Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := r.db.
-		WithContext(ctx).
-		Model(model.User{}).Where("role = ?", role).
+	if err := query.
 		Limit(limit).
 		Offset(offset).
 		Find(&users).
@@ -258,4 +263,15 @@ func (r *userRepository) ChangeRole(ctx context.Context, id int, role model.Role
 		return err
 	}
 	return nil
+}
+
+func (r *userRepository) BulkInsert(ctx context.Context, users []model.User) ([]model.User, error) {
+	if err := r.db.
+		WithContext(ctx).
+		CreateInBatches(&users, 100). //batch size 100
+		Error; err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }

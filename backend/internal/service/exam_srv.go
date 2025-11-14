@@ -19,17 +19,22 @@ type ExamService interface {
 }
 
 type examService struct {
-	repo     repository.ExamRepository
-	userRepo repository.UserRepository
+	repo         repository.ExamRepository
+	userRepo     repository.UserRepository
+	questionRepo repository.QuestionRepository
 }
 
-func NewExamService(repo repository.ExamRepository, userRepo repository.UserRepository) ExamService {
+func NewExamService(
+	repo repository.ExamRepository,
+	userRepo repository.UserRepository,
+	questionRepo repository.QuestionRepository,
+) ExamService {
 	return &examService{
-		repo:     repo,
-		userRepo: userRepo,
+		repo:         repo,
+		userRepo:     userRepo,
+		questionRepo: questionRepo,
 	}
 }
-
 func (s *examService) Create(ctx context.Context, data model.Exam) error {
 	if data.FinishedAt.Before(*data.StartedAt) {
 		return fmt.Errorf("finished_at must be after started_at")
@@ -41,7 +46,6 @@ func (s *examService) Create(ctx context.Context, data model.Exam) error {
 
 	return nil
 }
-
 func (s *examService) GetById(ctx context.Context, id int) (*model.Exam, error) {
 	data, err := s.repo.GetById(ctx, id)
 	if err != nil {

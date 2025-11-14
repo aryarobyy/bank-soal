@@ -9,11 +9,11 @@ type User struct {
 	Nip          *string   `json:"nip,omitempty" gorm:"unique"`
 	Nidn         *string   `json:"nidn,omitempty" gorm:"unique"`
 	ImgUrl       string    `json:"img_url,omitempty"`
-	Email        string    `json:"email" gorm:"unique" validate:"required,email"`
+	Email        string    `json:"email,omitempty" gorm:"unique;default:null"`
 	Password     string    `json:"password" validate:"required,min=6"`
 	Role         Role      `json:"role" validate:"oneof=admin user super_admin lecturer"`
 	Major        string    `json:"major,omitempty"`
-	AcademicYear int       `json:"academic_year,omitempty" validate:"numeric,len=4"`
+	AcademicYear string    `json:"academic_year,omitempty" validate:"len=4"`
 	Faculty      string    `json:"faculty,omitempty"`
 	Status       Status    `json:"status" validate:"oneof=passed not_passed"`
 	CreatedAt    time.Time `json:"created_at"`
@@ -26,15 +26,16 @@ type LoginCredential struct {
 }
 
 type RegisterCredential struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6"`
-	Name     string `json:"name" validate:"required"`
-	Nim      string `json:"nim,omitempty"`
-	Nip      string `json:"nip,omitempty"`
-	Nidn     string `json:"nidn,omitempty"`
-	Major    string `json:"major" validate:"required"`
-	Faculty  string `json:"faculty" validate:"required"`
-	Role     string `json:"role" gorm:"default:user"`
+	Email        string `json:"email,omitempty" gorm:"unique;default:null"`
+	Password     string `json:"password" validate:"required,min=6"`
+	Name         string `json:"name" validate:"required"`
+	Nim          string `json:"nim,omitempty"`
+	Nip          string `json:"nip,omitempty"`
+	Nidn         string `json:"nidn,omitempty"`
+	Major        string `json:"major" validate:"required" gorm:"default:informatika"`
+	Faculty      string `json:"faculty" validate:"required" gorm:"default:teknik"`
+	Role         string `json:"role" gorm:"default:user"`
+	AcademicYear string `json:"academic_year,omitempty" validate:"len=4"`
 }
 
 type ChangePasswordCredential struct {
@@ -43,4 +44,18 @@ type ChangePasswordCredential struct {
 
 type ChangeRoleCredential struct {
 	Role Role `json:"role" binding:"required"`
+}
+
+type BulkUserCredential struct {
+	Nim          string `json:"nim"`
+	Password     string `json:"password"`
+	Role         string `json:"role"`
+	Major        string `json:"major"`
+	Faculty      string `json:"faculty"`
+	AcademicYear string `json:"academic_year"`
+}
+
+type BulkUserOutput struct {
+	Nim      string `json:"nim"`
+	Password string `json:"password"`
 }

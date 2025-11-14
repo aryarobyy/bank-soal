@@ -15,6 +15,7 @@ type ExamRepository interface {
 	Delete(ctx context.Context, id int) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, int64, error)
 	StartSession(ctx context.Context, id int) (*model.Exam, error)
+	UpdateScore(ctx context.Context, examId int, score int) error
 }
 
 type examRepository struct {
@@ -115,9 +116,10 @@ func (r *examRepository) GetMany(ctx context.Context, limit int, offset int) ([]
 	}
 
 	if err := r.db.WithContext(ctx).
-		Find(&e).
+		Model(&model.Exam{}).
 		Limit(limit).
 		Offset(offset).
+		Find(&e).
 		Error; err != nil {
 		return nil, 0, err
 	}
@@ -132,4 +134,15 @@ func (r *examRepository) StartSession(ctx context.Context, id int) (*model.Exam,
 		return nil, fmt.Errorf("failed to load exam with questions: %w", err)
 	}
 	return &exam, nil
+}
+
+func (r *examRepository) UpdateScore(ctx context.Context, examId int, score int) error {
+	if err := r.db.WithContext(ctx).
+		Model(&model.Exam{}).
+		Where("id = ?", examId).
+		Update("score", score).
+		Error; err != nil {
+		return fmt.Errorf("failed to update exam: %w", err)
+	}
+	return nil
 }

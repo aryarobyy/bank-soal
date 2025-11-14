@@ -14,7 +14,7 @@ type ExamSessionRepository interface {
 	GetById(ctx context.Context, id int) (*model.ExamSession, error)
 	Update(ctx context.Context, id int, e model.UpdateExamSession) (*model.ExamSession, error)
 	Delete(ctx context.Context, id int) error
-	GetMany(ctx context.Context, userId int, limit int, offset int) ([]model.ExamSession, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.ExamSession, error)
 	UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error)
 	FinishExam(ctx context.Context, id int, e model.FinishExam) (*model.ExamSession, error)
 	CheckUserSession(ctx context.Context, userId int, examId int) error
@@ -41,6 +41,7 @@ func (r *examSessionRepository) Create(ctx context.Context, e model.ExamSession)
 func (r *examSessionRepository) GetById(ctx context.Context, id int) (*model.ExamSession, error) {
 	e := model.ExamSession{}
 	if err := r.db.WithContext(ctx).
+		Preload("UserAnswers").
 		First(&e, id).
 		Error; err != nil {
 		return nil, err
@@ -69,7 +70,7 @@ func (r *examSessionRepository) Update(ctx context.Context, id int, e model.Upda
 	if e.CurrentNo != 0 {
 		updateData["current_no"] = e.CurrentNo
 	}
-	if e.Score != nil {
+	if e.Score != 0 {
 		updateData["score"] = e.Score
 	}
 
@@ -105,13 +106,13 @@ func (r *examSessionRepository) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (r *examSessionRepository) GetMany(ctx context.Context, userId int, limit int, offset int) ([]model.ExamSession, error) {
+func (r *examSessionRepository) GetMany(ctx context.Context, limit int, offset int) ([]model.ExamSession, error) {
 	var sessions []model.ExamSession
 	if err := r.db.WithContext(ctx).
-		Where("user_id = ?", userId).
 		Limit(limit).
 		Offset(offset).
-		Find(&sessions).Error; err != nil {
+		Find(&sessions).
+		Error; err != nil {
 		return nil, err
 	}
 	return sessions, nil
@@ -119,13 +120,13 @@ func (r *examSessionRepository) GetMany(ctx context.Context, userId int, limit i
 
 func (r *examSessionRepository) UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error) {
 	if no.CurrentNo <= 0 {
-		return nil, fmt.Errorf("invalid current number")
+		return nil, fmt.Errorf("invalid: no cant be 0")
 	}
 
 	if err := r.db.WithContext(ctx).
 		Model(&model.ExamSession{}).
 		Where("id = ?", id).
-		Update("current_no = ?", no.CurrentNo).Error; err != nil {
+		Update("current_no", no.CurrentNo).Error; err != nil {
 		return nil, err
 	}
 
@@ -140,14 +141,11 @@ func (r *examSessionRepository) UpdateCurrNo(ctx context.Context, id int, no mod
 }
 
 func (r *examSessionRepository) FinishExam(ctx context.Context, id int, e model.FinishExam) (*model.ExamSession, error) {
-	if *e.Score == 0.0 {
-		return nil, fmt.Errorf("invalid status")
-	}
-
 	if err := r.db.WithContext(ctx).
 		Model(&model.ExamSession{}).
 		Where("id = ?", id).
-		Update("score", e.Score).Error; err != nil {
+		Updates(&e).
+		Error; err != nil {
 		return nil, err
 	}
 

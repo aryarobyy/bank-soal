@@ -58,6 +58,10 @@ func (s *examQuestionService) AddQuestionToExam(ctx context.Context, examId int,
 		return fmt.Errorf("failed to add questions to exam: %w", err)
 	}
 
+	if err := s.updateExamScore(ctx, examId); err != nil {
+		return fmt.Errorf("failed to update exam score: %w", err)
+	}
+
 	return nil
 }
 
@@ -82,6 +86,10 @@ func (s *examQuestionService) UpdateQuestionsInExam(ctx context.Context, examId 
 		return fmt.Errorf("failed to update questions in exam: %w", err)
 	}
 
+	if err := s.updateExamScore(ctx, examId); err != nil {
+		return fmt.Errorf("failed to update exam score: %w", err)
+	}
+
 	return nil
 }
 
@@ -95,6 +103,32 @@ func (s *examQuestionService) RemoveQuestionsFromExam(ctx context.Context, examI
 
 	if err := s.repo.RemoveQuestionsFromExam(ctx, examId, questionIds); err != nil {
 		return fmt.Errorf("failed to remove questions from exam: %w", err)
+	}
+
+	if err := s.updateExamScore(ctx, examId); err != nil {
+		return fmt.Errorf("failed to update exam score: %w", err)
+	}
+
+	return nil
+}
+
+func (s *examQuestionService) updateExamScore(ctx context.Context, examId int) error {
+	examQuestions, err := s.repo.GetByExamId(ctx, examId)
+	if err != nil {
+		return fmt.Errorf("failed to get exam questions: %w", err)
+	}
+
+	totalScore := 0
+	for _, eq := range examQuestions {
+		question, err := s.questRepo.GetById(ctx, eq.QuestionId)
+		if err != nil {
+			return fmt.Errorf("failed to get question %d: %w", eq.QuestionId, err)
+		}
+		totalScore += question.Score
+	}
+
+	if err := s.examRepo.UpdateScore(ctx, examId, totalScore); err != nil {
+		return fmt.Errorf("failed to update exam score: %w", err)
 	}
 
 	return nil

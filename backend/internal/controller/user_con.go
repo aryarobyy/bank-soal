@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"latih.in-be/internal/model"
@@ -11,14 +12,20 @@ import (
 )
 
 type UserController struct {
-	service service.UserService
+	service        service.UserService
+	xlsPathService service.XlsPathService
 }
 
-func NewUserController(s service.UserService) *UserController {
-	return &UserController{service: s}
+func NewUserController(s service.UserService, x service.XlsPathService) *UserController {
+	return &UserController{
+		service:        s,
+		xlsPathService: x,
+	}
 }
 
 func (h *UserController) Register(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var user model.RegisterCredential
 	if err := c.ShouldBindJSON(&user); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
@@ -41,7 +48,7 @@ func (h *UserController) Register(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.Register(c.Request.Context(), user); err != nil {
+	if err := h.service.Register(ctx, user); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -50,6 +57,8 @@ func (h *UserController) Register(c *gin.Context) {
 }
 
 func (h *UserController) Login(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var cred model.LoginCredential
 	if err := c.ShouldBindJSON(&cred); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
@@ -61,7 +70,7 @@ func (h *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	user, accessToken, refreshToken, err := h.service.Login(c.Request.Context(), cred)
+	user, accessToken, refreshToken, err := h.service.Login(ctx, cred)
 	if err != nil {
 		helper.Error(c, http.StatusUnauthorized, err.Error())
 		return
@@ -76,6 +85,8 @@ func (h *UserController) Login(c *gin.Context) {
 }
 
 func (h *UserController) GetById(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -83,7 +94,7 @@ func (h *UserController) GetById(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.GetById(c.Request.Context(), id)
+	user, err := h.service.GetById(ctx, id)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -93,6 +104,8 @@ func (h *UserController) GetById(c *gin.Context) {
 }
 
 func (h *UserController) GetByEmail(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	email := c.Query("email")
 	if email == "" {
 		helper.Error(c, http.StatusBadRequest, "invalid user email")
@@ -108,7 +121,7 @@ func (h *UserController) GetByEmail(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.GetByEmail(c.Request.Context(), email)
+	user, err := h.service.GetByEmail(ctx, email)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -118,6 +131,8 @@ func (h *UserController) GetByEmail(c *gin.Context) {
 }
 
 func (h *UserController) Update(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -148,25 +163,18 @@ func (h *UserController) Update(c *gin.Context) {
 	}
 
 	user := model.User{
-		Name:    c.PostForm("name"),
-		Email:   email,
-		Nim:     nimPtr,
-		Nip:     nipPtr,
-		Nidn:    nidnPtr,
-		Major:   c.PostForm("major"),
-		Faculty: c.PostForm("faculty"),
-		Status:  model.Status(c.PostForm("status")),
+		Name:         c.PostForm("name"),
+		Email:        email,
+		Nim:          nimPtr,
+		Nip:          nipPtr,
+		Nidn:         nidnPtr,
+		Role:         model.Role(c.PostForm("role")),
+		Major:        c.PostForm("major"),
+		Faculty:      c.PostForm("faculty"),
+		Status:       model.Status(c.PostForm("status")),
+		AcademicYear: c.PostForm("academic_year"),
 	}
 
-	academicYearStr := c.PostForm("academic_year")
-	if academicYearStr != "" {
-		academicYear, err := strconv.Atoi(academicYearStr)
-		if err != nil {
-			helper.Error(c, http.StatusBadRequest, "invalid academic_year")
-			return
-		}
-		user.AcademicYear = academicYear
-	}
 	file, _ := c.FormFile("image")
 	if file != nil {
 		imageUrl, err := helper.UploadImage(c, id)
@@ -176,7 +184,7 @@ func (h *UserController) Update(c *gin.Context) {
 		}
 		user.ImgUrl = imageUrl
 	}
-	updatedUser, err := h.service.Update(c.Request.Context(), user, id)
+	updatedUser, err := h.service.Update(ctx, user, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -185,6 +193,8 @@ func (h *UserController) Update(c *gin.Context) {
 }
 
 func (h *UserController) Delete(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -192,7 +202,7 @@ func (h *UserController) Delete(c *gin.Context) {
 		return
 	}
 
-	err = h.service.Delete(c.Request.Context(), id)
+	err = h.service.Delete(ctx, id)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -202,12 +212,14 @@ func (h *UserController) Delete(c *gin.Context) {
 }
 
 func (h *UserController) GetMany(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid limit")
 		return
 	}
-	users, total, err := h.service.GetMany(c, limit, offset)
+	users, total, err := h.service.GetMany(ctx, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -217,12 +229,14 @@ func (h *UserController) GetMany(c *gin.Context) {
 }
 
 func (h *UserController) GetByNim(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	nim := c.Query("nim")
-	user, err := h.service.GetByNim(c, nim)
 	if len(nim) >= 10 {
 		helper.Error(c, http.StatusBadRequest, "invalid nim")
 		return
 	}
+	user, err := h.service.GetByNim(ctx, nim)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -232,6 +246,8 @@ func (h *UserController) GetByNim(c *gin.Context) {
 }
 
 func (h *UserController) GetByName(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid limit")
@@ -239,7 +255,7 @@ func (h *UserController) GetByName(c *gin.Context) {
 	}
 
 	name := c.Query("name")
-	users, total, err := h.service.GetByName(c, name, limit, offset)
+	users, total, err := h.service.GetByName(ctx, name, limit, offset)
 	if len(name) > 256 {
 		helper.Error(c, http.StatusBadRequest, "invalid name")
 		return
@@ -253,6 +269,8 @@ func (h *UserController) GetByName(c *gin.Context) {
 }
 
 func (h *UserController) GetByRole(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid limit")
@@ -260,7 +278,7 @@ func (h *UserController) GetByRole(c *gin.Context) {
 	}
 
 	role := c.Query("role")
-	users, total, err := h.service.GetByRole(c, role, limit, offset)
+	users, total, err := h.service.GetByRole(ctx, role, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -270,6 +288,8 @@ func (h *UserController) GetByRole(c *gin.Context) {
 }
 
 func (h *UserController) ChangePassword(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -283,7 +303,7 @@ func (h *UserController) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ChangePassword(c.Request.Context(), id, req.NewPassword); err != nil {
+	if err := h.service.ChangePassword(ctx, id, req.NewPassword); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -292,6 +312,8 @@ func (h *UserController) ChangePassword(c *gin.Context) {
 }
 
 func (h *UserController) ChangeRole(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -305,7 +327,7 @@ func (h *UserController) ChangeRole(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.GetById(c, id)
+	user, err := h.service.GetById(ctx, id)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, "user not found")
 		return
@@ -336,7 +358,7 @@ func (h *UserController) ChangeRole(c *gin.Context) {
 
 	roleValue := model.Role(roleStr)
 
-	if err := h.service.ChangeRole(c, id, user.Role, roleValue); err != nil {
+	if err := h.service.ChangeRole(ctx, id, user.Role, roleValue); err != nil {
 		helper.Error(c, http.StatusInternalServerError, "failed to update user role")
 		return
 	}
@@ -345,17 +367,86 @@ func (h *UserController) ChangeRole(c *gin.Context) {
 }
 
 func (h *UserController) RefreshToken(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	refreshToken, err := c.Cookie("refresh_token")
 	if err != nil || refreshToken == "" {
 		helper.Error(c, http.StatusUnauthorized, "missing refresh token")
 		return
 	}
 
-	newAccessToken, err := h.service.RefreshToken(c, refreshToken)
+	newAccessToken, err := h.service.RefreshToken(ctx, refreshToken)
 	if err != nil {
 		helper.Error(c, http.StatusUnauthorized, err.Error())
 		return
 	}
 
 	helper.Success(c, newAccessToken, "token refreshed")
+}
+
+func (h *UserController) BulkInsert(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var batchUser model.BulkUserCredential
+
+	if err := c.ShouldBindJSON(&batchUser); err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid input body")
+		return
+	}
+
+	year := strings.TrimSpace(batchUser.AcademicYear)
+
+	if len(year) < 2 {
+		helper.Error(c, http.StatusBadRequest, "academic year must be at least 2 characters")
+		return
+	}
+
+	if len(year) != 4 {
+		helper.Error(c, http.StatusBadRequest, "academic year must be 4 digits, e.g. 2025")
+		return
+	}
+
+	prefix := year[len(year)-2:]
+
+	startStr := c.Query("start")
+	endStr := c.Query("end")
+
+	startInt, err := strconv.Atoi(startStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid start")
+		return
+	}
+
+	endInt, err := strconv.Atoi(endStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid end")
+		return
+	}
+
+	users, err := h.service.BulkInsert(ctx, batchUser, prefix, startInt, endInt)
+	if err != nil {
+		helper.Error(c, 500, err.Error())
+		return
+	}
+
+	storageDir := "./storages/files"
+	filename, filepath, err := h.xlsPathService.ExportUsersToExcel(users, storageDir)
+	if err != nil {
+		helper.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err := h.xlsPathService.SaveXlsPath(c, filepath); err != nil {
+		helper.Error(c, http.StatusInternalServerError, "failed to save xls path")
+		return
+	}
+
+	response := map[string]interface{}{
+		"file":     filename,
+		"filepath": filepath,
+		"message":  "users created and xls file saved",
+		"users":    users,
+	}
+
+	helper.Success(c, response, "users created and xls file saved")
 }

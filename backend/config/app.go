@@ -26,6 +26,9 @@ type Controllers struct {
 	ExamScore    *controller.ExamScoreController
 	ExamSession  *controller.ExamSessionController
 	ExamQuestion *controller.ExamQuestionController
+	Subject      *controller.SubjectController
+	XlsPath      *controller.XlsPathController
+	UserAnswer   *controller.UserAnswerController
 }
 
 func NewApp(db *gorm.DB) *App {
@@ -54,25 +57,34 @@ func NewApp(db *gorm.DB) *App {
 	examScoreRepo := repository.NewExamScoreRepository(db)
 	examSessionRepo := repository.NewExamSessionRepository(db)
 	examQuestionRepo := repository.NewExamQuestionRepository(db)
+	subjectRepo := repository.NewSubjectRepository(db)
+	xlsPathRepo := repository.NewXlsPathRepository(db)
+	userAnswerRepo := repository.NewUserAnswerRepository(db)
 
 	// ✅ Services
 	userService := service.NewUserService(userRepo)
-	examService := service.NewExamService(examRepo, userRepo)
+	examService := service.NewExamService(examRepo, userRepo, questionRepo)
 	questionService := service.NewQuestionService(questionRepo, userRepo, optionRepo)
 	optionService := service.NewOptionService(optionRepo)
 	examScoreService := service.NewExamScoreService(examScoreRepo)
-	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo)
+	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo, userAnswerRepo, questionRepo, examQuestionRepo)
 	examQuestionService := service.NewExamQuestionService(examQuestionRepo, questionRepo, examRepo)
+	subjectService := service.NewSubjectService(subjectRepo)
+	xlsPathService := service.NewXlsPathService(xlsPathRepo)
+	userAnswerService := service.NewUserAnswerService(userAnswerRepo, optionRepo)
 
 	// ✅ Controllers
 	controllers := &Controllers{
-		User:         controller.NewUserController(userService),
+		User:         controller.NewUserController(userService, xlsPathService),
 		Exam:         controller.NewExamController(examService),
 		Question:     controller.NewQuestionController(questionService),
 		Option:       controller.NewOptionController(optionService),
 		ExamScore:    controller.NewExamScoreController(examScoreService),
 		ExamSession:  controller.NewExamSessionController(examSessionService),
 		ExamQuestion: controller.NewExamQuestionController(examQuestionService),
+		Subject:      controller.NewSubjectController(subjectService),
+		XlsPath:      controller.NewXlsPathController(xlsPathService),
+		UserAnswer:   controller.NewUserAnswerController(userAnswerService),
 	}
 
 	// ✅ Rate limiter (setelah CORS)
@@ -93,6 +105,7 @@ func NewApp(db *gorm.DB) *App {
 
 func setupRoutes(r *gin.Engine, ctrl *Controllers) {
 	r.Static("/storages/images", "./storages/images")
+	r.Static("/storages/files", "./storages/files")
 	route.UserRoutes(r, ctrl.User)
 	route.ExamRoutes(r, ctrl.Exam)
 	route.QuestionRoutes(r, ctrl.Question)
@@ -100,6 +113,9 @@ func setupRoutes(r *gin.Engine, ctrl *Controllers) {
 	route.ExamScoreRoutes(r, ctrl.ExamScore)
 	route.ExamSessionRoutes(r, ctrl.ExamSession)
 	route.ExamQuestionRoutes(r, ctrl.ExamQuestion)
+	route.SubjectRoutes(r, ctrl.Subject)
+	route.XlsPathRoutes(r, ctrl.XlsPath)
+	route.UserAnswerRoutes(r, ctrl.UserAnswer)
 }
 
 func (a *App) Run(addr string) error {
