@@ -357,8 +357,8 @@ func (s *userService) BulkInsert(ctx context.Context, batchUser model.BulkUserCr
 			Nim:          &nim,
 			Password:     string(hashed),
 			Role:         model.RoleUser,
-			Major:        batchUser.Major,
-			Faculty:      batchUser.Faculty,
+			Major:        "Informatika",
+			Faculty:      "Teknik",
 			AcademicYear: batchUser.AcademicYear,
 		})
 
