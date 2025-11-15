@@ -31,17 +31,6 @@ func (h *UserController) Register(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	rules := map[string]int{
-		"name":    256,
-		"email":   512,
-		"faculty": 128,
-		"major":   256,
-	}
-
-	if err := helper.ValidateFieldLengths(user, rules); err != nil {
-		helper.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
 
 	if !helper.IsValidEmail(user.Email) {
 		helper.Error(c, http.StatusBadRequest, "wrong email format")
@@ -62,11 +51,6 @@ func (h *UserController) Login(c *gin.Context) {
 	var cred model.LoginCredential
 	if err := c.ShouldBindJSON(&cred); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	if !helper.IsValidEmail(cred.Email) {
-		helper.Error(c, http.StatusBadRequest, "wrong email format")
 		return
 	}
 
@@ -237,6 +221,40 @@ func (h *UserController) GetByNim(c *gin.Context) {
 		return
 	}
 	user, err := h.service.GetByNim(ctx, nim)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	helper.Success(c, user, "user found")
+}
+
+func (h *UserController) GetByNidn(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	nidn := c.Query("nidn")
+	if len(nidn) >= 11 {
+		helper.Error(c, http.StatusBadRequest, "invalid nidn")
+		return
+	}
+	user, err := h.service.GetByNidn(ctx, nidn)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	helper.Success(c, user, "user found")
+}
+
+func (h *UserController) GetByUsn(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	username := c.Query("username")
+	if len(username) >= 10 {
+		helper.Error(c, http.StatusBadRequest, "invalid username")
+		return
+	}
+	user, err := h.service.GetByUsn(ctx, username)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return

@@ -21,6 +21,8 @@ type UserService interface {
 	Delete(ctx context.Context, id int) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
 	GetByNim(ctx context.Context, nim string) (*model.User, error)
+	GetByUsn(ctx context.Context, username string) (*model.User, error)
+	GetByNidn(ctx context.Context, nidn string) (*model.User, error)
 	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error)
 	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, int64, error)
 	ChangePassword(ctx context.Context, id int, newPassword string) error
@@ -55,21 +57,32 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 		return fmt.Errorf("email %s already used", data.Email)
 	}
 
+	rules := map[string]int{
+		"name":    256,
+		"email":   512,
+		"faculty": 128,
+		"major":   256,
+	}
+
+	if err := helper.ValidateFieldLengths(data, rules); err != nil {
+		return fmt.Errorf(err.Error())
+	}
+
 	switch data.Role {
-	case "lecturer":
+	case string(model.RoleLecturer):
 		if data.Nip == "" || data.Nidn == "" {
 			return fmt.Errorf("lecturer must have both NIP and NIDN")
 		}
-	case "user":
+	case string(model.RoleUser):
 		if data.Nim == "" {
 			return fmt.Errorf("user must have NIM")
 		}
-	case "admin":
+	case string(model.RoleAdmin):
 	default:
 		return fmt.Errorf("invalid role: %s", data.Role)
 	}
 
-	var nimPtr, nipPtr, nidnPtr *string
+	var nimPtr, nipPtr, nidnPtr, academicYearPtr, usernamePtr *string
 
 	if data.Nim != "" {
 		nimPtr = &data.Nim
@@ -80,17 +93,38 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 	if data.Nidn != "" {
 		nidnPtr = &data.Nidn
 	}
+	if data.Username != "" {
+		usernamePtr = &data.Username
+	}
+	if data.Role == string(model.RoleAdmin) {
+		academicYearPtr = &data.AcademicYear
+	}
+
+	if data.Role == string(model.RoleLecturer) || data.Role == string(model.RoleAdmin) {
+		academicYearPtr = nil
+	}
+
+	if data.Role == string(model.RoleLecturer) || data.Role == string(model.RoleUser) {
+		usernamePtr = nil
+	}
+
+	var academicYearVal string
+	if academicYearPtr != nil {
+		academicYearVal = *academicYearPtr
+	}
 
 	userData := model.User{
-		Name:     data.Name,
-		Email:    data.Email,
-		Password: string(hashedPassword),
-		Major:    data.Major,
-		Faculty:  data.Faculty,
-		Nim:      nimPtr,
-		Nip:      nipPtr,
-		Nidn:     nidnPtr,
-		Role:     model.Role(data.Role),
+		Name:         data.Name,
+		Email:        data.Email,
+		Password:     string(hashedPassword),
+		Major:        data.Major,
+		Faculty:      data.Faculty,
+		AcademicYear: academicYearVal,
+		Nim:          nimPtr,
+		Nip:          nipPtr,
+		Username:     usernamePtr,
+		Nidn:         nidnPtr,
+		Role:         model.Role(data.Role),
 	}
 
 	_, err = s.repo.Register(ctx, userData)
@@ -102,9 +136,34 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 }
 
 func (s *userService) Login(ctx context.Context, cred model.LoginCredential) (*model.User, string, string, error) {
-	data, err := s.repo.GetByEmail(ctx, cred.Email)
+	loginId := cred.LoginId
+
+	loginType := helper.DetectLoginType(loginId)
+
+	var (
+		data *model.User
+		err  error
+	)
+
+	rules := map[string]int{
+		"login_id": 256,
+	}
+
+	if err := helper.ValidateFieldLengths(data, rules); err != nil {
+		return nil, "", "", err
+	}
+
+	switch loginType {
+	case "nidn":
+		data, err = s.repo.GetByNidn(ctx, loginId)
+	case "nim":
+		data, err = s.repo.GetByNim(ctx, loginId)
+	default:
+		data, err = s.repo.GetByUsn(ctx, loginId)
+	}
+
 	if err != nil {
-		return nil, "", "", fmt.Errorf("user with email %s not found", cred.Email)
+		return nil, "", "", fmt.Errorf("user not found")
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(data.Password), []byte(cred.Password)) != nil {
@@ -149,6 +208,19 @@ func (s *userService) Update(ctx context.Context, data model.User, id int) (*mod
 	effectiveRole := data.Role
 	if effectiveRole == "" {
 		effectiveRole = oldUser.Role
+	}
+
+	var academicYearPtr *string
+	if effectiveRole == model.RoleAdmin {
+		academicYearPtr = &data.AcademicYear
+	} else {
+		academicYearPtr = nil
+	}
+
+	if academicYearPtr != nil {
+		data.AcademicYear = *academicYearPtr
+	} else {
+		data.AcademicYear = ""
 	}
 
 	roleChanged := effectiveRole != oldUser.Role
@@ -244,6 +316,32 @@ func (s *userService) GetByNim(ctx context.Context, nim string) (*model.User, er
 	data, err := s.repo.GetByNim(ctx, nim)
 	if err != nil {
 		return nil, fmt.Errorf("user with nim %q not found: %w", nim, err)
+	}
+
+	return data, nil
+}
+
+func (s *userService) GetByNidn(ctx context.Context, nidn string) (*model.User, error) {
+	if len(nidn) > 10 {
+		return nil, fmt.Errorf("nidn cannot be more than 9 characters: %s", nidn)
+	}
+
+	data, err := s.repo.GetByNidn(ctx, nidn)
+	if err != nil {
+		return nil, fmt.Errorf("user with nidn %q not found: %w", nidn, err)
+	}
+
+	return data, nil
+}
+
+func (s *userService) GetByUsn(ctx context.Context, username string) (*model.User, error) {
+	if len(username) > 256 {
+		return nil, fmt.Errorf("username cannot be more than 9 characters: %s", username)
+	}
+
+	data, err := s.repo.GetByUsn(ctx, username)
+	if err != nil {
+		return nil, fmt.Errorf("user with username %q not found: %w", username, err)
 	}
 
 	return data, nil

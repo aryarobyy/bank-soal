@@ -16,6 +16,8 @@ type UserRepository interface {
 	Delete(ctx context.Context, id int) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
 	GetByNim(ctx context.Context, nim string) (*model.User, error)
+	GetByNidn(ctx context.Context, nidn string) (*model.User, error)
+	GetByUsn(ctx context.Context, username string) (*model.User, error)
 	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error)
 	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, int64, error)
 	ChangePassword(ctx context.Context, id int, password string) error
@@ -180,6 +182,32 @@ func (r *userRepository) GetByNim(ctx context.Context, nim string) (*model.User,
 		WithContext(ctx).
 		Model(model.User{}).
 		Where("nim = ?", nim).
+		First(&user).
+		Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) GetByNidn(ctx context.Context, nidn string) (*model.User, error) {
+	user := model.User{}
+	if err := r.db.
+		WithContext(ctx).
+		Model(model.User{}).
+		Where("nidn = ?", nidn).
+		First(&user).
+		Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) GetByUsn(ctx context.Context, username string) (*model.User, error) {
+	user := model.User{}
+	if err := r.db.
+		WithContext(ctx).
+		Model(model.User{}).
+		Where("username = ?", username).
 		First(&user).
 		Error; err != nil {
 		return nil, err
