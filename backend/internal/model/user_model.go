@@ -8,6 +8,7 @@ type User struct {
 	Nim          *string   `json:"nim,omitempty" gorm:"unique"`
 	Nip          *string   `json:"nip,omitempty" gorm:"unique"`
 	Nidn         *string   `json:"nidn,omitempty" gorm:"unique"`
+	Username     *string   `json:"username,omitempty" gorm:"unique"`
 	ImgUrl       string    `json:"img_url,omitempty"`
 	Email        string    `json:"email,omitempty" gorm:"unique;default:null"`
 	Password     string    `json:"password" validate:"required,min=6"`
@@ -21,7 +22,7 @@ type User struct {
 }
 
 type LoginCredential struct {
-	Email    string `json:"email" validate:"required,email"`
+	LoginId  string `json:"login_id"`
 	Password string `json:"password" validate:"required,min=6"`
 }
 
@@ -32,10 +33,11 @@ type RegisterCredential struct {
 	Nim          string `json:"nim,omitempty"`
 	Nip          string `json:"nip,omitempty"`
 	Nidn         string `json:"nidn,omitempty"`
+	Username     string `json:"username,omitempty"`
 	Major        string `json:"major" validate:"required" gorm:"default:informatika"`
 	Faculty      string `json:"faculty" validate:"required" gorm:"default:teknik"`
-	Role         string `json:"role" gorm:"default:user"`
-	AcademicYear string `json:"academic_year,omitempty" validate:"len=4"`
+	Role         Role   `json:"role" gorm:"default:user"`
+	AcademicYear string `json:"academic_year,omitempty" validate:"omitempty,len=4"`
 }
 
 type ChangePasswordCredential struct {

@@ -11,7 +11,7 @@ func UserRoutes(r *gin.Engine, user *controller.UserController) {
 	routes := r.Group("/user")
 	{
 		routes.POST("/register", middleware.InputValidate([]string{"name", "password", "major", "faculty"}), user.Register)
-		routes.POST("/login", middleware.InputValidate([]string{"email", "password"}), user.Login)
+		routes.POST("/login", middleware.InputValidate([]string{"login_id", "password"}), user.Login)
 
 		routes.POST("/refresh", user.RefreshToken)
 		routes.GET("/id", user.GetById)
@@ -21,11 +21,13 @@ func UserRoutes(r *gin.Engine, user *controller.UserController) {
 		{
 			usersAuth.GET("/email", user.GetByEmail)
 			usersAuth.GET("/nim", user.GetByNim)
+			usersAuth.GET("/nidn", user.GetByNidn)
+			usersAuth.GET("/username", user.GetByUsn)
 			usersAuth.GET("/name", user.GetByName)
 			usersAuth.GET("/role", user.GetByRole)
 			usersAuth.GET("/", user.GetMany)
 			usersAuth.PUT("/:id", user.Update)
-			usersAuth.PUT("/password", middleware.RoleGuard(model.RoleAdmin), middleware.InputValidate([]string{"new_password"}), user.ChangePassword)
+			usersAuth.PUT("/password", middleware.RoleGuard(model.RoleAdmin, model.RoleSuperAdmin), middleware.InputValidate([]string{"new_password"}), user.ChangePassword)
 			usersAuth.DELETE("/:id", user.Delete)
 			usersAuth.PUT("/role", middleware.RoleGuard(model.RoleAdmin, model.RoleSuperAdmin), middleware.InputValidate([]string{"role"}), user.ChangeRole)
 			usersAuth.POST("/generate", middleware.RoleGuard(model.RoleAdmin), middleware.InputValidate([]string{"academic_year"}), user.BulkInsert)

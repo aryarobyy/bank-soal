@@ -15,6 +15,7 @@ func XlsPathRoutes(r *gin.Engine, xlspath *controller.XlsPathController) {
 		{
 			auth.GET("/", middleware.RoleGuard(model.RoleAdmin), xlspath.GetMany)
 			auth.GET("/id", middleware.RoleGuard(model.RoleAdmin), xlspath.GetById)
+			auth.GET("/download", middleware.RoleGuard(model.RoleAdmin), xlspath.Download)
 			auth.DELETE("/", middleware.RoleGuard(model.RoleAdmin), xlspath.Delete)
 		}
 	}

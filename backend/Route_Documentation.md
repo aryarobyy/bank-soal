@@ -24,7 +24,7 @@ Route untuk mengelola data pengguna dalam sistem.
 - **Akses**: Umum (tidak memerlukan otentikasi)
 - **Parameter Request (JSON)**:
   - `name` (string, wajib): Nama pengguna
-  - `email` (string, wajib): Email pengguna
+  - `email` (string, opsional): Email pengguna
   - `password` (string, wajib): Password pengguna
   - `major` (string, wajib): Jurusan pengguna
   - `faculty` (string, wajib): Fakultas pengguna
@@ -33,7 +33,7 @@ Route untuk mengelola data pengguna dalam sistem.
 ```json
 {
   "name": "John Doe",
-  "email": "john@example.com",
+  "email": "john@example.com", //kosongin jg gpp
   "password": "password123",
   "major": "Informatika",
   "faculty": "Ilmu Komputer"
@@ -45,13 +45,13 @@ Route untuk mengelola data pengguna dalam sistem.
 - **Metode HTTP**: POST
 - **Akses**: Umum (tidak memerlukan otentikasi)
 - **Parameter Request (JSON)**:
-  - `email` (string, wajib): Email pengguna
+  - `login_id` (string, wajib): Username/nidn/nim pengguna
   - `password` (string, wajib): Password pengguna
-- **Validasi**: Email harus dalam format yang valid
+- **Validasi**: nim/nidn harus sesuai format
 - **Contoh Request**:
 ```json
 {
-  "email": "john@example.com",
+  "login_id": "G1A0YYXXX",
   "password": "password123"
 }
 ```

@@ -17,7 +17,7 @@ type ExamSessionService interface {
 	Delete(ctx context.Context, id int) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.ExamSession, error)
 	UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error)
-	FinishExam(ctx context.Context, userId int, id int) (*model.ExamSession, error)
+	FinishExam(ctx context.Context, userId int, id int) (*model.FinishExamOutput, error)
 }
 
 type examSessionService struct {
@@ -74,6 +74,11 @@ func (s *examSessionService) GetById(ctx context.Context, id int) (*model.ExamSe
 		}
 		return nil, fmt.Errorf("failed to get session: %w", err)
 	}
+
+	if data.FinishedAt.Before(time.Now()) {
+		return nil, fmt.Errorf("session %d already finished", id)
+	}
+
 	return data, nil
 }
 
@@ -108,7 +113,7 @@ func (s *examSessionService) UpdateCurrNo(ctx context.Context, id int, no model.
 	return updated, nil
 }
 
-func (s *examSessionService) FinishExam(ctx context.Context, userId int, id int) (*model.ExamSession, error) {
+func (s *examSessionService) FinishExam(ctx context.Context, userId int, id int) (*model.FinishExamOutput, error) {
 	session, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find session: %w", err)
