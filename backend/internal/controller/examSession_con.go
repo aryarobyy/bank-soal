@@ -153,19 +153,19 @@ func (h *ExamSessionController) UpdateCurrNo(c *gin.Context) {
 func (h *ExamSessionController) FinishExam(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	idStr := c.Param("id")
+	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid id")
+		helper.Error(c, http.StatusBadRequest, "invalid exam id")
 		return
 	}
 
-	userIdVal, exists := c.Get("user_id")
-	if !exists {
-		helper.Error(c, http.StatusUnauthorized, "user id not found in context %w")
+	userIdStr := c.Query("user_id")
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid user id")
 		return
 	}
-	userId := userIdVal.(int)
 
 	data, err := h.service.FinishExam(ctx, userId, id)
 	if err != nil {
