@@ -19,7 +19,7 @@ type UserRepository interface {
 	GetByNidn(ctx context.Context, nidn string) (*model.User, error)
 	GetByUsn(ctx context.Context, username string) (*model.User, error)
 	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error)
-	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, int64, error)
+	GetByRole(ctx context.Context, role model.Role, limit int, offset int) ([]model.User, int64, error)
 	ChangePassword(ctx context.Context, id int, password string) error
 	ChangeRole(ctx context.Context, id int, role model.Role) error
 	BulkInsert(ctx context.Context, users []model.User) ([]model.User, error)
@@ -242,7 +242,7 @@ func (r *userRepository) GetByName(ctx context.Context, name string, limit int, 
 	return users, total, nil
 }
 
-func (r *userRepository) GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, int64, error) {
+func (r *userRepository) GetByRole(ctx context.Context, role model.Role, limit int, offset int) ([]model.User, int64, error) {
 	var (
 		users []model.User
 		total int64

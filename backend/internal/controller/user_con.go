@@ -37,7 +37,11 @@ func (h *UserController) Register(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.Register(ctx, user); err != nil {
+	currRole, _ := c.Get("role")
+
+	role, _ := currRole.(model.Role)
+
+	if err := h.service.Register(ctx, user, role); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -124,6 +128,18 @@ func (h *UserController) Update(c *gin.Context) {
 		return
 	}
 
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	role, ok := currRole.(model.Role)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
 	email := c.PostForm("email")
 
 	if email != "" && !helper.IsValidEmail(email) {
@@ -168,7 +184,7 @@ func (h *UserController) Update(c *gin.Context) {
 		}
 		user.ImgUrl = imageUrl
 	}
-	updatedUser, err := h.service.Update(ctx, user, id)
+	updatedUser, err := h.service.Update(ctx, user, id, role)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -186,7 +202,19 @@ func (h *UserController) Delete(c *gin.Context) {
 		return
 	}
 
-	err = h.service.Delete(ctx, id)
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	role, ok := currRole.(model.Role)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	err = h.service.Delete(ctx, id, role)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -220,7 +248,20 @@ func (h *UserController) GetByNim(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid nim")
 		return
 	}
-	user, err := h.service.GetByNim(ctx, nim)
+
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	role, ok := currRole.(model.Role)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	user, err := h.service.GetByNim(ctx, nim, role)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -237,7 +278,20 @@ func (h *UserController) GetByNidn(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid nidn")
 		return
 	}
-	user, err := h.service.GetByNidn(ctx, nidn)
+
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	role, ok := currRole.(model.Role)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	user, err := h.service.GetByNidn(ctx, nidn, role)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -254,7 +308,20 @@ func (h *UserController) GetByUsn(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid username")
 		return
 	}
-	user, err := h.service.GetByUsn(ctx, username)
+
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	role, ok := currRole.(model.Role)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	user, err := h.service.GetByUsn(ctx, username, role)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -296,7 +363,20 @@ func (h *UserController) GetByRole(c *gin.Context) {
 	}
 
 	role := c.Query("role")
-	users, total, err := h.service.GetByRole(ctx, role, limit, offset)
+
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	userRole, ok := currRole.(model.Role)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	users, total, err := h.service.GetByRole(ctx, role, limit, offset, userRole)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -321,7 +401,19 @@ func (h *UserController) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ChangePassword(ctx, id, req.NewPassword); err != nil {
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	role, ok := currRole.(model.Role)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	if err := h.service.ChangePassword(ctx, id, req.NewPassword, role); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}

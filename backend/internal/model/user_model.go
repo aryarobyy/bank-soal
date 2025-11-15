@@ -36,8 +36,8 @@ type RegisterCredential struct {
 	Username     string `json:"username,omitempty"`
 	Major        string `json:"major" validate:"required" gorm:"default:informatika"`
 	Faculty      string `json:"faculty" validate:"required" gorm:"default:teknik"`
-	Role         string `json:"role" gorm:"default:user"`
-	AcademicYear string `json:"academic_year,omitempty" validate:"len=4"`
+	Role         Role   `json:"role" gorm:"default:user"`
+	AcademicYear string `json:"academic_year,omitempty" validate:"omitempty,len=4"`
 }
 
 type ChangePasswordCredential struct {

@@ -27,7 +27,7 @@ func UserRoutes(r *gin.Engine, user *controller.UserController) {
 			usersAuth.GET("/role", user.GetByRole)
 			usersAuth.GET("/", user.GetMany)
 			usersAuth.PUT("/:id", user.Update)
-			usersAuth.PUT("/password", middleware.RoleGuard(model.RoleAdmin), middleware.InputValidate([]string{"new_password"}), user.ChangePassword)
+			usersAuth.PUT("/password", middleware.RoleGuard(model.RoleAdmin, model.RoleSuperAdmin), middleware.InputValidate([]string{"new_password"}), user.ChangePassword)
 			usersAuth.DELETE("/:id", user.Delete)
 			usersAuth.PUT("/role", middleware.RoleGuard(model.RoleAdmin, model.RoleSuperAdmin), middleware.InputValidate([]string{"role"}), user.ChangeRole)
 			usersAuth.POST("/generate", middleware.RoleGuard(model.RoleAdmin), middleware.InputValidate([]string{"academic_year"}), user.BulkInsert)
