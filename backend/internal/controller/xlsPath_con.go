@@ -2,7 +2,10 @@ package controller
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"latih.in-be/internal/service"
@@ -69,4 +72,43 @@ func (h *XlsPathController) Delete(c *gin.Context) {
 		return
 	}
 	helper.Success(c, nil, "data deleted")
+}
+
+func (h *XlsPathController) Download(c *gin.Context) {
+	idStr := c.Query("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	record, err := h.service.GetById(c, id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "file metadata not found"})
+		return
+	}
+
+	filePath := record.FilePath
+	cleanPath := filepath.Clean(filePath)
+
+	baseDir := filepath.Clean("./storages/files")
+	absBase, _ := filepath.Abs(baseDir)
+	absPath, _ := filepath.Abs(cleanPath)
+
+	if !strings.HasPrefix(absPath, absBase) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "invalid file path"})
+		return
+	}
+
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "file not found"})
+		return
+	}
+
+	filename := filepath.Base(absPath)
+
+	c.Header("Content-Disposition", "attachment; filename="+filename)
+	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+	c.File(absPath)
 }
