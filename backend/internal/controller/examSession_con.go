@@ -153,21 +153,9 @@ func (h *ExamSessionController) UpdateCurrNo(c *gin.Context) {
 func (h *ExamSessionController) FinishExam(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	idStr := c.Query("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid exam id")
-		return
-	}
+	var req model.FinishExam
 
-	userIdStr := c.Query("user_id")
-	userId, err := strconv.Atoi(userIdStr)
-	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid user id")
-		return
-	}
-
-	data, err := h.service.FinishExam(ctx, userId, id)
+	data, err := h.service.FinishExam(ctx, req.UserId, req.ExamId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
