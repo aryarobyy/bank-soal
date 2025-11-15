@@ -137,7 +137,6 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 
 func (s *userService) Login(ctx context.Context, cred model.LoginCredential) (*model.User, string, string, error) {
 	loginId := cred.LoginId
-
 	loginType := helper.DetectLoginType(loginId)
 
 	var (
@@ -149,7 +148,7 @@ func (s *userService) Login(ctx context.Context, cred model.LoginCredential) (*m
 		"login_id": 256,
 	}
 
-	if err := helper.ValidateFieldLengths(data, rules); err != nil {
+	if err := helper.ValidateFieldLengths(cred, rules); err != nil {
 		return nil, "", "", err
 	}
 
@@ -162,7 +161,7 @@ func (s *userService) Login(ctx context.Context, cred model.LoginCredential) (*m
 		data, err = s.repo.GetByUsn(ctx, loginId)
 	}
 
-	if err != nil {
+	if err != nil || data == nil {
 		return nil, "", "", fmt.Errorf("user not found")
 	}
 
