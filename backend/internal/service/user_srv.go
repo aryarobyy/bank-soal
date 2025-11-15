@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/crypto/bcrypt"
 	"latih.in-be/internal/model"
@@ -17,14 +18,14 @@ type UserService interface {
 	Login(ctx context.Context, cred model.LoginCredential) (*model.User, string, string, error)
 	GetById(ctx context.Context, id int) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
-	Update(ctx context.Context, data model.User, id int, requesterRole model.Role) (*model.User, error)
+	Update(ctx context.Context, c *gin.Context, data model.User, id int, requesterRole model.Role) (*model.User, error)
 	Delete(ctx context.Context, id int, requesterRole model.Role) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
 	GetByNim(ctx context.Context, nim string, requesterRole model.Role) (*model.User, error)
 	GetByUsn(ctx context.Context, username string, requesterRole model.Role) (*model.User, error)
 	GetByNidn(ctx context.Context, nidn string, requesterRole model.Role) (*model.User, error)
 	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error)
-	GetByRole(ctx context.Context, role string, limit int, offset int, requesterRole model.Role) ([]model.User, int64, error)
+	GetByRole(ctx context.Context, role string, limit int, offset int, requesterRole string) ([]model.User, int64, error)
 	ChangePassword(ctx context.Context, id int, newPassword string, role model.Role) error
 	ChangeRole(ctx context.Context, id int, role model.Role, userRole model.Role) error
 	RefreshToken(ctx context.Context, refreshToken string) (string, error)
@@ -218,7 +219,8 @@ func (s *userService) GetByEmail(ctx context.Context, email string) (*model.User
 	return data, nil
 }
 
-func (s *userService) Update(ctx context.Context, data model.User, id int, requesterRole model.Role) (*model.User, error) {
+func (s *userService) Update(ctx context.Context, c *gin.Context, data model.User, id int, requesterRole model.Role) (*model.User, error) {
+
 	oldUser, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
@@ -237,69 +239,71 @@ func (s *userService) Update(ctx context.Context, data model.User, id int, reque
 		effectiveRole = oldUser.Role
 	}
 
-	var academicYearPtr *string
-	if effectiveRole == model.RoleAdmin {
-		academicYearPtr = &data.AcademicYear
-	} else {
-		academicYearPtr = nil
-	}
+	switch effectiveRole {
 
-	if academicYearPtr != nil {
-		data.AcademicYear = *academicYearPtr
-	} else {
+	case model.RoleUser:
+		if data.Nim == nil || *data.Nim == "" {
+			return nil, fmt.Errorf("user must provide Nim")
+		}
+
+		if strings.TrimSpace(data.AcademicYear) == "" {
+			return nil, fmt.Errorf("user must provide academicYear")
+		}
+
+		empty := ""
+		data.Nip = &empty
+		data.Nidn = &empty
+
+	case model.RoleLecturer:
+		if (data.Nip == nil || *data.Nip == "") && (data.Nidn == nil || *data.Nidn == "") {
+			return nil, fmt.Errorf("lecturer must provide either Nip or Nidn")
+		}
+
+		empty := ""
+		data.Nim = &empty
 		data.AcademicYear = ""
+
+	case model.RoleAdmin, model.RoleSuperAdmin:
+		empty := ""
+		data.Nim = &empty
+		data.Nip = &empty
+		data.Nidn = &empty
+		data.AcademicYear = ""
+
+	default:
+		return nil, fmt.Errorf("invalid role")
 	}
 
-	roleChanged := effectiveRole != oldUser.Role
+	imgDir := "./storages/images/user"
 
-	if roleChanged {
-		if effectiveRole == "lecturer" {
-			if (data.Nip == nil || *data.Nip == "") && (data.Nidn == nil || *data.Nidn == "") {
-				return nil, fmt.Errorf("lecturer must provide either Nip or Nidn")
+	file, _ := c.FormFile("image")
+	if file != nil {
+		if oldUser.ImgUrl != "" {
+			if err := helper.DeleteImage(oldUser.ImgUrl); err != nil {
+				return nil, fmt.Errorf("failed to delete old image: %w", err)
 			}
-			emptyNim := ""
-			data.Nim = &emptyNim
 		}
 
-		if effectiveRole == "user" {
-			if data.Nim == nil || *data.Nim == "" {
-				return nil, fmt.Errorf("user must provide Nim")
-			}
-			emptyStr := ""
-			data.Nip = &emptyStr
-			data.Nidn = &emptyStr
+		newImageUrl, err := helper.UploadImage(c, id, imgDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to upload image: %w", err)
 		}
 
-		data.Role = effectiveRole
+		data.ImgUrl = newImageUrl
+
 	} else {
-		if effectiveRole == "lecturer" {
-			if data.Nim != nil && *data.Nim != "" {
-				return nil, fmt.Errorf("only user can have Nim")
-			}
-		}
-
-		if effectiveRole == "user" {
-			if (data.Nip != nil && *data.Nip != "") || (data.Nidn != nil && *data.Nidn != "") {
-				return nil, fmt.Errorf("only lecturers can have Nip or Nidn")
-			}
-		}
-	}
-
-	if oldUser.ImgUrl != "" && oldUser.ImgUrl != data.ImgUrl {
-		if err := helper.DeleteImage(oldUser.ImgUrl); err != nil {
-			return nil, fmt.Errorf("failed to delete old image: %w", err)
-		}
+		data.ImgUrl = oldUser.ImgUrl
 	}
 
 	updatedUser, err := s.repo.Update(ctx, data, id)
 	if err != nil {
+
 		if strings.Contains(err.Error(), "Unknown column") {
 			var fieldName string
 			parts := strings.Split(err.Error(), "'")
 			if len(parts) >= 2 {
 				fieldName = parts[1]
 			}
-
 			val := helper.GetFieldValue(data, fieldName)
 			return nil, fmt.Errorf("field '%s' with value '%v' is undefined", fieldName, val)
 		}
@@ -429,10 +433,11 @@ func (s *userService) GetByName(ctx context.Context, name string, limit int, off
 	return filtered, totalWithoutSA, nil
 }
 
-func (s *userService) GetByRole(ctx context.Context, role string, limit int, offset int, requesterRole model.Role) ([]model.User, int64, error) {
+func (s *userService) GetByRole(ctx context.Context, role string, limit int, offset int, requesterRole string) ([]model.User, int64, error) {
 	modelRole := model.Role(role)
+	requesterRoleModel := model.Role(requesterRole)
 
-	if modelRole == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
+	if modelRole == model.RoleSuperAdmin && requesterRoleModel != model.RoleSuperAdmin {
 		return nil, 0, fmt.Errorf("user not found")
 	}
 

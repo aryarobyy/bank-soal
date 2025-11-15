@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -37,9 +38,19 @@ func (h *UserController) Register(c *gin.Context) {
 		return
 	}
 
-	currRole, _ := c.Get("role")
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
 
-	role, _ := currRole.(model.Role)
+	roleStr, ok := currRole.(string)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	role := model.Role(roleStr)
 
 	if err := h.service.Register(ctx, user, role); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
@@ -134,11 +145,13 @@ func (h *UserController) Update(c *gin.Context) {
 		return
 	}
 
-	role, ok := currRole.(model.Role)
+	roleStr, ok := currRole.(string)
 	if !ok {
 		helper.Error(c, http.StatusBadRequest, "invalid role type")
 		return
 	}
+
+	role := model.Role(roleStr)
 
 	email := c.PostForm("email")
 
@@ -175,16 +188,7 @@ func (h *UserController) Update(c *gin.Context) {
 		AcademicYear: c.PostForm("academic_year"),
 	}
 
-	file, _ := c.FormFile("image")
-	if file != nil {
-		imageUrl, err := helper.UploadImage(c, id)
-		if err != nil {
-			helper.Error(c, http.StatusInternalServerError, "failed to upload image")
-			return
-		}
-		user.ImgUrl = imageUrl
-	}
-	updatedUser, err := h.service.Update(ctx, user, id, role)
+	updatedUser, err := h.service.Update(ctx, c, user, id, role)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -208,11 +212,13 @@ func (h *UserController) Delete(c *gin.Context) {
 		return
 	}
 
-	role, ok := currRole.(model.Role)
+	roleStr, ok := currRole.(string)
 	if !ok {
 		helper.Error(c, http.StatusBadRequest, "invalid role type")
 		return
 	}
+
+	role := model.Role(roleStr)
 
 	err = h.service.Delete(ctx, id, role)
 	if err != nil {
@@ -255,11 +261,13 @@ func (h *UserController) GetByNim(c *gin.Context) {
 		return
 	}
 
-	role, ok := currRole.(model.Role)
+	roleStr, ok := currRole.(string)
 	if !ok {
 		helper.Error(c, http.StatusBadRequest, "invalid role type")
 		return
 	}
+
+	role := model.Role(roleStr)
 
 	user, err := h.service.GetByNim(ctx, nim, role)
 	if err != nil {
@@ -285,11 +293,13 @@ func (h *UserController) GetByNidn(c *gin.Context) {
 		return
 	}
 
-	role, ok := currRole.(model.Role)
+	roleStr, ok := currRole.(string)
 	if !ok {
 		helper.Error(c, http.StatusBadRequest, "invalid role type")
 		return
 	}
+
+	role := model.Role(roleStr)
 
 	user, err := h.service.GetByNidn(ctx, nidn, role)
 	if err != nil {
@@ -315,11 +325,13 @@ func (h *UserController) GetByUsn(c *gin.Context) {
 		return
 	}
 
-	role, ok := currRole.(model.Role)
+	roleStr, ok := currRole.(string)
 	if !ok {
 		helper.Error(c, http.StatusBadRequest, "invalid role type")
 		return
 	}
+
+	role := model.Role(roleStr)
 
 	user, err := h.service.GetByUsn(ctx, username, role)
 	if err != nil {
@@ -369,8 +381,9 @@ func (h *UserController) GetByRole(c *gin.Context) {
 		helper.Error(c, http.StatusUnauthorized, "role not found in context")
 		return
 	}
+	log.Printf("role: %s", currRole)
 
-	userRole, ok := currRole.(model.Role)
+	userRole, ok := currRole.(string)
 	if !ok {
 		helper.Error(c, http.StatusBadRequest, "invalid role type")
 		return
@@ -407,11 +420,13 @@ func (h *UserController) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	role, ok := currRole.(model.Role)
+	roleStr, ok := currRole.(string)
 	if !ok {
 		helper.Error(c, http.StatusBadRequest, "invalid role type")
 		return
 	}
+
+	role := model.Role(roleStr)
 
 	if err := h.service.ChangePassword(ctx, id, req.NewPassword, role); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
