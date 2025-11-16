@@ -87,25 +87,24 @@ func (r *questionRepository) GetByExam(ctx context.Context, examId int, limit in
 		total int64
 	)
 
-	query := r.db.WithContext(ctx).
+	baseQuery := r.db.WithContext(ctx).
 		Model(&model.Question{}).
-		Where("exam_id = ?", examId)
+		Joins("JOIN exam_questions eq ON eq.question_id = questions.id").
+		Where("eq.exam_id = ?", examId)
 
-	if err := query.
-		Count(&total).
-		Error; err != nil {
+	if err := baseQuery.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := query.
+	if err := baseQuery.
 		Preload("Subject").
 		Preload("Options").
 		Limit(limit).
 		Offset(offset).
-		Find(&q).
-		Error; err != nil {
+		Find(&q).Error; err != nil {
 		return nil, 0, err
 	}
+
 	return q, total, nil
 }
 

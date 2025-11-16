@@ -10,27 +10,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func UploadImage(c *gin.Context, userId int) (string, error) {
+func UploadImage(c *gin.Context, id int, imgDir string) (string, error) {
 	file, err := c.FormFile("image")
 	if err != nil {
 		return "", nil
 	}
 
-	saveDir := "./storages/images"
-	if err := os.MkdirAll(saveDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(imgDir, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to create storage directory: %w", err)
 	}
 
-	filename := strconv.Itoa(userId)
+	filename := strconv.Itoa(id)
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	imageName := fmt.Sprintf("%s%s", filename, ext)
-	savePath := filepath.Join(saveDir, imageName)
+
+	savePath := filepath.Join(imgDir, imageName)
 
 	if err := c.SaveUploadedFile(file, savePath); err != nil {
 		return "", fmt.Errorf("failed to save image: %w", err)
 	}
 
-	imageURL := fmt.Sprintf("http://localhost:8080/storages/images/%s", imageName)
+	publicPath := strings.TrimPrefix(imgDir, "./")
+
+	imageURL := fmt.Sprintf("http://localhost:8080/%s/%s", publicPath, imageName)
+
 	return imageURL, nil
 }
 
