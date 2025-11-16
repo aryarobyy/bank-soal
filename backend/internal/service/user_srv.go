@@ -164,10 +164,19 @@ func (s *userService) Login(ctx context.Context, cred model.LoginCredential) (*m
 	switch loginType {
 	case "nidn":
 		data, err = s.repo.GetByNidn(ctx, loginId)
+		if data.Role != model.RoleLecturer {
+			return nil, "", "", fmt.Errorf("you cant login use nidn")
+		}
 	case "nim":
 		data, err = s.repo.GetByNim(ctx, loginId)
+		if data.Role != model.RoleUser {
+			return nil, "", "", fmt.Errorf("you cant login use nim")
+		}
 	default:
 		data, err = s.repo.GetByUsn(ctx, loginId)
+		if data.Role != model.RoleAdmin && data.Role != model.RoleSuperAdmin {
+			return nil, "", "", fmt.Errorf("user not fount")
+		}
 	}
 
 	if err != nil || data == nil {

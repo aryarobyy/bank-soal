@@ -10,7 +10,6 @@ import (
 func UserRoutes(r *gin.Engine, user *controller.UserController) {
 	routes := r.Group("/user")
 	{
-		routes.POST("/register", middleware.InputValidate([]string{"name", "password", "major", "faculty"}), user.Register)
 		routes.POST("/login", middleware.InputValidate([]string{"login_id", "password"}), user.Login)
 
 		routes.POST("/refresh", user.RefreshToken)
@@ -19,6 +18,7 @@ func UserRoutes(r *gin.Engine, user *controller.UserController) {
 		usersAuth := routes.Group("")
 		usersAuth.Use(middleware.AuthMiddleware())
 		{
+			usersAuth.POST("/register", middleware.RoleGuard(model.RoleAdmin, model.RoleSuperAdmin), middleware.InputValidate([]string{"name", "password", "major", "faculty"}), user.Register)
 			usersAuth.GET("/email", user.GetByEmail)
 			usersAuth.GET("/nim", user.GetByNim)
 			usersAuth.GET("/nidn", user.GetByNidn)
