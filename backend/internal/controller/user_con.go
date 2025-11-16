@@ -33,10 +33,11 @@ func (h *UserController) Register(c *gin.Context) {
 		return
 	}
 
-	if !helper.IsValidEmail(user.Email) {
-		helper.Error(c, http.StatusBadRequest, "wrong email format")
-		return
-	}
+	// email is unnecessary
+	// if !helper.IsValidEmail(user.Email) {
+	// 	helper.Error(c, http.StatusBadRequest, "wrong email format")
+	// 	return
+	// }
 
 	currRole, exists := c.Get("role")
 	if !exists {
