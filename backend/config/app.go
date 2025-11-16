@@ -98,7 +98,8 @@ func NewApp(db *gorm.DB) *App {
 }
 
 func setupRoutes(r *gin.Engine, ctrl *Controllers) {
-	r.Static("/storages/images", "./storages/images")
+	r.Static("/storages/images/user", "./storages/images/user")
+	r.Static("/storages/images/question", "./storages/images/question")
 	r.Static("/storages/files", "./storages/files")
 	route.UserRoutes(r, ctrl.User)
 	route.ExamRoutes(r, ctrl.Exam)
