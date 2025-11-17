@@ -152,12 +152,8 @@ onMounted(() => {
         name: 'nidn', title: 'NIDN',
         placeholder: 'Enter your NIDN', icon: Clipboard, type: 'text'
       });
-    } else if (user.value.role === 'admin') {
-       fields.value.push({
-        name: 'nip', title: 'NIP',
-        placeholder: 'Enter your NIP', icon: Clipboard, type: 'text'
-      });
-    }
+    } 
+    // ## BLOK 'else if (user.value.role === 'admin')' DIHAPUS DARI SINI ##
   }
 });
 
@@ -224,9 +220,8 @@ const handleSubmit = async () => {
     } else if (user.value.role === 'lecturer') {
       dataToUpdate.nip = formData.value.nip;
       dataToUpdate.nidn = formData.value.nidn;
-    } else if (user.value.role === 'admin') {
-      dataToUpdate.nip = formData.value.nip;
     }
+    // ## BLOK 'else if (user.value.role === 'admin')' DIHAPUS DARI SINI ##
 
     // Kirim file gambar jika ada
     if (avatarFile.value) {

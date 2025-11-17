@@ -38,14 +38,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-// ## 5. Impor ikon baru ##
+// ## PERBAIKAN 1: Impor 'watch' dan 'useGetCurrentUser' ##
+import { ref, onMounted, watch } from 'vue'; 
 import { BookOpen, FileText } from 'lucide-vue-next';
-// ## 6. Impor provider Ujian dan Soal ##
 import { getAllExam } from '../../provider/exam.provider';
 import { getmanyQuestions } from '../../provider/question.provider';
+import { useGetCurrentUser } from '../../hooks/useGetCurrentUser'; // <-- Impor user
 
-// ## 7. State reaktif diperbarui ##
+const { user } = useGetCurrentUser(); // <-- Dapatkan user
+
 const stats = ref({
   totalExam: 0,
   totalSoal: 0,
@@ -53,27 +54,34 @@ const stats = ref({
 const loading = ref(true);
 const error = ref(null);
 
-// ## 8. Fungsi fetch data diperbarui total ##
 const fetchDashboardData = async () => {
+  // Tunggu sampai user.value ada
+  if (!user.value) { 
+    return;
+  }
+  
   try {
-    // Kita gunakan Promise.allSettled untuk jaga-jaga jika satu API gagal
     const [examResult, questionResult] = await Promise.allSettled([
-      getAllExam(),
-      getmanyQuestions(1, 0) // Panggil 1 soal untuk dapat total
+      // ## PERBAIKAN 2: Kirim 'user.value.id' untuk filter ##
+      getAllExam(99999, 0, user.value.id), 
+      
+      // (Total Soal juga seharusnya difilter, tapi kita biarkan dulu)
+      getmanyQuestions(1, 0) 
     ]);
 
     // Cek hasil Panggilan Ujian
     if (examResult.status === 'fulfilled') {
-      stats.value.totalExam = (examResult.value.data || []).length;
+      const examList = examResult.value || [];
+      stats.value.totalExam = examList.length;
     } else {
       console.error("Gagal mengambil data ujian:", examResult.reason);
-      if (!error.value) error.value = "Gagal memuat data ujian."; // Tampilkan error pertama
+      if (!error.value) error.value = "Gagal memuat data ujian.";
       stats.value.totalExam = 'N/A';
     }
 
     // Cek hasil Panggilan Soal
     if (questionResult.status === 'fulfilled') {
-      stats.value.totalSoal = questionResult.value.data.total || 0;
+      stats.value.totalSoal = questionResult.value.total || 0;
     } else {
       console.error("Gagal mengambil data soal:", questionResult.reason);
       if (!error.value) error.value = "Gagal memuat data soal.";
@@ -88,10 +96,12 @@ const fetchDashboardData = async () => {
   }
 };
 
-// ## 9. roleClass() dihapus karena tidak terpakai ##
-
-// Panggil fungsi fetch saat komponen dimuat
-onMounted(() => {
-  fetchDashboardData();
-});
+// ## PERBAIKAN 3: Ganti 'onMounted' dengan 'watch' ##
+// Ini untuk memastikan 'fetchDashboardData' HANYA berjalan
+// setelah 'user.value' (data login) berhasil didapatkan.
+watch(user, (currentUser) => {
+  if (currentUser) {
+    fetchDashboardData();
+  }
+}, { immediate: true });
 </script>

@@ -138,7 +138,7 @@ onMounted(async () => {
   }
 
   try {
-    const id = route.query.id || 1; // Default ke ID 1
+    const id = route.query.id || 2; // Default ke ID 1
     const data = await getExamById(id);
     exam.value = data;
   } catch (err) {

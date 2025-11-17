@@ -16,7 +16,7 @@ type ExamSessionRepository interface {
 	Delete(ctx context.Context, id int) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.ExamSession, error)
 	UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error)
-	FinishExam(ctx context.Context, id int, e model.FinishExam) (*model.FinishExamOutput, error)
+	FinishExam(ctx context.Context, id int, e model.FinishExam) (*model.ExamSession, error)
 	CheckUserSession(ctx context.Context, userId int, examId int) error
 }
 
@@ -140,7 +140,11 @@ func (r *examSessionRepository) UpdateCurrNo(ctx context.Context, id int, no mod
 	return &updated, nil
 }
 
-func (r *examSessionRepository) FinishExam(ctx context.Context, id int, e model.FinishExam) (*model.FinishExamOutput, error) {
+func (r *examSessionRepository) FinishExam(ctx context.Context, id int, e model.FinishExam) (*model.ExamSession, error) {
+	if e.Score == 0 {
+		return nil, fmt.Errorf("invalid status")
+	}
+
 	if err := r.db.WithContext(ctx).
 		Model(&model.ExamSession{}).
 		Where("id = ?", id).
@@ -149,7 +153,7 @@ func (r *examSessionRepository) FinishExam(ctx context.Context, id int, e model.
 		return nil, err
 	}
 
-	var updated model.FinishExamOutput
+	var updated model.ExamSession
 	if err := r.db.WithContext(ctx).
 		First(&updated, id).
 		Error; err != nil {

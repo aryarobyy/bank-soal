@@ -19,15 +19,13 @@ func NewSubjectController(s service.SubjectService) *SubjectController {
 }
 
 func (h *SubjectController) Create(c *gin.Context) {
-	ctx := c.Request.Context()
-
 	var data model.Subject
 	if err := c.ShouldBindJSON(&data); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := h.service.Create(ctx, data); err != nil {
+	if err := h.service.Create(c.Request.Context(), data); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -35,8 +33,6 @@ func (h *SubjectController) Create(c *gin.Context) {
 }
 
 func (h *SubjectController) GetById(c *gin.Context) {
-	ctx := c.Request.Context()
-
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -44,7 +40,7 @@ func (h *SubjectController) GetById(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.GetById(ctx, id)
+	data, err := h.service.GetById(c.Request.Context(), id)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -54,11 +50,9 @@ func (h *SubjectController) GetById(c *gin.Context) {
 }
 
 func (h *SubjectController) GetByCode(c *gin.Context) {
-	ctx := c.Request.Context()
-
 	code := c.Query("code")
 
-	data, err := h.service.GetByCode(ctx, code)
+	data, err := h.service.GetByCode(c.Request.Context(), code)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -68,15 +62,13 @@ func (h *SubjectController) GetByCode(c *gin.Context) {
 }
 
 func (h *SubjectController) GetMany(c *gin.Context) {
-	ctx := c.Request.Context()
-
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid limit")
 		return
 	}
 
-	data, total, err := h.service.GetMany(ctx, limit, offset)
+	data, total, err := h.service.GetMany(c, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -86,8 +78,6 @@ func (h *SubjectController) GetMany(c *gin.Context) {
 }
 
 func (h *SubjectController) Update(c *gin.Context) {
-	ctx := c.Request.Context()
-
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -101,7 +91,7 @@ func (h *SubjectController) Update(c *gin.Context) {
 		return
 	}
 
-	updatedData, err := h.service.Update(ctx, data, id)
+	updatedData, err := h.service.Update(c, data, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -110,15 +100,13 @@ func (h *SubjectController) Update(c *gin.Context) {
 }
 
 func (h *SubjectController) Delete(c *gin.Context) {
-	ctx := c.Request.Context()
-
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
 	}
-	err = h.service.Delete(ctx, id)
+	err = h.service.Delete(c, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return

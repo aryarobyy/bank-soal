@@ -104,26 +104,7 @@
             </div>
           </template>
           
-          <template v-if="user?.role === 'admin'">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                NIP
-              </label>
-              <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
-                {{ user?.nip || '-' }}
-              </div>
-            </div>
-          </template>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Gender
-            </label>
-            <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
-              {{ user?.gender || '-' }}
-            </div>
           </div>
-        </div>
 
         <div class="mb-6">
           <label class="block text-sm font-medium text-gray-700 mb-3">

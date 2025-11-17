@@ -37,14 +37,12 @@ type UpdateStatus struct {
 }
 
 type FinishExam struct {
-	UserId     int           `json:"user_id" gorm:"not null"`
-	ExamId     int           `json:"exam_id" gorm:"not null"`
 	FinishedAt time.Time     `json:"finished_at"`
 	Status     SessionStatus `json:"status" gorm:"default:'finished'"`
 	Score      int           `json:"score"`
 }
 
-type SessionResponse struct {
+type ESessionResponse struct {
 	Id         int           `json:"id" gorm:"primaryKey;autoIncrement;not null"`
 	UserId     int           `json:"user_id" gorm:"not null"`
 	ExamId     int           `json:"exam_id" gorm:"not null"`
@@ -55,10 +53,4 @@ type SessionResponse struct {
 	Score      *float64      `json:"score"`
 
 	UserAnswers []UserAnswer `gorm:"foreignKey:ExamSessionId"`
-}
-
-type FinishExamOutput struct {
-	FinishedAt time.Time     `json:"finished_at"`
-	Status     SessionStatus `json:"status" gorm:"default:'finished'"`
-	Score      int           `json:"score"`
 }

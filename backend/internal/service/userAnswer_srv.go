@@ -16,7 +16,7 @@ type UserAnswerService interface {
 	Delete(ctx context.Context, id int) error
 	GetByExamSessionId(ctx context.Context, examSessionId int, limit int, offset int) ([]model.UserAnswer, int64, error)
 	GetByQuestionId(ctx context.Context, questionId int, limit int, offset int) ([]model.UserAnswer, int64, error)
-	GetUserAnswer(ctx context.Context, userId int, examSessionId int, limit int, offset int) ([]model.UserAnswer, int64, error)
+	GetByUserId(ctx context.Context, userId int, limit int, offset int) ([]model.UserAnswer, int64, error)
 }
 
 type userAnswerService struct {
@@ -119,12 +119,12 @@ func (s *userAnswerService) GetByQuestionId(ctx context.Context, questionId int,
 	return data, total, nil
 }
 
-func (s *userAnswerService) GetUserAnswer(ctx context.Context, userId int, examSessionId int, limit int, offset int) ([]model.UserAnswer, int64, error) {
+func (s *userAnswerService) GetByUserId(ctx context.Context, userId int, limit int, offset int) ([]model.UserAnswer, int64, error) {
 	if userId <= 0 {
 		return nil, 0, fmt.Errorf("user Id is required and must be greater than 0")
 	}
 
-	data, total, err := s.repo.GetUserAnswer(ctx, userId, examSessionId, limit, offset)
+	data, total, err := s.repo.GetByUserId(ctx, userId, limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get user answers by user Id %d: %w", userId, err)
 	}

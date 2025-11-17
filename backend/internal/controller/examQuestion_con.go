@@ -18,8 +18,6 @@ func NewExamQuestionController(s service.ExamQuestionService) *ExamQuestionContr
 }
 
 func (h *ExamQuestionController) AddQuestionsToExam(c *gin.Context) {
-	ctx := c.Request.Context()
-
 	examIdStr := c.Query("exam_id")
 	examId, err := strconv.Atoi(examIdStr)
 	if err != nil {
@@ -39,7 +37,7 @@ func (h *ExamQuestionController) AddQuestionsToExam(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.AddQuestionToExam(ctx, examId, body.QuestionIds); err != nil {
+	if err := h.service.AddQuestionToExam(c, examId, body.QuestionIds); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -48,8 +46,6 @@ func (h *ExamQuestionController) AddQuestionsToExam(c *gin.Context) {
 }
 
 func (h *ExamQuestionController) UpdateQuestionsInExam(c *gin.Context) {
-	ctx := c.Request.Context()
-
 	examIdStr := c.Query("exam_id")
 	examId, err := strconv.Atoi(examIdStr)
 	if err != nil {
@@ -69,7 +65,7 @@ func (h *ExamQuestionController) UpdateQuestionsInExam(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.UpdateQuestionsInExam(ctx, examId, body.QuestionIds); err != nil {
+	if err := h.service.UpdateQuestionsInExam(c, examId, body.QuestionIds); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -78,8 +74,6 @@ func (h *ExamQuestionController) UpdateQuestionsInExam(c *gin.Context) {
 }
 
 func (h *ExamQuestionController) RemoveQuestionsFromExam(c *gin.Context) {
-	ctx := c.Request.Context()
-
 	examIdStr := c.Query("exam_id")
 	examId, err := strconv.Atoi(examIdStr)
 	if err != nil {
@@ -99,7 +93,7 @@ func (h *ExamQuestionController) RemoveQuestionsFromExam(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.RemoveQuestionsFromExam(ctx, examId, body.QuestionIds); err != nil {
+	if err := h.service.RemoveQuestionsFromExam(c, examId, body.QuestionIds); err != nil {
 		helper.Error(c, http.StatusInternalServerError, "failed to delete questions")
 		return
 	}
