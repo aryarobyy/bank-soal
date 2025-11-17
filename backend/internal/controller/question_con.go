@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -18,21 +19,9 @@ func NewQuestionController(s service.QuestionService) *QuestionController {
 	return &QuestionController{service: s}
 }
 
-func (h *QuestionController) Create(c *gin.Context) {
-	var data model.Question
-	if err := c.ShouldBindJSON(&data); err != nil {
-		helper.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	if err := h.service.Create(c.Request.Context(), data); err != nil {
-		helper.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	helper.Success(c, data, "data created")
-}
-
 func (h *QuestionController) GetById(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -40,7 +29,7 @@ func (h *QuestionController) GetById(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.GetById(c.Request.Context(), id)
+	data, err := h.service.GetById(ctx, id)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -50,23 +39,27 @@ func (h *QuestionController) GetById(c *gin.Context) {
 }
 
 func (h *QuestionController) GetMany(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid limit")
 		return
 	}
-	data, err := h.service.GetMany(c, limit, offset)
+	data, total, err := h.service.GetMany(ctx, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
 }
 
 func (h *QuestionController) Update(c *gin.Context) {
-	idStr1 := c.Param("id")
-	id, err := strconv.Atoi(idStr1)
+	ctx := c.Request.Context()
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid id")
 		return
@@ -74,27 +67,40 @@ func (h *QuestionController) Update(c *gin.Context) {
 
 	userIdVal, exists := c.Get("user_id")
 	if !exists {
-		helper.Error(c, http.StatusUnauthorized, "user id not found in context")
+		helper.Error(c, http.StatusUnauthorized, "user id not found")
 		return
 	}
 	userId := userIdVal.(int)
 
 	var data model.Question
 
-	if err := c.ShouldBindJSON(&data); err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid request body")
-		return
+	data.SubjectId, _ = strconv.Atoi(c.PostForm("subject_id"))
+	data.CreatorId, _ = strconv.Atoi(c.PostForm("creator_id"))
+	data.QuestionText = c.PostForm("question_text")
+	data.Difficulty = model.Difficulty(c.PostForm("difficulty"))
+	data.Answer = c.PostForm("answer")
+	data.Score, _ = strconv.Atoi(c.PostForm("score"))
+	optionsJson := c.PostForm("options")
+
+	if optionsJson != "" {
+		if err := json.Unmarshal([]byte(optionsJson), &data.Options); err != nil {
+			helper.Error(c, http.StatusBadRequest, "invalid options format")
+			return
+		}
 	}
 
-	updatedData, err := h.service.Update(c, data, id, userId)
+	updated, err := h.service.Update(ctx, c, &data, id, userId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	helper.Success(c, updatedData, "data updated")
+
+	helper.Success(c, updated, "question updated")
 }
 
 func (h *QuestionController) Delete(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr1 := c.Param("id")
 	id, err := strconv.Atoi(idStr1)
 	if err != nil {
@@ -109,7 +115,7 @@ func (h *QuestionController) Delete(c *gin.Context) {
 	}
 	userId := userIdVal.(int)
 
-	err = h.service.Delete(c, id, userId)
+	err = h.service.Delete(ctx, id, userId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -118,22 +124,39 @@ func (h *QuestionController) Delete(c *gin.Context) {
 }
 
 func (h *QuestionController) CreateWithOptions(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var data model.Question
 
-	if err := c.ShouldBindJSON(&data); err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid request body")
+	data.SubjectId, _ = strconv.Atoi(c.PostForm("subject_id"))
+	data.CreatorId, _ = strconv.Atoi(c.PostForm("creator_id"))
+	data.QuestionText = c.PostForm("question_text")
+	data.Difficulty = model.Difficulty(c.PostForm("difficulty"))
+	data.Answer = c.PostForm("answer")
+	data.Score, _ = strconv.Atoi(c.PostForm("score"))
+
+	optionsJson := c.PostForm("options")
+	if optionsJson == "" {
+		helper.Error(c, http.StatusBadRequest, "options cannot be empty")
 		return
 	}
 
-	if err := h.service.Create(c, data); err != nil {
+	if err := json.Unmarshal([]byte(optionsJson), &data.Options); err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid options format")
+		return
+	}
+
+	if err := h.service.Create(ctx, c, &data); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	helper.Success(c, nil, "question created successfully")
+	helper.Success(c, data, "question created successfully")
 }
 
 func (h *QuestionController) CreateFromJson(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	file, err := c.FormFile("file")
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "File tidak ditemukan. Gunakan key 'file' untuk upload")
@@ -145,7 +168,7 @@ func (h *QuestionController) CreateFromJson(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.CreateFromJson(c, file); err != nil {
+	if err := h.service.CreateFromJson(ctx, file); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -153,6 +176,8 @@ func (h *QuestionController) CreateFromJson(c *gin.Context) {
 }
 
 func (h *QuestionController) GetByExam(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Query("exam_id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -166,21 +191,18 @@ func (h *QuestionController) GetByExam(c *gin.Context) {
 		return
 	}
 
+	data, total, err := h.service.GetByExam(ctx, id, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	data, err := h.service.GetByExam(c, id, limit, offset)
-	if err != nil {
-		helper.Error(c, http.StatusNotFound, err.Error())
-		return
-	}
-
-	helper.Success(c, data, "data found")
+	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
 }
 
 func (h *QuestionController) GetByCreator(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Query("creator_id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -194,16 +216,18 @@ func (h *QuestionController) GetByCreator(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.GetByCreatorId(c, id, limit, offset)
+	data, total, err := h.service.GetByCreatorId(ctx, id, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
 }
 
 func (h *QuestionController) GetByDiff(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	diff := c.Query("diff")
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
@@ -212,11 +236,38 @@ func (h *QuestionController) GetByDiff(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.GetByDifficult(c, diff, limit, offset)
+	data, total, err := h.service.GetByDifficult(ctx, diff, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
+}
+
+func (h *QuestionController) GetBySubject(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	subjectStr := c.Query("subject_id")
+	subject := 0
+
+	if subjectStr != "" {
+		if l, err := strconv.Atoi(subjectStr); err == nil && l > 0 {
+			subject = l
+		}
+	}
+
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		return
+	}
+
+	data, total, err := h.service.GetBySubject(ctx, subject, limit, offset)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
 }

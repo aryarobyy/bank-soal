@@ -14,6 +14,7 @@ type OptionRepository interface {
 	Update(ctx context.Context, o model.Option, id int) (*model.Option, error)
 	Delete(ctx context.Context, id int) error
 	DeleteByQuestionId(ctx context.Context, qId int) error
+	CheckCorrectAnswer(ctx context.Context, qId int, answer string) (bool, error)
 }
 
 type optionRepository struct {
@@ -49,6 +50,8 @@ func (r *optionRepository) GetMany(ctx context.Context, qId int, limit int, offs
 	var o []model.Option
 
 	if err := r.db.WithContext(ctx).
+		Limit(limit).
+		Offset(offset).
 		Where("question_id = ?", qId).
 		Error; err != nil {
 		return nil, err
@@ -86,4 +89,20 @@ func (r *optionRepository) DeleteByQuestionId(ctx context.Context, qId int) erro
 		return err
 	}
 	return nil
+}
+
+func (r *optionRepository) CheckCorrectAnswer(ctx context.Context, qId int, answer string) (bool, error) {
+	var option model.Option
+
+	if err := r.db.WithContext(ctx).
+		Select("is_correct").
+		Where("question_id = ? AND option_label = ?", qId, answer).
+		First(&option).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, err
+		}
+		return false, err
+	}
+
+	return option.IsCorrect, nil
 }

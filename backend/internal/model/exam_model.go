@@ -11,6 +11,9 @@ type Exam struct {
 	CreatorId   int        `json:"creator_id" validate:"required"`
 	StartedAt   *time.Time `json:"started_at" validate:"required"`
 	FinishedAt  *time.Time `json:"finished_at" validate:"required, gtfield=StartedAt"`
+	Score       int        `json:"score" validate:"required"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
+
+	Questions []Question `json:"questions" gorm:"many2many:exam_questions;"`
 }

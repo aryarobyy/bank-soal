@@ -63,8 +63,7 @@ import { useRouter } from 'vue-router'
 import { useUser } from "../../hooks/useGetCurrentUser";
 
 const { setValue: setToken } = useLocalStorage("token");
-const { setValue: setId } = useLocalStorage("id");
-const { setUser: setGlobalUser } = useUser();
+const { setValue: setUser } = useLocalStorage("id");
 
 const toastRef = ref(null);
 // <-- PERUBAHAN: 'email' diubah menjadi 'login_id'
@@ -109,8 +108,7 @@ const handleSubmit = async () => {
 
     if (data.data.token && userData) {
       setToken(data.data.token);
-      setId(userData.id);
-      setGlobalUser(userData);
+      setUser(data.data.data.id);
     }
 
     const userRole = userData.role;

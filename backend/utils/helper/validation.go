@@ -73,3 +73,28 @@ func GetPaginationQuery(c *gin.Context, defaultLimit, defaultOffset int) (int, i
 
 	return limit, offset, nil
 }
+
+func DetectLoginType(id string) string {
+	var (
+		nidnRegex = regexp.MustCompile(`^0\d{9}$`)
+		nimRegex  = regexp.MustCompile(`^(G1A0\d{5}|Y1G0\d{5})$`)
+	)
+
+	switch {
+	case nidnRegex.MatchString(id):
+		return "nidn"
+	case nimRegex.MatchString(id):
+		return "nim"
+	default:
+		return "username"
+	}
+}
+
+func ContainsNumber(s string) bool {
+	for _, ch := range s {
+		if ch >= '0' && ch <= '9' {
+			return true
+		}
+	}
+	return false
+}

@@ -1,9 +1,12 @@
 package model
 
-type Difficulty string
-type Role string
-type Status string
-type SubjectTitle string
+type (
+	Difficulty    string
+	Role          string
+	Status        string
+	SubjectTitle  string
+	SessionStatus string
+)
 
 const (
 	DifficultyEasy   Difficulty = "easy"
@@ -29,4 +32,10 @@ const (
 	SubjectAutomata SubjectTitle = "Teori Bahasa dan Automata"
 	SubjectData     SubjectTitle = "Basis Data Lanjut"
 	SubjectMetNum   SubjectTitle = "Metode Numerik"
+)
+
+const (
+	SessionInProgress SessionStatus = "in_progress"
+	SessionFinished   SessionStatus = "finished"
+	SessionExpired    SessionStatus = "expired"
 )

@@ -5,11 +5,18 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"latih.in-be/internal/model"
 	"latih.in-be/utils/helper"
 )
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+
+		if c.Request.Method == "OPTIONS" {
+			c.Next()
+			return
+		}
+
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
@@ -24,11 +31,13 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("user", claims)
+		c.Set("user_id", claims.UserId)
+		c.Set("role", claims.Role)
 		c.Next()
 	}
 }
 
-func RoleGuard(allowedRoles ...string) gin.HandlerFunc {
+func RoleGuard(allowedRoles ...model.Role) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -55,7 +64,7 @@ func RoleGuard(allowedRoles ...string) gin.HandlerFunc {
 
 		allowed := false
 		for _, r := range allowedRoles {
-			if strings.EqualFold(r, role) {
+			if strings.EqualFold(string(r), role) {
 				allowed = true
 				break
 			}

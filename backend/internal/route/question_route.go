@@ -4,24 +4,25 @@ import (
 	"github.com/gin-gonic/gin"
 	"latih.in-be/internal/controller"
 	"latih.in-be/internal/middleware"
+	"latih.in-be/internal/model"
 )
 
 func QuestionRoutes(r *gin.Engine, question *controller.QuestionController) {
-	questions := r.Group("/question")
+	routes := r.Group("/question")
 	{
-		auth := questions.Group("")
+		auth := routes.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			questions.POST("/", middleware.RoleGuard("admin", "lecturer"), middleware.InputValidate([]string{"creator_id", "question_text"}), question.Create)
-			questions.GET("/", question.GetMany)
-			questions.GET("/id", question.GetById)
-			questions.PUT("/:id", middleware.RoleGuard("admin", "lecturer"), question.Update)
-			questions.DELETE("/:id", middleware.RoleGuard("admin", "lecturer"), question.Delete)
-			questions.POST("/options", middleware.RoleGuard("admin", "lecturer"), middleware.InputValidate([]string{"creator_id", "question_text"}), question.CreateWithOptions)
-			questions.POST("/json", middleware.RoleGuard("admin", "lecturer"), question.CreateFromJson)
-			questions.GET("/exam", question.GetByExam)
-			questions.GET("/diff", question.GetByDiff)
-			questions.GET("/creator", question.GetByCreator)
+			auth.POST("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), question.CreateWithOptions)
+			auth.GET("/", question.GetMany)
+			auth.GET("/id", question.GetById)
+			auth.PUT("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), question.Update)
+			auth.DELETE("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), question.Delete)
+			auth.POST("/json", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), question.CreateFromJson)
+			auth.GET("/exam", question.GetByExam)
+			auth.GET("/diff", question.GetByDiff)
+			auth.GET("/creator", question.GetByCreator)
+			auth.GET("/subject", question.GetBySubject)
 		}
 	}
 }
