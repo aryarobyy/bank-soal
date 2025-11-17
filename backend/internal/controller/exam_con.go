@@ -19,6 +19,8 @@ func NewExamController(s service.ExamService) *ExamController {
 }
 
 func (h *ExamController) Create(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	var data model.Exam
 	if err := c.ShouldBindJSON(&data); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
@@ -33,7 +35,7 @@ func (h *ExamController) Create(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.Create(c.Request.Context(), data); err != nil {
+	if err := h.service.Create(ctx, data); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -41,6 +43,8 @@ func (h *ExamController) Create(c *gin.Context) {
 }
 
 func (h *ExamController) GetById(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -48,7 +52,7 @@ func (h *ExamController) GetById(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.GetById(c.Request.Context(), id)
+	data, err := h.service.GetById(ctx, id)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -58,21 +62,25 @@ func (h *ExamController) GetById(c *gin.Context) {
 }
 
 func (h *ExamController) GetMany(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid limit")
 		return
 	}
-	data, err := h.service.GetMany(c, limit, offset)
+	data, total, err := h.service.GetMany(ctx, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
 }
 
 func (h *ExamController) Update(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -101,7 +109,7 @@ func (h *ExamController) Update(c *gin.Context) {
 	}
 	userId := userIdVal.(int)
 
-	updatedData, err := h.service.Update(c, data, id, userId)
+	updatedData, err := h.service.Update(ctx, data, id, userId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -111,6 +119,8 @@ func (h *ExamController) Update(c *gin.Context) {
 }
 
 func (h *ExamController) Delete(c *gin.Context) {
+	ctx := c.Request.Context()
+
 	idStr1 := c.Param("id")
 	id, err := strconv.Atoi(idStr1)
 	if err != nil {
@@ -125,7 +135,7 @@ func (h *ExamController) Delete(c *gin.Context) {
 	}
 	userId := userIdVal.(int)
 
-	err = h.service.Delete(c, id, userId)
+	err = h.service.Delete(ctx, id, userId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
