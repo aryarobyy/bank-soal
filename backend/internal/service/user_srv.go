@@ -19,14 +19,13 @@ type UserService interface {
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	Update(ctx context.Context, data model.User, id int) (*model.User, error)
 	Delete(ctx context.Context, id int) error
-	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.User, error)
 	GetByNim(ctx context.Context, nim string) (*model.User, error)
-	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error)
-	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, int64, error)
-	ChangePassword(ctx context.Context, id int, newPassword string) error
-	ChangeRole(ctx context.Context, id int, role model.Role, userRole model.Role) error
+	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, error)
+	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, error)
+	ChangePassword(ctx context.Context, id int, oldPassword, newPassword string) error
+	ChangeRole(ctx context.Context, id int, role model.Role) error
 	RefreshToken(ctx context.Context, refreshToken string) (string, error)
-	BulkInsert(ctx context.Context, prefix string, start int, end int) ([]model.BulkUserCredential, error)
 }
 
 type userService struct {
@@ -55,42 +54,14 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 		return fmt.Errorf("email %s already used", data.Email)
 	}
 
-	switch data.Role {
-	case "lecturer":
-		if data.Nip == "" || data.Nidn == "" {
-			return fmt.Errorf("lecturer must have both NIP and NIDN")
-		}
-	case "user":
-		if data.Nim == "" {
-			return fmt.Errorf("user must have NIM")
-		}
-	case "admin":
-	default:
-		return fmt.Errorf("invalid role: %s", data.Role)
-	}
-
-	var nimPtr, nipPtr, nidnPtr *string
-
-	if data.Nim != "" {
-		nimPtr = &data.Nim
-	}
-	if data.Nip != "" {
-		nipPtr = &data.Nip
-	}
-	if data.Nidn != "" {
-		nidnPtr = &data.Nidn
-	}
-
 	userData := model.User{
 		Name:     data.Name,
 		Email:    data.Email,
 		Password: string(hashedPassword),
 		Major:    data.Major,
+		Nim:      data.Nim,
 		Faculty:  data.Faculty,
-		Nim:      nimPtr,
-		Nip:      nipPtr,
-		Nidn:     nidnPtr,
-		Role:     model.Role(data.Role),
+		Role:     model.RoleUser,
 	}
 
 	_, err = s.repo.Register(ctx, userData)
@@ -146,42 +117,6 @@ func (s *userService) Update(ctx context.Context, data model.User, id int) (*mod
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
-	effectiveRole := data.Role
-	if effectiveRole == "" {
-		effectiveRole = oldUser.Role
-	}
-
-	roleChanged := effectiveRole != oldUser.Role
-
-	if roleChanged {
-		if effectiveRole == "lecturer" {
-			if (data.Nip == nil || *data.Nip == "") && (data.Nidn == nil || *data.Nidn == "") {
-				return nil, fmt.Errorf("lecturer must provide either Nip or Nidn")
-			}
-			data.Nim = nil
-		}
-
-		if effectiveRole == "user" {
-			if data.Nim == nil || *data.Nim == "" {
-				return nil, fmt.Errorf("user must provide Nim")
-			}
-			data.Nip = nil
-			data.Nidn = nil
-		}
-	} else {
-		if effectiveRole != "lecturer" {
-			if (data.Nip != nil && *data.Nip != "") || (data.Nidn != nil && *data.Nidn != "") {
-				return nil, fmt.Errorf("only lecturers can have Nip or Nidn")
-			}
-		}
-
-		if effectiveRole != "user" {
-			if data.Nim != nil && *data.Nim != "" {
-				return nil, fmt.Errorf("only user can have Nim")
-			}
-		}
-	}
-
 	if oldUser.ImgUrl != "" && oldUser.ImgUrl != data.ImgUrl {
 		if err := helper.DeleteImage(oldUser.ImgUrl); err != nil {
 			return nil, fmt.Errorf("failed to delete old image: %w", err)
@@ -198,6 +133,7 @@ func (s *userService) Update(ctx context.Context, data model.User, id int) (*mod
 			}
 
 			val := helper.GetFieldValue(data, fieldName)
+
 			return nil, fmt.Errorf("field '%s' with value '%v' is undefined", fieldName, val)
 		}
 
@@ -223,13 +159,13 @@ func (s *userService) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *userService) GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error) {
-	dataList, total, err := s.repo.GetMany(ctx, limit, offset)
+func (s *userService) GetMany(ctx context.Context, limit int, offset int) ([]model.User, error) {
+	dataList, err := s.repo.GetMany(ctx, limit, offset)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get all users: %w", err)
+		return nil, fmt.Errorf("failed to get all users: %w", err)
 	}
 
-	return dataList, total, nil
+	return dataList, nil
 }
 
 func (s *userService) GetByNim(ctx context.Context, nim string) (*model.User, error) {
@@ -245,47 +181,39 @@ func (s *userService) GetByNim(ctx context.Context, nim string) (*model.User, er
 	return data, nil
 }
 
-func (s *userService) GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error) {
+func (s *userService) GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, error) {
 	if containsNumber(name) {
-		return nil, 0, fmt.Errorf("name cannot contain numbers")
+		return nil, fmt.Errorf("name cannot contain numbers")
 	}
 
-	dataList, total, err := s.repo.GetByName(ctx, name, limit, offset)
+	dataList, err := s.repo.GetByName(ctx, name, limit, offset)
 	if err != nil {
-		return nil, 0, fmt.Errorf("user with name %q not found: %w", name, err)
+		return nil, fmt.Errorf("user with name %q not found: %w", name, err)
 	}
-	return dataList, total, nil
+	return dataList, nil
 }
 
-func (s *userService) GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, int64, error) {
+func (s *userService) GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, error) {
 	if role != "admin" && role != "user" && role != "lecturer" {
-		return nil, 0, fmt.Errorf("invalid role: %s", role)
+		return nil, fmt.Errorf("invalid role: %s", role)
 	}
 
-	dataList, total, err := s.repo.GetByRole(ctx, role, limit, offset)
+	dataList, err := s.repo.GetByRole(ctx, role, limit, offset)
 	if err != nil {
-		return nil, 0, fmt.Errorf("user with role %q not found: %w", role, err)
+		return nil, fmt.Errorf("user with role %q not found: %w", role, err)
 	}
 
-	return dataList, total, nil
+	return dataList, nil
 }
 
-func (s *userService) ChangePassword(ctx context.Context, id int, newPassword string) error {
-	if newPassword == "" {
-		return fmt.Errorf("new password cannot be empty")
-	}
-
-	if len(newPassword) < 6 {
-		return fmt.Errorf("password must be at least 6 characters")
-	}
-
-	user, err := s.GetById(ctx, id)
+func (s *userService) ChangePassword(ctx context.Context, id int, oldPassword, newPassword string) error {
+	data, err := s.repo.GetById(ctx, id)
 	if err != nil {
-		return fmt.Errorf("failed to get user: %w", err)
+		return fmt.Errorf("user not found: %w", err)
 	}
 
-	if user == nil {
-		return fmt.Errorf("user not found")
+	if bcrypt.CompareHashAndPassword([]byte(data.Password), []byte(oldPassword)) != nil {
+		return fmt.Errorf("old password is incorrect")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
@@ -300,11 +228,7 @@ func (s *userService) ChangePassword(ctx context.Context, id int, newPassword st
 	return nil
 }
 
-func (s *userService) ChangeRole(ctx context.Context, id int, role model.Role, userRole model.Role) error {
-	if role == model.RoleAdmin && model.Role(userRole) != model.RoleSuperAdmin {
-		return fmt.Errorf("you dont have permission to assign admin role")
-	}
-
+func (s *userService) ChangeRole(ctx context.Context, id int, role model.Role) error {
 	if err := s.repo.ChangeRole(ctx, id, role); err != nil {
 		return fmt.Errorf("cannot change role: %w", err)
 	}
@@ -337,40 +261,4 @@ func (s *userService) RefreshToken(ctx context.Context, refreshToken string) (st
 	}
 
 	return newAccessToken, nil
-}
-
-func (s *userService) BulkInsert(ctx context.Context, prefix string, start int, end int) ([]model.BulkUserCredential, error) {
-	nims := helper.GenerateNim(prefix, start, end)
-
-	var users []model.User
-	var credentials []model.BulkUserCredential
-
-	for _, nim := range nims {
-		plainPw, _ := helper.GenerateRandomPassword(12)
-		hashed, _ := bcrypt.GenerateFromPassword([]byte(plainPw), bcrypt.DefaultCost)
-
-		users = append(users, model.User{
-			Nim:      &nim,
-			Password: string(hashed),
-		})
-
-		credentials = append(credentials, model.BulkUserCredential{
-			Nim:          nim,
-			Password:     plainPw,
-			Role:         string(model.RoleUser),
-			Major:        "informatika",
-			Faculty:      "teknik",
-			AcademicYear: "20" + prefix, // dua ribu sekian
-		})
-	}
-
-	_, err := s.repo.BulkInsert(ctx, users)
-	if err != nil {
-		if strings.Contains(err.Error(), "1062") {
-			return nil, fmt.Errorf("failed to insert: some data has been registered (duplicate)")
-		}
-		return nil, fmt.Errorf("failed to bulk insert users: %w", err)
-	}
-
-	return credentials, nil
 }

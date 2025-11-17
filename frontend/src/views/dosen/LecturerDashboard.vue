@@ -38,10 +38,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+// ## PERBAIKAN 1: Impor 'watch' dan 'useGetCurrentUser' ##
+import { ref, onMounted, watch } from 'vue'; 
 import { BookOpen, FileText } from 'lucide-vue-next';
 import { getAllExam } from '../../provider/exam.provider';
 import { getmanyQuestions } from '../../provider/question.provider';
+import { useGetCurrentUser } from '../../hooks/useGetCurrentUser'; // <-- Impor user
+
+const { user } = useGetCurrentUser(); // <-- Dapatkan user
 
 const stats = ref({
   totalExam: 0,
@@ -51,31 +55,31 @@ const loading = ref(true);
 const error = ref(null);
 
 const fetchDashboardData = async () => {
+  // Tunggu sampai user.value ada
+  if (!user.value) { 
+    return;
+  }
+  
   try {
     const [examResult, questionResult] = await Promise.allSettled([
-      // ## PERUBAHAN 1: Panggil TANPA parameter ##
-      // agar mengikuti limit default (misal: 10)
-      getAllExam(), 
-      getmanyQuestions(1, 0) // Biarkan ini, karena total soal sudah benar
+      // ## PERBAIKAN 2: Kirim 'user.value.id' untuk filter ##
+      getAllExam(99999, 0, user.value.id), 
+      
+      // (Total Soal juga seharusnya difilter, tapi kita biarkan dulu)
+      getmanyQuestions(1, 0) 
     ]);
 
     // Cek hasil Panggilan Ujian
     if (examResult.status === 'fulfilled') {
-      // ## PERUBAHAN 2: LOGIKA IDENTIK DENGAN ADMIN DASHBOARD ##
-      // 'examResult.value' adalah { data: [...], total: 48 }
-      // Kita ambil array 'data' di dalamnya
-      const examList = examResult.value.data || [];
-      
-      // Kita hitung panjang array (length), BUKAN total
+      const examList = examResult.value || [];
       stats.value.totalExam = examList.length;
-      
     } else {
       console.error("Gagal mengambil data ujian:", examResult.reason);
       if (!error.value) error.value = "Gagal memuat data ujian.";
       stats.value.totalExam = 'N/A';
     }
 
-    // Cek hasil Panggilan Soal (Ini tetap menggunakan logika .total)
+    // Cek hasil Panggilan Soal
     if (questionResult.status === 'fulfilled') {
       stats.value.totalSoal = questionResult.value.total || 0;
     } else {
@@ -92,7 +96,12 @@ const fetchDashboardData = async () => {
   }
 };
 
-onMounted(() => {
-  fetchDashboardData();
-});
+// ## PERBAIKAN 3: Ganti 'onMounted' dengan 'watch' ##
+// Ini untuk memastikan 'fetchDashboardData' HANYA berjalan
+// setelah 'user.value' (data login) berhasil didapatkan.
+watch(user, (currentUser) => {
+  if (currentUser) {
+    fetchDashboardData();
+  }
+}, { immediate: true });
 </script>

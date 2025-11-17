@@ -99,11 +99,13 @@
               :key="q.id"
               class="border-b hover:bg-gray-50"
             >
-              <td class="p-3">{{ q.question.id }}</td>
-              <td class="p-3">{{ q.question.question_text.substring(0, 100) }}...</td>
+              <td class="p-3">{{ q.id }}</td>
+              <td class="p-3">
+                {{ q.question_text?.substring(0, 100) || "[Soal tidak valid]" }}...
+              </td>
               <td class="p-3 text-center">
                 <button
-                  @click="handleDeleteQuestion(q.id)"
+                  @click="handleDeleteQuestion(q)"
                   class="text-red-600 hover:text-red-800"
                 >
                   🗑️ Hapus
@@ -161,7 +163,7 @@
                   />
                 </td>
                 <td class="p-2">
-                  {{ q.question_text.substring(0, 120) }}...
+                  {{ q.question_text?.substring(0, 120) || "[Soal tidak valid]" }}...
                 </td>
               </tr>
             </tbody>
@@ -188,15 +190,14 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-// Pastikan path provider Anda sudah benar
+// Provider
 import { getExamById, deleteExam } from "/src/provider/exam.provider";
 import {
-  getExamQuestionsByExamId,
-  deleteExamQuestion,
   addExamQuestions,
+  deleteExamQuestions,
 } from "/src/provider/examquestion.provider";
 import { getPaginatedSubjects } from "/src/provider/subject.provider";
-import { getQuestionsBySubject } from "/src/provider/question.provider";
+import { getQuestionsBySubject, getQuestionsByExam } from "/src/provider/question.provider";
 
 const route = useRoute();
 const router = useRouter();
@@ -208,7 +209,7 @@ const examQuestions = ref([]);
 const loading = ref(true);
 const error = ref("");
 
-// State (Ref) untuk Modal
+// State Modal
 const showAddSoalModal = ref(false);
 const modalLoading = ref(false); 
 const saveLoading = ref(false);  
@@ -217,12 +218,10 @@ const selectedSubject = ref(null);
 const questionsForSubject = ref([]);
 const selectedQuestions = ref([]); 
 
-// Load detail ujian
 const loadExamDetails = async () => {
   try {
     const id = route.params.id;
     const res = await getExamById(id);
-    // Provider getExamById mengembalikan data langsung
     exam.value = res; 
   } catch (err) {
     console.error("Gagal memuat detail ujian:", err);
@@ -230,18 +229,17 @@ const loadExamDetails = async () => {
   }
 };
 
-// Load semua soal dalam ujian
 const loadExamQuestions = async () => {
   try {
     const id = route.params.id;
-    // Provider getExamQuestionsByExamId mengembalikan array
-    examQuestions.value = await getExamQuestionsByExamId(id);
+    const result = await getQuestionsByExam(id); 
+    examQuestions.value = result.data || [];
   } catch (err) {
     console.error("Gagal memuat soal ujian:", err);
+    examQuestions.value = []; 
   }
 };
 
-// Hapus ujian
 const removeExam = async (id) => {
   if (!confirm("Apakah kamu yakin ingin menghapus ujian ini?")) return;
   try {
@@ -254,44 +252,44 @@ const removeExam = async (id) => {
   }
 };
 
-// Hapus soal dari ujian
-const handleDeleteQuestion = async (id) => {
-  if (!confirm("Apakah kamu yakin ingin menghapus soal ini dari ujian?"))
+const handleDeleteQuestion = async (question) => {
+  const questionIdToDelete = question.id;
+  const examId = exam.value.id;
+
+  if (!confirm(`Yakin ingin menghapus soal (ID: ${questionIdToDelete}) dari ujian ini?`))
     return;
+    
   try {
-    // 'id' di sini adalah examQuestionId
-    await deleteExamQuestion(id);
+    await deleteExamQuestions(examId, [questionIdToDelete]);
     alert("Soal berhasil dihapus dari ujian!");
-    loadExamQuestions(); // Muat ulang daftar soal
+    loadExamQuestions();
   } catch (err) {
     console.error("Gagal menghapus soal:", err);
     alert("Gagal menghapus soal.");
   }
 };
 
-// --- Logika Modal Tambah Soal ---
-
-// Membuka modal
 const openAddSoalModal = () => {
   selectedSubject.value = null;
   questionsForSubject.value = [];
   selectedQuestions.value = [];
-  
   fetchAvailableSubjects(); 
   showAddSoalModal.value = true;
 };
 
-// Menutup modal
 const closeAddSoalModal = () => {
   showAddSoalModal.value = false;
 };
 
-// Mengambil daftar subjek dari database
+// ## FUNGSI YANG DIPERBAIKI ##
 const fetchAvailableSubjects = async () => {
   modalLoading.value = true;
   try {
+    // 'res' adalah objek JSON lengkap: { code: ..., data: { data: [...], total: ... } }
     const res = await getPaginatedSubjects(100, 0, "");
-    availableSubjects.value = res.data || [];
+    
+    // ## PERBAIKAN: Ambil array dari 'res.data.data' ##
+    availableSubjects.value = res.data.data || [];
   } catch (err) {
     console.error("Gagal mengambil daftar subjek:", err);
   } finally {
@@ -299,7 +297,7 @@ const fetchAvailableSubjects = async () => {
   }
 };
 
-// Mengambil soal berdasarkan subjek yang dipilih
+// (Fungsi ini sudah benar)
 const fetchQuestionsForSubject = async (subjectId) => {
   if (!subjectId) {
     questionsForSubject.value = [];
@@ -307,15 +305,10 @@ const fetchQuestionsForSubject = async (subjectId) => {
   }
   modalLoading.value = true;
   try {
-    // Ambil semua soal (asumsi < 500)
-    const res = await getQuestionsBySubject(subjectId, 500, 0);
-    
-    // Buat Set (daftar) ID soal yang SUDAH ADA di ujian ini
-    const existingQuestionIds = new Set(examQuestions.value.map(q => q.question.id));
-    
-    // Filter soal: hanya tampilkan soal yang BELUM ADA di ujian
-    questionsForSubject.value = (res.data || []).filter(q => !existingQuestionIds.has(q.id));
-
+    const result = await getQuestionsBySubject(subjectId, 500, 0); 
+    const existingQuestionIds = new Set(examQuestions.value.map(q => q.id));
+    const allQuestions = result.data || [];
+    questionsForSubject.value = allQuestions.filter(q => !existingQuestionIds.has(q.id));
   } catch (err) {
     console.error("Gagal mengambil daftar soal:", err);
     questionsForSubject.value = [];
@@ -324,7 +317,6 @@ const fetchQuestionsForSubject = async (subjectId) => {
   }
 };
 
-// Kirim soal yang dipilih ke backend
 const handleAddSoal = async () => {
   if (selectedQuestions.value.length === 0) {
     alert("Pilih setidaknya satu soal untuk ditambahkan.");
@@ -335,11 +327,9 @@ const handleAddSoal = async () => {
   try {
     const examId = exam.value.id;
     await addExamQuestions(examId, selectedQuestions.value);
-    
     alert("Soal berhasil ditambahkan!");
     closeAddSoalModal();
-    loadExamQuestions(); // Muat ulang daftar soal di halaman detail
-
+    loadExamQuestions(); 
   } catch (err) {
     alert("Gagal menambahkan soal. Silakan coba lagi.");
   } finally {
@@ -347,12 +337,9 @@ const handleAddSoal = async () => {
   }
 };
 
-// Watcher untuk memantau dropdown subjek
 watch(selectedSubject, (newSubjectId) => {
   fetchQuestionsForSubject(newSubjectId);
 });
-
-// --- Fungsi Helper (Format Tampilan) ---
 
 const formatDate = (date) => {
   if (!date) return "-";
@@ -377,8 +364,8 @@ const statusClass = (status) => {
   return "bg-gray-100 text-gray-600 border border-gray-300";
 };
 
-// onMounted
 onMounted(async () => {
+  loading.value = true;
   await loadExamDetails();
   await loadExamQuestions();
   loading.value = false;

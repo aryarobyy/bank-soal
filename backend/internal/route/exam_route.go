@@ -7,21 +7,18 @@ import (
 )
 
 func ExamRoutes(r *gin.Engine, exam *controller.ExamController) {
-	routes := r.Group("/exam")
+	exams := r.Group("/exam")
 	{
-		routes.OPTIONS("/*path", func(c *gin.Context) {
-			c.Status(204)
-		})
-		auth := routes.Group("")
+		auth := exams.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			auth.POST("/", middleware.RoleGuard("admin", "lecturer"),
+			exams.POST("/", middleware.RoleGuard("admin", "lecturer"),
 				middleware.InputValidate([]string{"title", "creator_id", "long_time", "started_at", "finished_at"}),
 				exam.Create)
-			auth.GET("/", exam.GetMany)
-			auth.GET("/id", exam.GetById)
-			auth.PUT("/:id", middleware.RoleGuard("admin", "lecturer"), exam.Update)
-			auth.DELETE("/:id", middleware.RoleGuard("admin", "lecturer"), exam.Delete)
+			exams.GET("/", exam.GetMany)
+			exams.GET("/id", exam.GetById)
+			exams.PUT("/:id", middleware.RoleGuard("admin", "lecturer"), exam.Update)
+			exams.DELETE("/:id", middleware.RoleGuard("admin", "lecturer"), exam.Delete)
 		}
 	}
 }

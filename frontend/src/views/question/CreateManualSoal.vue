@@ -83,9 +83,10 @@
 </template>
 
 <script>
-// Pastikan path ke provider dan hook Anda sudah benar
 import { createQuestionWithOptions, getQuestionById, updateQuestion } from '../../provider/question.provider';
 import { useGetCurrentUser } from '../../hooks/useGetCurrentUser';
+// Pastikan path constant ini benar
+import { API_BASE_URL } from '../../core/constant'; 
 
 // Data subjek ini HANYA CONTOH (hardcoded)
 const subjects = [
@@ -98,7 +99,11 @@ const subjects = [
 
 const createEmptySoal = () => ({
   subject_id: subjects.length > 0 ? subjects[0].id : null,
-  level: 'easy', mark: 10, imageUrl: null, question: '',
+  level: 'easy',
+  mark: 3,
+  imageUrl: null,   // URL untuk Preview (bisa dari backend atau file lokal)
+  imageFile: null,  // File Object mentah untuk diupload (Form Data)
+  question: '',
   answers: [
     { text: '', isCorrect: false }, { text: '', isCorrect: false },
     { text: '', isCorrect: false }, { text: '', isCorrect: false },
@@ -118,13 +123,14 @@ export default {
       isEditMode: false,
       questionId: null,
       returnSubjectId: null, 
-      returnPage: null, // ## PERUBAHAN DI SINI: Ditambahkan ##
-      subjects: subjects, // Menggunakan data hardcoded di atas
+      returnPage: null, 
+      subjects: subjects, 
       isDraggingImage: false,
       uploadedImageName: null,
       currentSoal: createEmptySoal(),
       soalList: [],
-      answerColors: ['bg-red-500', 'bg-blue-500', 'bg-yellow-500', 'bg-green-500']
+      answerColors: ['bg-red-500', 'bg-blue-500', 'bg-yellow-500', 'bg-green-500'],
+      isLoadingData: false,
     };
   },
   
@@ -133,27 +139,47 @@ export default {
       return this.$route.path.startsWith('/admin/soal');
     },
     listRouteName() {
-      // Mengembalikan nama route untuk daftar soal
       return this.isAdminRoute ? 'AdminSoalList' : 'DosenSoalList';
     }
   },
   
   methods: {
-    // Mengambil data soal jika dalam mode Edit
+    // ## FUNGSI DIPERBARUI: Cek apakah path sudah URL lengkap ##
+    constructImageUrl(serverPath) {
+      if (!serverPath) return null;
+      
+      // Jika backend mengirim URL lengkap (seperti di JSON Anda), gunakan langsung
+      if (serverPath.startsWith('http')) {
+        return serverPath;
+      }
+
+      // Fallback jika backend mengirim path relatif (./storages...)
+      const cleanPath = serverPath.startsWith('.') ? serverPath.substring(1) : serverPath;
+      return `${API_BASE_URL}${cleanPath}`;
+    },
+
+    // ## FUNGSI DIPERBARUI: Membaca 'img_url' ##
     async fetchQuestionData(id) {
       try {
         const response = await getQuestionById(id);
-        const questionData = response.data; // Berdasarkan JSON getById Anda
+        const questionData = response.data; // Ini adalah objek { id: 69, ... }
         if (!questionData) throw new Error("Data soal tidak ditemukan");
 
         this.currentSoal = {
           subject_id: questionData.subject_id,
           level: questionData.difficulty,
-          mark: 10, // Anda mungkin ingin mengambil 'score' dari API
+          mark: questionData.score,
           question: questionData.question_text,
           answers: this.prepareAnswers(questionData.options),
-          imageUrl: questionData.image_url || null
+          // ## PERBAIKAN: Gunakan 'img_url' (sesuai JSON) ##
+          imageUrl: this.constructImageUrl(questionData.img_url), 
+          imageFile: null, 
         };
+        
+        if (this.currentSoal.imageUrl) {
+          this.uploadedImageName = "Gambar tersimpan di server";
+        }
+
       } catch (error) {
         console.error("Gagal mengambil data soal:", error);
         alert('Gagal memuat data soal untuk diedit.');
@@ -161,7 +187,6 @@ export default {
       }
     },
     
-    // Menyiapkan array jawaban untuk form
     prepareAnswers(options = []) {
       const answers = options.map(opt => ({ text: opt.option_text, isCorrect: opt.is_correct }));
       while (answers.length < 4) {
@@ -170,66 +195,47 @@ export default {
       return answers.slice(0, 4);
     },
 
-    // ## FUNGSI SIMPAN UTAMA ##
     async saveSoal() {
       const creatorId = this.user?.id; 
-
       if (!creatorId) {
         alert('Gagal mendapatkan ID pengguna. Silakan login ulang.');
         return;
       }
-      
-      const hardcodedExamId = 2; // TODO: Perbaiki ini nanti
+      const hardcodedExamId = 2; 
 
       try {
         if (this.isEditMode) {
-          // --- ALUR UNTUK MODE EDIT ---
+          // --- ALUR EDIT ---
           if (!this.currentSoal.question.trim() || !this.currentSoal.subject_id || !this.currentSoal.answers.some(a => a.isCorrect)) {
-            alert('Harap lengkapi semua field yang wajib diisi (Subjek, Pertanyaan, dan Jawaban Benar).');
+            alert('Harap lengkapi semua field yang wajib diisi.');
             return;
           }
+          
           const payload = this.formatPayload(this.currentSoal, creatorId, hardcodedExamId);
           await updateQuestion(this.questionId, payload);
           alert('Soal berhasil diperbarui!');
           
-          // ## PERUBAHAN DI SINI: Navigasi kembali ke halaman yang benar ##
           const query = {};
-          if (this.returnSubjectId) {
-            query.subject_id = this.returnSubjectId;
-          }
-          if (this.returnPage) {
-            query.page = this.returnPage; // Kirim kembali halamannya
-          }
-
-          this.$router.push({ 
-            name: this.listRouteName, 
-            query: query // Gunakan query yang sudah disiapkan
-          });
-          // ## AKHIR PERUBAHAN ##
+          if (this.returnSubjectId) query.subject_id = this.returnSubjectId;
+          if (this.returnPage) query.page = this.returnPage; 
+          this.$router.push({ name: this.listRouteName, query: query });
 
         } else {
           // --- ALUR BUAT BARU ---
-          const questionsToSave = this.soalList.length > 0 ? this.soalList : [];
-          
+          const questionsToSave = this.soalList.length > 0 ? [...this.soalList] : [];
           if(this.currentSoal.question.trim()){
-              // Validasi jawaban untuk soal di form
               if (this.currentSoal.answers.every(a => !a.text.trim())) {
-                alert('Soal di form saat ini belum memiliki jawaban. Harap isi jawaban terlebih dahulu.');
-                return; 
+                alert('Isi jawaban terlebih dahulu.'); return; 
               }
               if (!this.currentSoal.answers.some(a => a.isCorrect)) {
-                alert('Soal di form saat ini belum memiliki jawaban benar. Harap pilih satu jawaban benar.');
-                return; 
+                alert('Pilih satu jawaban benar.'); return; 
               }
               questionsToSave.push(this.currentSoal);
           }
-
           if (questionsToSave.length === 0) {
-            alert('Tidak ada soal untuk disimpan. Harap isi form atau tambahkan soal ke daftar terlebih dahulu.');
-            return;
+            alert('Tidak ada soal untuk disimpan.'); return;
           }
 
-          // Simpan semua soal
           for (const soal of questionsToSave) {
             if (!soal.question.trim()) continue; 
             const payload = this.formatPayload(soal, creatorId, hardcodedExamId);
@@ -237,21 +243,24 @@ export default {
           }
           
           alert(`${questionsToSave.length} soal berhasil disimpan!`);
-          
-          // Arahkan ke halaman list dengan query 'show_last_page'
-          this.$router.push({ 
-            name: this.listRouteName, 
-            query: { show_last_page: 'true' } 
-          });
+          this.$router.push({ name: this.listRouteName, query: { show_last_page: 'true' } });
         }
-
       } catch (error) {
-        console.error("Gagal menyimpan/update soal:", error);
-        alert('Terjadi kesalahan. Periksa konsol untuk detail.');
+        console.error("Gagal menyimpan:", error.response?.data || error);
+        const translatedMessage = this.translateBackendError(error);
+        alert(translatedMessage);
       }
     },
+
+    translateBackendError(error) {
+      const rawMessage = error?.response?.data?.message || 'Terjadi kesalahan.';
+      const message = rawMessage.toLowerCase();
+      if (message.includes("easy difficulty must be between")) return "Skor Easy harus 3-8.";
+      if (message.includes("medium difficulty must be between")) return "Skor Medium harus 10-15.";
+      if (message.includes("hard difficulty must be between")) return "Skor Hard harus 18-23.";
+      return rawMessage;
+    },
     
-    // Memformat data soal agar sesuai dengan API
     formatPayload(soal, creatorId, examId) {
         return {
             exam_id: examId,
@@ -259,18 +268,17 @@ export default {
             subject_id: soal.subject_id,
             question_text: soal.question,
             difficulty: soal.level,
-            score: soal.mark, 
+            score: soal.mark,
             options: soal.answers
-                .filter(a => a.text.trim() !== '') // Hanya kirim jawaban yang diisi
+                .filter(a => a.text.trim() !== '') 
                 .map((a, index) => ({
                     option_label: String.fromCharCode(65 + index),
                     option_text: a.text,
                     is_correct: a.isCorrect,
                 })),
+            image: soal.imageFile, // Mengirim file mentah
         };
     },
-    
-    // --- Metode Bantuan Form ---
     
     triggerImageInput() { this.$refs.imageInput.click(); },
     handleImageSelect(event) { this.processImage(event.target.files[0]); },
@@ -278,8 +286,11 @@ export default {
     
     processImage(file) {
       if (file && file.type.startsWith('image/')) {
+        this.currentSoal.imageFile = file; 
+        this.uploadedImageName = file.name;
+        
         const reader = new FileReader();
-        reader.onload = (e) => { this.currentSoal.imageUrl = e.target.result; this.uploadedImageName = file.name; };
+        reader.onload = (e) => { this.currentSoal.imageUrl = e.target.result; };
         reader.readAsDataURL(file);
       } else {
         alert('Hanya file gambar yang diperbolehkan!');
@@ -288,9 +299,10 @@ export default {
     
     removeImage() {
       this.currentSoal.imageUrl = null;
+      this.currentSoal.imageFile = null; 
       this.uploadedImageName = null;
       if (this.$refs.imageInput) {
-        this.$refs.imageInput.value = null; // Reset input file
+        this.$refs.imageInput.value = null; 
       }
     },
     
@@ -301,51 +313,55 @@ export default {
     },
     
     addSoalToList() {
-      // Validasi sebelum menambahkan ke daftar
-      if (!this.currentSoal.subject_id) { alert('Silakan pilih subjek mata kuliah terlebih dahulu!'); return; }
-      if (!this.currentSoal.question.trim()) { alert('Soal tidak boleh kosong!'); return; }
-      if (this.currentSoal.answers.every(a => !a.text.trim())) { alert('Setidaknya satu jawaban harus diisi!'); return; }
-      if (!this.currentSoal.answers.some(a => a.isCorrect)) { alert('Pilih satu jawaban yang benar!'); return; }
+      if (!this.currentSoal.subject_id) { alert('Pilih subjek!'); return; }
+      if (!this.currentSoal.question.trim()) { alert('Soal kosong!'); return; }
+      if (this.currentSoal.answers.every(a => !a.text.trim())) { alert('Jawaban kosong!'); return; }
+      if (!this.currentSoal.answers.some(a => a.isCorrect)) { alert('Pilih jawaban benar!'); return; }
 
-      // Tambahkan soal ke list
       this.soalList.push(JSON.parse(JSON.stringify(this.currentSoal)));
       
-      // Simpan subject_id, lalu reset form
       const savedSubjectId = this.currentSoal.subject_id;
       this.currentSoal = createEmptySoal();
-      this.currentSoal.subject_id = savedSubjectId; // Atur kembali subject agar tidak perlu milih lagi
+      this.currentSoal.subject_id = savedSubjectId; 
       
-      this.removeImage(); // Hapus gambar dari form
-      alert('Soal berhasil ditambahkan ke daftar!');
+      this.removeImage(); 
+      alert('Soal ditambahkan ke daftar!');
     },
     
     removeSoalFromList(index) {
-        if (confirm('Anda yakin ingin menghapus soal ini dari daftar?')) {
+        if (confirm('Hapus soal dari daftar?')) {
             this.soalList.splice(index, 1);
         }
     },
   },
+
+  watch: {
+    'currentSoal.level'(newLevel) {
+      if (this.isLoadingData) return;
+      switch (newLevel) {
+        case 'easy': this.currentSoal.mark = 3; break;
+        case 'medium': this.currentSoal.mark = 10; break;
+        case 'hard': this.currentSoal.mark = 18; break;
+        default: this.currentSoal.mark = 3;
+      }
+    }
+  },
   
-  // ## created DIPERBARUI ##
   created() {
     const id = this.$route.params.id;
     const returnId = this.$route.query.return_subject_id; 
-    const returnPg = this.$route.query.return_page; // ## TAMBAHKAN INI ##
+    const returnPg = this.$route.query.return_page; 
     
-    if (returnId) {
-      this.returnSubjectId = returnId; 
-    }
-
-    // ## TAMBAHKAN BLOK INI ##
-    if (returnPg) {
-      this.returnPage = parseInt(returnPg, 10);
-    }
+    if (returnId) this.returnSubjectId = returnId; 
+    if (returnPg) this.returnPage = parseInt(returnPg, 10);
     
-    // Jika ada 'id' di URL, kita masuk ke mode Edit
     if (id) {
       this.isEditMode = true;
       this.questionId = id;
-      this.fetchQuestionData(id); // Panggil data soal
+      this.isLoadingData = true;
+      this.fetchQuestionData(id).finally(() => {
+        this.isLoadingData = false;
+      });
     }
   }
 };

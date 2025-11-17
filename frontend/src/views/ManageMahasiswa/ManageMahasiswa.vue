@@ -2,12 +2,22 @@
   <div class="p-6 bg-gray-50 min-h-screen">
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-2xl font-bold text-gray-800">Manajemen Akun Mahasiswa</h2>
-      <button
-        @click="openAddModal"
-        class="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition shadow"
-      >
-        <i class="fas fa-plus-circle"></i> Tambah Mahasiswa
-      </button>
+      
+      <div class="flex gap-2">
+        <button
+          @click="openAddModal"
+          class="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition shadow"
+        >
+          <i class="fas fa-plus-circle"></i> Tambah Mahasiswa
+        </button>
+        
+        <button
+          @click="openGenerateModal"
+          class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow"
+        >
+          <i class="fas fa-users"></i> Generate Massal
+        </button>
+      </div>
     </div>
 
     <div v-if="loading" class="text-center py-10">
@@ -25,6 +35,7 @@
             <th class="px-4 py-3 text-left">Nama</th>
             <th class="px-4 py-3 text-left">Email</th>
             <th class="px-4 py-3 text-left">NIM</th>
+            <th class="px-4 py-3 text-left">Tahun Ajaran</th>
             <th class="px-4 py-3 text-left">Role</th>
             <th class="px-4 py-3 text-left">Tanggal Dibuat</th>
             <th class="px-4 py-3 text-left">Aksi</th>
@@ -36,10 +47,11 @@
             :key="mhs.id || mhs.ID || mhs._id"
             class="border-t hover:bg-gray-50 transition"
           >
-            <td class="px-4 py-3">{{ index + 1 }}</td>
+            <td class="px-4 py-3">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
             <td class="px-4 py-3 font-medium">{{ mhs.name }}</td>
             <td class="px-4 py-3">{{ mhs.email }}</td>
             <td class="px-4 py-3">{{ mhs.nim }}</td>
+            <td class="px-4 py-3">{{ mhs.academic_year }}</td>
             <td class="px-4 py-3">
               <span
                 :class="roleClass(mhs.role)"
@@ -67,12 +79,34 @@
             </td>
           </tr>
           <tr v-if="mahasiswaList.length === 0">
-            <td colspan="7" class="px-4 py-4 text-center text-gray-500">
+            <td colspan="8" class="px-4 py-4 text-center text-gray-500">
               Belum ada data mahasiswa.
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div v-if="!loading && totalPages > 1" class="flex justify-between items-center mt-6">
+      <span class="text-sm text-gray-700">
+        Halaman <span class="font-semibold">{{ currentPage }}</span> dari <span class="font-semibold">{{ totalPages }}</span> (Total <span class="font-semibold">{{ totalItems }}</span> mahasiswa)
+      </span>
+      <div class="flex gap-1">
+        <button
+          @click="prevPage"
+          :disabled="currentPage === 1"
+          class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          &lt; Sebelumnya
+        </button>
+        <button
+          @click="nextPage"
+          :disabled="currentPage === totalPages"
+          class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Berikutnya &gt;
+        </button>
+      </div>
     </div>
 
     <div
@@ -87,67 +121,36 @@
         <form @submit.prevent="simpanMahasiswa">
           <div class="mb-3">
             <label class="block mb-1 text-sm font-medium text-gray-700">Nama</label>
-            <input
-              v-model="form.name"
-              type="text"
-              required
-              class="w-full p-2 border rounded-md"
-            />
+            <input v-model="form.name" type="text" required class="w-full p-2 border rounded-md"/>
           </div>
-
           <div class="mb-3">
             <label class="block mb-1 text-sm font-medium text-gray-700">Email</label>
-            <input
-              v-model="form.email"
-              type="email"
-              required
-              class="w-full p-2 border rounded-md"
-            />
+            <input v-model="form.email" type="email" required class="w-full p-2 border rounded-md"/>
           </div>
 
           <template v-if="!editMode">
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Password</label>
-              <input
-                v-model="form.password"
-                type="password"
-                required
-                class="w-full p-2 border rounded-md"
-              />
+              <input v-model="form.password" type="password" required class="w-full p-2 border rounded-md"/>
             </div>
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">NIM</label>
-              <input
-                v-model="form.nim"
-                type="text"
-                class="w-full p-2 border rounded-md"
-                placeholder="Wajib diisi jika role 'user'"
-              />
+              <input v-model="form.nim" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi jika role 'user'"/>
             </div>
             <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700"
-                >Jurusan (Major)</label
-              >
-              <input
-                v-model="form.major"
-                type="text"
-                class="w-full p-2 border rounded-md"
-                placeholder="Wajib diisi jika role 'user'"
-              />
+              <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
+              <input v-model="form.major" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi jika role 'user'"/>
             </div>
             <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700"
-                >Fakultas (Faculty)</label
-              >
-              <input
-                v-model="form.faculty"
-                type="text"
-                class="w-full p-2 border rounded-md"
-                placeholder="Wajib diisi jika role 'user'"
-              />
+              <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas (Faculty)</label>
+              <input v-model="form.faculty" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi jika role 'user'"/>
+            </div>
+            <div class="mb-3">
+              <label class="block mb-1 text-sm font-medium text-gray-700">Tahun Ajaran (Academic Year)</label>
+              <input v-model="form.academic_year" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi jika role 'user'"/>
             </div>
           </template>
-          
+
           <template v-else>
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
@@ -187,6 +190,16 @@
                   class="w-full p-2 border rounded-md"
                 />
               </div>
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700"
+                  >Tahun Ajaran (Academic Year)</label
+                >
+                <input
+                  v-model="form.academic_year"
+                  type="text"
+                  class="w-full p-2 border rounded-md"
+                />
+              </div>
             </div>
 
             <div v-if="form.role === 'lecturer'">
@@ -212,50 +225,130 @@
               />
             </div>
           </template>
-
           <div class="mb-3" v-if="!editMode">
-            <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
-            <select
-              v-model="form.role"
-              required
-              class="w-full p-2 border rounded-md bg-white"
-            >
+             <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
+            <select v-model="form.role" required class="w-full p-2 border rounded-md bg-white">
               <option value="user" selected>Mahasiswa (user)</option>
               <option value="lecturer">Dosen (lecturer)</option>
               </select>
           </div>
 
           <div class="flex justify-end gap-2 mt-4">
-            <button
-              type="button"
-              @click="closeModal"
-              class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition"
-            >
+            <button type="button" @click="closeModal" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition">
               Batal
             </button>
-            <button
-              type="submit"
-              class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition"
-            >
+            <button type="submit" class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition">
               {{ editMode ? "Simpan Perubahan" : "Tambah" }}
             </button>
           </div>
         </form>
       </div>
     </div>
+    
+    <div
+      v-if="showGenerateModal"
+      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 transition-opacity"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+        <h3 class="text-lg font-semibold mb-4 border-b pb-2">
+          Generate Akun Massal
+        </h3>
+
+        <form @submit.prevent="handleGenerate">
+          <p class="text-sm text-gray-600 mb-4">
+            Buat akun massal berdasarkan rentang NIM. File Excel berisi NIM dan
+            password akan di-download secara otomatis.
+          </p>
+
+          <div class="mb-4">
+            <label class="block mb-1 text-sm font-medium text-gray-700">
+              Prefix NIM (Awalan)
+            </label>
+            <input
+              v-model="generateForm.prefix"
+              type="text"
+              maxlength="2"
+              required
+              class="w-full p-2 border rounded-md"
+              placeholder="Contoh: 25"
+            />
+            <p class="text-xs text-gray-500 mt-1">Wajib 2 karakter.</p>
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1 text-sm font-medium text-gray-700">
+              Angka Mulai (Start)
+            </label>
+            <input
+              v-model="generateForm.start" 
+              type="number"
+              required
+              class="w-full p-2 border rounded-md"
+              placeholder="Contoh: 301"
+            />
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1 text-sm font-medium text-gray-700">
+              Angka Akhir (End)
+            </label>
+            <input
+              v-model="generateForm.end"
+              type="number"
+              required
+              class="w-full p-2 border rounded-md"
+              placeholder="Contoh: 350"
+            />
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1 text-sm font-medium text-gray-700">
+              Tahun Ajaran (Academic Year)
+            </label>
+            <input
+              v-model="generateForm.academic_year"
+              type="text"
+              required
+              class="w-full p-2 border rounded-md"
+              placeholder="Contoh: 2025/2026"
+            />
+            <p class="text-xs text-gray-500 mt-1">Wajib diisi.</p>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-4">
+            <button
+              type="button"
+              @click="closeGenerateModal"
+              class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              :disabled="isLoadingGenerate"
+              class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition disabled:bg-gray-400"
+            >
+              {{ isLoadingGenerate ? "Memproses..." : "Generate & Download" }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+// BARU: Impor 'computed' dan 'watch'
+import { ref, onMounted, computed, watch } from "vue";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import {
   getUsersByRole,
   register,
   updateUser,
-  deleteUser, 
-  changeRole,
+  deleteUser,
   changePassword,
+  generateUsers,
 } from "../../provider/user.provider.js";
 
 const mahasiswaList = ref([]);
@@ -263,47 +356,144 @@ const loading = ref(true);
 const error = ref(null);
 const showModal = ref(false);
 const editMode = ref(false);
-const originalRole = ref(null); // <-- Ref untuk menyimpan role asli
 
 const initialFormState = {
   id: null, name: "", email: "", password: "",
-  role: "user", nim: "", major: "", faculty: "",
-  nip: "", nidn: "" // Tambahkan field Dosen
+  role: "user", nim: "", major: "", faculty: "", academic_year: "",
+  nip: "", nidn: ""
 };
 
 const form = ref({ ...initialFormState });
 const { user: storedUser } = useGetCurrentUser();
 
+const showGenerateModal = ref(false);
+const isLoadingGenerate = ref(false);
+
+const generateForm = ref({
+  prefix: "25",
+  start: '',
+  end: '',
+  academic_year: "",
+});
+
+// --- BARU: State untuk Paginasi ---
+const currentPage = ref(1);
+const itemsPerPage = ref(10); // Atur jumlah item per halaman
+const totalItems = ref(0);
+
+// BARU: Computed property untuk total halaman
+const totalPages = computed(() => {
+  return Math.ceil(totalItems.value / itemsPerPage.value);
+});
+// --- AKHIR: State Paginasi ---
+
+// DIPERBARUI: fetchMahasiswa
 const fetchMahasiswa = async () => {
   try {
     loading.value = true;
-    const response = await getUsersByRole("user");
+    
+    // Hitung offset
+    const offset = (currentPage.value - 1) * itemsPerPage.value;
+    
+    // Panggil provider dengan paginasi
+    const response = await getUsersByRole("user", itemsPerPage.value, offset); 
+    
+    // Simpan data dan total
     mahasiswaList.value = response.data || [];
+    totalItems.value = response.total || 0;
+    error.value = null;
+
   } catch (err) {
     console.error("Gagal mengambil data mahasiswa:", err);
     error.value = "Tidak dapat memuat data. Silakan coba lagi nanti.";
+    mahasiswaList.value = [];
+    totalItems.value = 0;
   } finally {
     loading.value = false;
   }
 };
 
 onMounted(() => {
-  fetchMahasiswa();
+  fetchMahasiswa(); // Panggilan pertama
 });
+
+// BARU: Watcher untuk memuat ulang data saat halaman berganti
+watch(currentPage, (newPage, oldPage) => {
+  if (newPage !== oldPage) {
+    fetchMahasiswa();
+  }
+});
+
+// BARU: Fungsi navigasi paginasi
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+// --- AKHIR: Fungsi Paginasi ---
+
 
 const openAddModal = () => {
   editMode.value = false;
-  form.value = { ...initialFormState, role: "user" }; // Pastikan default role 'user'
-  originalRole.value = null; // Reset
+  form.value = { ...initialFormState, role: "user" };
   showModal.value = true;
 };
 
 const closeModal = () => {
   showModal.value = false;
-  originalRole.value = null; // Reset
 };
 
-// ## PERBAIKAN 2: Logika simpanMahasiswa diperbarui TOTAL ##
+const openGenerateModal = () => {
+  generateForm.value = { prefix: "25", start: '', end: '', academic_year: "" };
+  showGenerateModal.value = true;
+};
+
+const closeGenerateModal = () => {
+  showGenerateModal.value = false;
+};
+
+const handleGenerate = async () => {
+  const { prefix, start, end, academic_year } = generateForm.value;
+
+  if (!prefix || !start || !end || !academic_year) {
+    alert("Harap isi semua field (Prefix, Start, End, dan Tahun Ajaran).");
+    return;
+  }
+  if (prefix.length !== 2) {
+    alert("Prefix harus 2 karakter.");
+    return;
+  }
+  if (Number(end) < Number(start)) {
+    alert("Angka Akhir tidak boleh lebih kecil dari Angka Mulai.");
+    return;
+  }
+
+  isLoadingGenerate.value = true;
+
+  try {
+    const response = await generateUsers(prefix, start, end, academic_year);
+    alert(`Sukses: ${response.message}\nFile disimpan di server sebagai: ${response.data.file}`);
+    console.log("Pengguna yang di-generate:", response.data.users);
+    
+    closeGenerateModal();
+    currentPage.value = 1; // Kembali ke halaman 1
+    fetchMahasiswa(); // Muat ulang tabel
+
+  } catch (error) {
+    console.error('Gagal generate user:', error);
+    alert(`Gagal: ${error.response?.data?.message || 'Terjadi kesalahan.'}`);
+
+  } finally {
+    isLoadingGenerate.value = false;
+  }
+};
+
 const simpanMahasiswa = async () => {
   const userId = form.value.id;
   const adminId = storedUser.value?.id || storedUser.value?.ID;
@@ -320,51 +510,33 @@ const simpanMahasiswa = async () => {
       return;
     }
 
-    const roleChanged = form.value.role !== originalRole.value;
     let passwordErrorMessage = ""; 
     
     try {
-      // 1. Siapkan payload dasar
       const dataToUpdate = { 
         name: form.value.name, 
         email: form.value.email,
+        role: form.value.role,
       };
 
-      // 2. Logika jika Role DIUBAH
-      if (roleChanged) {
-        // Panggil changeRole PERTAMA
-        await changeRole(userId, adminId, form.value.role);
-        
-        // Atur payload berdasarkan ROLE BARU
-        if (form.value.role === 'user') {
-          dataToUpdate.nim = form.value.nim || null;
-          dataToUpdate.major = form.value.major || null;
-          dataToUpdate.faculty = form.value.faculty || null;
-          dataToUpdate.nip = null; // Bersihkan data dosen
-          dataToUpdate.nidn = null;
-        } else if (form.value.role === 'lecturer') {
-          dataToUpdate.nip = form.value.nip || null;
-          dataToUpdate.nidn = form.value.nidn || null;
-          dataToUpdate.nim = null; // Bersihkan data mahasiswa
-          dataToUpdate.major = null;
-          dataToUpdate.faculty = null;
-        }
-      }
-      // 3. Logika jika Role TIDAK DIUBAH
-      else {
-        // Hanya kirim field yang relevan dengan role saat ini
-        if (form.value.role === 'user') {
-          dataToUpdate.nim = form.value.nim;
-          dataToUpdate.major = form.value.major;
-          dataToUpdate.faculty = form.value.faculty;
-        }
-        // (Kita tidak perlu menangani 'lecturer' di sini karena ini ManageMahasiswa)
+      if (form.value.role === 'user') {
+        dataToUpdate.nim = form.value.nim || null;
+        dataToUpdate.major = form.value.major || null;
+        dataToUpdate.faculty = form.value.faculty || null;
+        dataToUpdate.academic_year = form.value.academic_year || null;
+        dataToUpdate.nip = null;
+        dataToUpdate.nidn = null;
+      } else if (form.value.role === 'lecturer') {
+        dataToUpdate.nip = form.value.nip || null;
+        dataToUpdate.nidn = form.value.nidn || null;
+        dataToUpdate.nim = null;
+        dataToUpdate.major = null;
+        dataToUpdate.faculty = null;
+        dataToUpdate.academic_year = null;
       }
       
-      // 4. Panggil updateUser
       await updateUser(dataToUpdate, userId);
 
-      // 5. Coba ganti password (jika diisi)
       if (form.value.password && form.value.password.trim() !== "") {
         try {
           await changePassword(userId, form.value.password, adminId);
@@ -381,10 +553,10 @@ const simpanMahasiswa = async () => {
       }
       
       closeModal();
-      fetchMahasiswa();
+      fetchMahasiswa(); // Muat ulang halaman saat ini
 
     } catch (err) {
-      console.error("Gagal menyimpan data (Update/Role):", err);
+      console.error("Gagal menyimpan data (Update):", err);
       const errorMsg = err.response?.data?.message || "Terjadi kesalahan saat menyimpan data.";
       alert(errorMsg);
       fetchMahasiswa();
@@ -404,6 +576,7 @@ const simpanMahasiswa = async () => {
         dataToCreate.nim = form.value.nim || null;
         dataToCreate.major = form.value.major || null;
         dataToCreate.faculty = form.value.faculty || null;
+        dataToCreate.academic_year = form.value.academic_year || null;
         dataToCreate.nip = null;
         dataToCreate.nidn = null;
       } else if (form.value.role === 'lecturer') {
@@ -412,13 +585,25 @@ const simpanMahasiswa = async () => {
         dataToCreate.nim = null;
         dataToCreate.major = null;
         dataToCreate.faculty = null;
+        dataToCreate.academic_year = null;
       }
 
       await register(dataToCreate);
       alert("Akun baru berhasil ditambahkan!");
       closeModal();
-      fetchMahasiswa();
-    } catch (err) {
+      // Pindah ke halaman terakhir setelah menambah
+      try {
+        // Ambil total item baru
+        const response = await getUsersByRole("user", 1, 0);
+        totalItems.value = response.total || 0;
+        // Hitung halaman terakhir
+        currentPage.value = totalPages.value; 
+      } catch (e) {
+        fetchMahasiswa(); // Fallback jika gagal
+      }
+
+    } catch (err)
+ {
       console.error("Gagal menambah data:", err);
       const errorMsg = err.response?.data?.message || "Terjadi kesalahan saat menambah data.";
       alert(errorMsg);
@@ -426,19 +611,17 @@ const simpanMahasiswa = async () => {
   }
 };
 
-// ## PERBAIKAN 3: Simpan Role Asli saat Buka Modal ##
 const openEditModal = (mhs) => {
   editMode.value = true;
-  originalRole.value = mhs.role; // <-- Simpan role asli
   const mhsData = { ...mhs };
   const userId = mhs.id || mhs.ID || mhs._id;
   form.value = {
     ...initialFormState,
     ...mhsData,
-    // Konversi null dari DB menjadi string kosong untuk v-model
     nim: mhs.nim || "",
     major: mhs.major || "", 
     faculty: mhs.faculty || "",
+    academic_year: mhs.academic_year || "",
     nip: mhs.nip || "",
     nidn: mhs.nidn || "",
     id: userId,
@@ -448,7 +631,6 @@ const openEditModal = (mhs) => {
 };
 
 const hapusMahasiswa = async (mhs) => {
-  // (Logika hapus tidak berubah)
   const userId = mhs.id || mhs.ID || mhs._id;
   if (!userId) {
     alert("Error: ID pengguna tidak ditemukan. Tidak dapat menghapus.");
@@ -459,7 +641,14 @@ const hapusMahasiswa = async (mhs) => {
     try {
       await deleteUser(userId);
       alert("Mahasiswa berhasil dihapus.");
-      fetchMahasiswa();
+      
+      // Logika untuk halaman jika item terakhir dihapus
+      if (mahasiswaList.value.length === 1 && currentPage.value > 1) {
+        currentPage.value--;
+      } else {
+        fetchMahasiswa();
+      }
+
     } catch (err) {
       console.error("Gagal menghapus mahasiswa:", err);
       const errorMsg = err.response?.data?.message || err.response?.data || "Terjadi kesalahan saat menghapus data.";

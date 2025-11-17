@@ -133,7 +133,13 @@ const routes = [
         path: 'update-profile', 
         name: 'AdminUpdateProfile', 
         component: UpdateProfile
-      }
+      },
+      {
+      path: 'excel-files',
+      name: 'AdminXlsFiles',
+      component: () => import('../views/Admin/ManageXlsFiles.vue'),
+      meta: { requiresAuth: true, role: 'admin' }
+     }
     ]
   },
 

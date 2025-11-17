@@ -1,29 +1,21 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
-	"os"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/xuri/excelize/v2"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
 	"latih.in-be/utils/helper"
 )
 
 type UserController struct {
-	service        service.UserService
-	xlsPathService service.XlsPathService
+	service service.UserService
 }
 
-func NewUserController(s service.UserService, x service.XlsPathService) *UserController {
-	return &UserController{
-		service:        s,
-		xlsPathService: x,
-	}
+func NewUserController(s service.UserService) *UserController {
+	return &UserController{service: s}
 }
 
 func (h *UserController) Register(c *gin.Context) {
@@ -140,33 +132,24 @@ func (h *UserController) Update(c *gin.Context) {
 		return
 	}
 
-	nim := c.PostForm("nim")
-	nip := c.PostForm("nip")
-	nidn := c.PostForm("nidn")
-
-	var nimPtr, nipPtr, nidnPtr *string
-	if nim != "" {
-		nimPtr = &nim
-	}
-	if nip != "" {
-		nipPtr = &nip
-	}
-	if nidn != "" {
-		nidnPtr = &nidn
-	}
-
 	user := model.User{
-		Name:         c.PostForm("name"),
-		Email:        email,
-		Nim:          nimPtr,
-		Nip:          nipPtr,
-		Nidn:         nidnPtr,
-		Major:        c.PostForm("major"),
-		Faculty:      c.PostForm("faculty"),
-		Status:       model.Status(c.PostForm("status")),
-		AcademicYear: c.PostForm("academic_year"),
+		Name:    c.PostForm("name"),
+		Email:   email,
+		Nim:     c.PostForm("nim"),
+		Major:   c.PostForm("major"),
+		Faculty: c.PostForm("faculty"),
+		Status:  model.Status(c.PostForm("status")),
 	}
 
+	academicYearStr := c.PostForm("academic_year")
+	if academicYearStr != "" {
+		academicYear, err := strconv.Atoi(academicYearStr)
+		if err != nil {
+			helper.Error(c, http.StatusBadRequest, "invalid academic_year")
+			return
+		}
+		user.AcademicYear = academicYear
+	}
 	file, _ := c.FormFile("image")
 	if file != nil {
 		imageUrl, err := helper.UploadImage(c, id)
@@ -197,8 +180,6 @@ func (h *UserController) Delete(c *gin.Context) {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
-	helper.Success(c, nil, "user deleted")
-
 }
 
 func (h *UserController) GetMany(c *gin.Context) {
@@ -207,13 +188,13 @@ func (h *UserController) GetMany(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid limit")
 		return
 	}
-	users, total, err := h.service.GetMany(c, limit, offset)
+	users, err := h.service.GetMany(c, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	helper.Success(c, gin.H{"data": users, "total": total}, "users found")
+	helper.Success(c, users, "users found")
 }
 
 func (h *UserController) GetByNim(c *gin.Context) {
@@ -239,7 +220,7 @@ func (h *UserController) GetByName(c *gin.Context) {
 	}
 
 	name := c.Query("name")
-	users, total, err := h.service.GetByName(c, name, limit, offset)
+	users, err := h.service.GetByName(c, name, limit, offset)
 	if len(name) > 256 {
 		helper.Error(c, http.StatusBadRequest, "invalid name")
 		return
@@ -249,7 +230,7 @@ func (h *UserController) GetByName(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": users, "total": total}, "users found")
+	helper.Success(c, users, "users found")
 }
 
 func (h *UserController) GetByRole(c *gin.Context) {
@@ -260,13 +241,13 @@ func (h *UserController) GetByRole(c *gin.Context) {
 	}
 
 	role := c.Query("role")
-	users, total, err := h.service.GetByRole(c, role, limit, offset)
+	users, err := h.service.GetByRole(c, role, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	helper.Success(c, gin.H{"data": users, "total": total}, "users found")
+	helper.Success(c, users, "users found")
 }
 
 func (h *UserController) ChangePassword(c *gin.Context) {
@@ -283,7 +264,7 @@ func (h *UserController) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ChangePassword(c.Request.Context(), id, req.NewPassword); err != nil {
+	if err := h.service.ChangePassword(c.Request.Context(), id, req.OldPassword, req.NewPassword); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -305,6 +286,21 @@ func (h *UserController) ChangeRole(c *gin.Context) {
 		return
 	}
 
+	if input.AdminId == 0 || input.Role == "" {
+		helper.Error(c, http.StatusBadRequest, "adminId and role are required")
+		return
+	}
+
+	admin, err := h.service.GetById(c, input.AdminId)
+	if err != nil {
+		helper.Error(c, http.StatusUnauthorized, "admin not found")
+		return
+	}
+	if admin.Role != "admin" {
+		helper.Error(c, http.StatusForbidden, "you are not authorized to change roles")
+		return
+	}
+
 	user, err := h.service.GetById(c, id)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, "user not found")
@@ -322,21 +318,7 @@ func (h *UserController) ChangeRole(c *gin.Context) {
 		return
 	}
 
-	userRole, exists := c.Get("role")
-	if !exists {
-		helper.Error(c, http.StatusUnauthorized, "role not found in context")
-		return
-	}
-
-	roleStr, ok := userRole.(string)
-	if !ok {
-		helper.Error(c, http.StatusBadRequest, "invalid role type")
-		return
-	}
-
-	roleValue := model.Role(roleStr)
-
-	if err := h.service.ChangeRole(c, id, user.Role, roleValue); err != nil {
+	if err := h.service.ChangeRole(c, id, user.Role); err != nil {
 		helper.Error(c, http.StatusInternalServerError, "failed to update user role")
 		return
 	}
@@ -358,74 +340,4 @@ func (h *UserController) RefreshToken(c *gin.Context) {
 	}
 
 	helper.Success(c, newAccessToken, "token refreshed")
-}
-
-func (h *UserController) BulkInsert(c *gin.Context) {
-	prefix := c.Query("prefix")
-	startStr := c.Query("start")
-	endStr := c.Query("end")
-
-	if len(prefix) != 2 {
-		helper.Error(c, http.StatusBadRequest, "prefix must be 2")
-		return
-	}
-
-	startInt, err := strconv.Atoi(startStr)
-	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid start")
-		return
-	}
-
-	endInt, err := strconv.Atoi(endStr)
-	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid end")
-		return
-	}
-
-	prefixes := "G1A" + prefix
-
-	users, err := h.service.BulkInsert(c, prefixes, startInt, endInt)
-	if err != nil {
-		helper.Error(c, 500, err.Error())
-		return
-	}
-
-	f := excelize.NewFile()
-	f.SetCellValue("Sheet1", "A1", "NIM")
-	f.SetCellValue("Sheet1", "B1", "Password")
-
-	for i := range users {
-		row := strconv.Itoa(i + 2)
-		f.SetCellValue("Sheet1", "A"+row, users[i].Nim)
-		f.SetCellValue("Sheet1", "B"+row, users[i].Password)
-	}
-
-	storageDir := "./storages/files"
-	if err := os.MkdirAll(storageDir, os.ModePerm); err != nil {
-		helper.Error(c, http.StatusInternalServerError, "failed to create storage directory")
-		return
-	}
-
-	timestamp := time.Now().Format("20060102_150405")
-	filename := fmt.Sprintf("bulk_users_%s.xlsx", timestamp)
-	filepath := fmt.Sprintf("%s/%s", storageDir, filename)
-
-	if err := f.SaveAs(filepath); err != nil {
-		helper.Error(c, http.StatusInternalServerError, "failed to save xls file")
-		return
-	}
-
-	if err := h.xlsPathService.SaveXlsPath(c, filepath); err != nil {
-		helper.Error(c, http.StatusInternalServerError, "failed to save xls path")
-		return
-	}
-
-	response := map[string]interface{}{
-		"users":    users,
-		"file":     filename,
-		"filepath": filepath,
-		"message":  "users created and xls file saved",
-	}
-
-	helper.Success(c, response, "users created and xls file saved")
 }

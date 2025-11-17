@@ -104,11 +104,10 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
-import { useRoute } from "vue-router"; // ## PERBAIKAN 3: Impor useRoute ##
+import { useRoute } from "vue-router";
 import { getAllExam, deleteExam } from "/src/provider/exam.provider";
 import { useGetCurrentUser } from "/src/hooks/useGetCurrentUser";
 
-// ## PERBAIKAN 4: Tambahkan route dan computed isAdminRoute ##
 const route = useRoute();
 const isAdminRoute = computed(() => route.path.startsWith('/admin'));
 
@@ -118,32 +117,42 @@ const sortBy = ref("Last Modified");
 const statusFilter = ref("");
 const page = ref(1);
 const limit = 10;
+const totalItems = ref(0); // Tambahkan totalItems
 
 const { user } = useGetCurrentUser();
 
-// ✅ Ambil data ujian dari backend
+// ## FUNGSI DIPERBARUI ##
 const loadExams = async () => {
+  if (!user.value) return; // Jangan lakukan apa-apa jika user belum dimuat
+
   try {
     const offset = (page.value - 1) * limit;
-    const result = await getAllExam(limit, offset);
+    
+    // Tentukan apakah kita perlu memfilter berdasarkan creator
+    const creatorId = isAdminRoute.value ? null : user.value.id;
+    
+    // Panggil provider baru dengan creatorId
+    // 'result' sekarang adalah { data: [...], total: ... }
+    // ATAU provider Anda mengembalikan array (mari kita asumsikan array)
+    const result = await getAllExam(limit, offset, creatorId);
 
-    const data = Array.isArray(result) ? result : result?.data || [];
+    // Provider Anda mengembalikan array, bukan objek { data, total }
+    exams.value = Array.isArray(result) ? result : [];
+    
+    // (Paginasi sederhana berbasis data yang diambil, BUKAN total)
+    totalItems.value = exams.value.length; 
 
-    // Filter berdasarkan creator HANYA jika bukan admin
-    if (isAdminRoute.value) {
-      exams.value = data;
-    } else {
-      exams.value = data.filter((e) => e.creator_id === user.value.id);
-    }
   } catch (err) {
     console.error("Gagal memuat data ujian:", err);
     exams.value = [];
   }
 };
+// ## AKHIR PERUBAHAN ##
 
-// (Sisa script setup tidak berubah)
 onMounted(loadExams);
-watch(page, loadExams);
+
+// PERBAIKAN: Tonton juga 'user' untuk memastikan data dimuat setelah user ada
+watch([page, user], loadExams, { immediate: true });
 
 const filteredExams = computed(() => {
   let data = [...exams.value];
@@ -160,9 +169,13 @@ const filteredExams = computed(() => {
   return data;
 });
 
-const totalPages = computed(() =>
-  Math.ceil(filteredExams.value.length / limit)
-);
+// Paginasi ini masih berbasis data yang di-filter, bukan total dari DB
+const totalPages = computed(() => {
+  const total = filteredExams.value.length;
+  if (total === 0) return 1;
+  return Math.ceil(total / limit);
+});
+
 
 const paginatedExams = computed(() => {
   const start = (page.value - 1) * limit;

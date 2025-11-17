@@ -2,18 +2,33 @@ import { EXAM } from "../core/constant";
 import ApiHandler from "./api.handler";
 
 // ✅ Get all exams (support pagination, aman jika BE pakai query)
-export const getAllExam = async (limit = 10, offset = 0) => {
+export const getAllExam = async (limit = 10, offset = 0, creatorId = null) => {
   try {
+    // 1. Buat URLSearchParams
+    const params = new URLSearchParams();
+    params.append('limit', limit);
+    params.append('offset', offset);
+    
+    // 2. Tambahkan creator_id HANYA jika ada
+    if (creatorId) {
+      params.append('creator_id', creatorId);
+    }
+
+    // 3. Panggil API dengan query
     const res = await ApiHandler.get(
-      `/${EXAM}/?limit=${limit}&offset=${offset}`
+      `/${EXAM}/?${params.toString()}`
     );
-    // backend kamu kadang return { data: [...] }, kadang langsung array
-    return res.data?.data || res.data || [];
+    
+    // Asumsi provider ini mengembalikan array, bukan objek { data, total }
+    // Berdasarkan perbaikan kita sebelumnya
+    return res.data.data.data; 
+    
   } catch (error) {
     console.error("Gagal mengambil data ujian:", error);
-    throw error;
+    return []; 
   }
 };
+
 
 // ✅ Get exam by ID (mendukung format lama dan baru)
 export const getExamById = async (id) => {

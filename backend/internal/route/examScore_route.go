@@ -7,16 +7,16 @@ import (
 )
 
 func ExamScoreRoutes(r *gin.Engine, examScore *controller.ExamScoreController) {
-	routes := r.Group("/exam-score")
+	examScores := r.Group("/exam-score")
 	{
-		auth := routes.Group("")
+		auth := examScores.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			auth.POST("/", middleware.RoleGuard("admin", "lecturer"), middleware.InputValidate([]string{"exam_id", "user_id", "status"}), examScore.Create)
-			auth.GET("/", examScore.GetMany)
-			auth.GET("/id", examScore.GetById)
-			auth.PUT("/:id", examScore.Update)
-			auth.DELETE("/:id", examScore.Delete)
+			examScores.POST("/", middleware.RoleGuard("admin", "lecturer"), middleware.InputValidate([]string{"exam_id", "user_id", "status"}), examScore.Create)
+			examScores.GET("/", examScore.GetMany)
+			examScores.GET("/id", examScore.GetById)
+			examScores.PUT("/:id", examScore.Update)
+			examScores.DELETE("/:id", examScore.Delete)
 		}
 	}
 }

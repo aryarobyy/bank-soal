@@ -73,10 +73,6 @@ func performMigration() error {
 		&model.Option{},
 		&model.ExamScore{},
 		&model.Exam{},
-		&model.ExamSession{},
-		&model.XlsPath{},
-		&model.UserAnswer{},
-		&model.Subject{},
 	)
 	if err != nil {
 		return err

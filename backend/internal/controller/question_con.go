@@ -19,7 +19,7 @@ func NewQuestionController(s service.QuestionService) *QuestionController {
 }
 
 func (h *QuestionController) Create(c *gin.Context) {
-	var data *model.Question
+	var data model.Question
 	if err := c.ShouldBindJSON(&data); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
@@ -55,13 +55,13 @@ func (h *QuestionController) GetMany(c *gin.Context) {
 		helper.Error(c, http.StatusBadRequest, "invalid limit")
 		return
 	}
-	data, total, err := h.service.GetMany(c, limit, offset)
+	data, err := h.service.GetMany(c, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
+	helper.Success(c, data, "data found")
 }
 
 func (h *QuestionController) Update(c *gin.Context) {
@@ -118,7 +118,7 @@ func (h *QuestionController) Delete(c *gin.Context) {
 }
 
 func (h *QuestionController) CreateWithOptions(c *gin.Context) {
-	var data *model.Question
+	var data model.Question
 
 	if err := c.ShouldBindJSON(&data); err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid request body")
@@ -166,13 +166,18 @@ func (h *QuestionController) GetByExam(c *gin.Context) {
 		return
 	}
 
-	data, total, err := h.service.GetByExam(c, id, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
+	data, err := h.service.GetByExam(c, id, limit, offset)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	helper.Success(c, data, "data found")
 }
 
 func (h *QuestionController) GetByCreator(c *gin.Context) {
@@ -189,13 +194,13 @@ func (h *QuestionController) GetByCreator(c *gin.Context) {
 		return
 	}
 
-	data, total, err := h.service.GetByCreatorId(c, id, limit, offset)
+	data, err := h.service.GetByCreatorId(c, id, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
+	helper.Success(c, data, "data found")
 }
 
 func (h *QuestionController) GetByDiff(c *gin.Context) {
@@ -207,36 +212,11 @@ func (h *QuestionController) GetByDiff(c *gin.Context) {
 		return
 	}
 
-	data, total, err := h.service.GetByDifficult(c, diff, limit, offset)
+	data, err := h.service.GetByDifficult(c, diff, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
-}
-
-func (h *QuestionController) GetBySubject(c *gin.Context) {
-	subjectStr := c.Query("subject_id")
-	subject := 0
-
-	if subjectStr != "" {
-		if l, err := strconv.Atoi(subjectStr); err == nil && l > 0 {
-			subject = l
-		}
-	}
-
-	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
-	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid limit")
-		return
-	}
-
-	data, total, err := h.service.GetBySubject(c, subject, limit, offset)
-	if err != nil {
-		helper.Error(c, http.StatusNotFound, err.Error())
-		return
-	}
-
-	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
+	helper.Success(c, data, "data found")
 }

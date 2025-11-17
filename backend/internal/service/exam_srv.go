@@ -15,26 +15,21 @@ type ExamService interface {
 	GetById(ctx context.Context, id int) (*model.Exam, error)
 	Update(ctx context.Context, newData model.Exam, id int, userId int) (*model.Exam, error)
 	Delete(ctx context.Context, id int, userId int) error
-	GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, int64, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, error)
 }
 
 type examService struct {
-	repo         repository.ExamRepository
-	userRepo     repository.UserRepository
-	questionRepo repository.QuestionRepository
+	repo     repository.ExamRepository
+	userRepo repository.UserRepository
 }
 
-func NewExamService(
-	repo repository.ExamRepository,
-	userRepo repository.UserRepository,
-	questionRepo repository.QuestionRepository,
-) ExamService {
+func NewExamService(repo repository.ExamRepository, userRepo repository.UserRepository) ExamService {
 	return &examService{
-		repo:         repo,
-		userRepo:     userRepo,
-		questionRepo: questionRepo,
+		repo:     repo,
+		userRepo: userRepo,
 	}
 }
+
 func (s *examService) Create(ctx context.Context, data model.Exam) error {
 	if data.FinishedAt.Before(*data.StartedAt) {
 		return fmt.Errorf("finished_at must be after started_at")
@@ -46,6 +41,7 @@ func (s *examService) Create(ctx context.Context, data model.Exam) error {
 
 	return nil
 }
+
 func (s *examService) GetById(ctx context.Context, id int) (*model.Exam, error) {
 	data, err := s.repo.GetById(ctx, id)
 	if err != nil {
@@ -89,12 +85,12 @@ func (s *examService) Update(ctx context.Context, newData model.Exam, id int, us
 	return updatedData, nil
 }
 
-func (s *examService) GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, int64, error) {
-	data, total, err := s.repo.GetMany(ctx, limit, offset)
+func (s *examService) GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, error) {
+	data, err := s.repo.GetMany(ctx, limit, offset)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get all data: %w", err)
+		return nil, fmt.Errorf("failed to get all data: %w", err)
 	}
-	return data, total, nil
+	return data, nil
 }
 
 func (s *examService) Delete(ctx context.Context, id int, userId int) error {

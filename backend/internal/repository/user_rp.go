@@ -14,13 +14,12 @@ type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	Update(ctx context.Context, user model.User, id int) (*model.User, error)
 	Delete(ctx context.Context, id int) error
-	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
+	GetMany(ctx context.Context, limit int, offset int) ([]model.User, error)
 	GetByNim(ctx context.Context, nim string) (*model.User, error)
-	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error)
-	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, int64, error)
+	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, error)
+	GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, error)
 	ChangePassword(ctx context.Context, id int, password string) error
 	ChangeRole(ctx context.Context, id int, role model.Role) error
-	BulkInsert(ctx context.Context, users []model.User) ([]model.User, error)
 }
 
 type userRepository struct {
@@ -72,37 +71,16 @@ func (r *userRepository) Update(ctx context.Context, user model.User, id int) (*
 	if user.Name != "" {
 		updateData["name"] = user.Name
 	}
-	if user.Nim != nil {
-		if *user.Nim != "" {
-			updateData["nim"] = user.Nim
-		} else {
-			updateData["nim"] = nil
-		}
-	}
-	if user.Nip != nil {
-		if *user.Nip != "" {
-			updateData["nip"] = user.Nip
-		} else {
-			updateData["nip"] = nil
-		}
-	}
-	if user.Nidn != nil {
-		if *user.Nidn != "" {
-			updateData["nidn"] = user.Nidn
-		} else {
-			updateData["nidn"] = nil
-		}
+	if user.Nim != "" {
+		updateData["nim"] = user.Nim
 	}
 	if user.Major != "" {
 		updateData["major"] = user.Major
 	}
-	if user.Email != "" {
-		updateData["email"] = user.Email
-	}
 	if user.Faculty != "" {
 		updateData["faculty"] = user.Faculty
 	}
-	if user.AcademicYear != "" {
+	if user.AcademicYear != 0 {
 		updateData["academic_year"] = user.AcademicYear
 	}
 	if user.Status != "" {
@@ -141,8 +119,6 @@ func (r *userRepository) Update(ctx context.Context, user model.User, id int) (*
 func (r *userRepository) Delete(ctx context.Context, id int) error {
 	if err := r.db.
 		WithContext(ctx).
-		Model(&model.User{}).
-		Where("id = ?", id).
 		Delete(id).
 		Error; err != nil {
 		return err
@@ -150,18 +126,8 @@ func (r *userRepository) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (r *userRepository) GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error) {
-	var (
-		users []model.User
-		total int64
-	)
-	if err := r.db.
-		WithContext(ctx).
-		Model(&model.User{}).
-		Count(&total).
-		Error; err != nil {
-		return nil, 0, err
-	}
+func (r *userRepository) GetMany(ctx context.Context, limit int, offset int) ([]model.User, error) {
+	var users []model.User
 	if err := r.db.
 		WithContext(ctx).
 		Model(model.User{}).
@@ -169,9 +135,9 @@ func (r *userRepository) GetMany(ctx context.Context, limit int, offset int) ([]
 		Offset(offset).
 		Find(&users).
 		Error; err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	return users, total, nil
+	return users, nil
 }
 
 func (r *userRepository) GetByNim(ctx context.Context, nim string) (*model.User, error) {
@@ -187,58 +153,33 @@ func (r *userRepository) GetByNim(ctx context.Context, nim string) (*model.User,
 	return &user, nil
 }
 
-func (r *userRepository) GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error) {
-	var (
-		users []model.User
-		total int64
-	)
-
-	query := r.db.
-		WithContext(ctx).
-		Model(&model.User{}).
-		Where("name LIKE ?", "%"+name+"%")
-
-	if err := query.
-		Count(&total).
-		Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := query.
-		Limit(limit).
-		Offset(offset).
-		Find(&users).
-		Error; err != nil {
-		return nil, 0, err
-	}
-	return users, total, nil
-}
-
-func (r *userRepository) GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, int64, error) {
-	var (
-		users []model.User
-		total int64
-	)
-
-	query := r.db.
+func (r *userRepository) GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, error) {
+	var users []model.User
+	if err := r.db.
 		WithContext(ctx).
 		Model(model.User{}).
-		Where("role = ?", role)
-
-	if err := query.
-		Count(&total).
-		Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := query.
+		Where("name = ?", name).
 		Limit(limit).
 		Offset(offset).
 		Find(&users).
 		Error; err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	return users, total, nil
+	return users, nil
+}
+
+func (r *userRepository) GetByRole(ctx context.Context, role string, limit int, offset int) ([]model.User, error) {
+	var users []model.User
+	if err := r.db.
+		WithContext(ctx).
+		Model(model.User{}).Where("role = ?", role).
+		Limit(limit).
+		Offset(offset).
+		Find(&users).
+		Error; err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
 func (r *userRepository) ChangePassword(ctx context.Context, id int, password string) error {
@@ -263,15 +204,4 @@ func (r *userRepository) ChangeRole(ctx context.Context, id int, role model.Role
 		return err
 	}
 	return nil
-}
-
-func (r *userRepository) BulkInsert(ctx context.Context, users []model.User) ([]model.User, error) {
-	if err := r.db.
-		WithContext(ctx).
-		CreateInBatches(&users, 100). //batch size 100
-		Error; err != nil {
-		return nil, err
-	}
-
-	return users, nil
 }

@@ -12,7 +12,27 @@ export const getmanyQuestions = async (limit,offset) => {
 };
 
 export const createQuestionWithOptions = async (data) => {
-  const res = await ApiHandler.post(`${QUESTION}/options`, data);
+  const formData = new FormData();
+  
+  // Loop semua data dari formatPayload
+  for (const key in data) {
+    const value = data[key];
+    
+    if (key === 'options') {
+      // Backend (sesuai Postman) mengharapkan 'options' sebagai string JSON
+      formData.append(key, JSON.stringify(value));
+    } else if (value !== null && value !== undefined) {
+      // Ini akan menangani string, angka, boolean, dan File (gambar)
+      formData.append(key, value);
+    }
+  }
+
+  // Kirim sebagai multipart/form-data
+  const res = await ApiHandler.post(`${QUESTION}/`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return res.data;
 };
 
@@ -29,7 +49,27 @@ export const getQuestionById = async (id) => {
 };
 
 export const updateQuestion = async (id, data) => {
-  const res = await ApiHandler.put(`/${QUESTION}/${id}`, data);
+  const formData = new FormData();
+  
+  for (const key in data) {
+    const value = data[key];
+    
+    if (key === 'options') {
+      // Backend (sesuai Postman) mengharapkan 'options' sebagai string JSON
+      formData.append(key, JSON.stringify(value));
+    } else if (value !== null && value !== undefined) {
+      // Ini akan menangani string, angka, boolean, dan File (gambar)
+      // Jika 'image' (value) adalah null, ini akan dilewati (perilaku benar)
+      formData.append(key, value);
+    }
+  }
+  
+  // Endpoint update (PUT /question/:id)
+  const res = await ApiHandler.put(`${QUESTION}/${id}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return res.data;
 };
 
@@ -44,10 +84,10 @@ export const createQuestionFromJson = async (data) => {
 };
 
 export const getQuestionsByExam = async (examId) => {
-  const res = await ApiHandler.get(`${QUESTION}/exam?exam_id=${examId}`);
+  // Parameter dikembalikan ke 'exam_id' agar sesuai dengan Postman
+  const res = await ApiHandler.get(`${QUESTION}/exam?exam_id=${examId}`); // <-- PERUBAHAN DI SINI
   return res.data.data;
 };
-
 export const getQuestionsByDiff = async (difficulty) => {
   const res = await ApiHandler.get(`${QUESTION}/diff?diff=${difficulty}`);
   return res.data.data;

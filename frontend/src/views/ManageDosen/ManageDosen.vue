@@ -16,7 +16,6 @@
     <div v-else-if="error" class="text-center py-10 bg-red-50 p-4 rounded-lg">
       <p class="text-red-600">{{ error }}</p>
     </div>
-
     <div v-else class="bg-white shadow rounded-lg overflow-hidden">
       <table class="min-w-full border-collapse">
         <thead class="bg-gray-100 text-gray-700 text-sm">
@@ -37,7 +36,7 @@
             :key="dosen.id || dosen.ID || dosen._id"
             class="border-t hover:bg-gray-50 transition"
           >
-            <td class="px-4 py-3">{{ index + 1 }}</td>
+            <td class="px-4 py-3">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
             <td class="px-4 py-3 font-medium">{{ dosen.name }}</td>
             <td class="px-4 py-3">{{ dosen.email }}</td>
             <td class="px-4 py-3">{{ dosen.nip }}</td>
@@ -74,6 +73,27 @@
         </tbody>
       </table>
     </div>
+    <div v-if="!loading && totalPages > 1" class="flex justify-between items-center mt-6">
+      <span class="text-sm text-gray-700">
+        Halaman <span class="font-semibold">{{ currentPage }}</span> dari <span class="font-semibold">{{ totalPages }}</span> (Total <span class="font-semibold">{{ totalItems }}</span> dosen)
+      </span>
+      <div class="flex gap-1">
+        <button
+          @click="prevPage"
+          :disabled="currentPage === 1"
+          class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          &lt; Sebelumnya
+        </button>
+        <button
+          @click="nextPage"
+          :disabled="currentPage === totalPages"
+          class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Berikutnya &gt;
+        </button>
+      </div>
+    </div>
 
     <div
       v-if="showModal"
@@ -81,7 +101,7 @@
     >
       <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
         <h3 class="text-lg font-semibold mb-4">
-          {{ editMode ? "Edit Dosen" : "Tambah Dosen" }}
+          {{ editMode ? "Edit Akun" : "Tambah Dosen" }}
         </h3>
 
         <form @submit.prevent="simpanDosen">
@@ -142,6 +162,18 @@
                 <label class="block mb-1 text-sm font-medium text-gray-700">NIM</label>
                 <input v-model="form.nim" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk mahasiswa"/>
               </div>
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
+                <input v-model="form.major" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk mahasiswa"/>
+              </div>
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas (Faculty)</label>
+                <input v-model="form.faculty" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk mahasiswa"/>
+              </div>
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700">Tahun Ajaran (Academic Year)</label>
+                <input v-model="form.academic_year" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk mahasiswa"/>
+              </div>
             </div>
             
             <div class="mb-3">
@@ -184,13 +216,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import {
   getUsersByRole,
   register,
   updateUser,
   deleteUser,
-  changeRole, // <-- Kita akan panggil changeRole
   changePassword,
 } from "../../provider/user.provider.js";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
@@ -200,25 +231,38 @@ const loading = ref(true);
 const error = ref(null);
 const showModal = ref(false);
 const editMode = ref(false);
-const originalRole = ref(null); // <-- Ref untuk menyimpan role asli
 
+// Hapus 'academic_year' dari initial state dosen
 const initialFormState = {
   id: null, name: "", email: "", password: "",
   role: "lecturer", nip: "", nidn: "", 
-  major: "", faculty: "", nim: ""
+  major: "", faculty: "", nim: "", academic_year: "" // (kita biarkan ini untuk role 'user')
 };
 const form = ref({ ...initialFormState });
 
 const { user: storedUser } = useGetCurrentUser();
 
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const totalItems = ref(0);
+
+const totalPages = computed(() => {
+  return Math.ceil(totalItems.value / itemsPerPage.value);
+});
+
 const fetchDosen = async () => {
   try {
     loading.value = true;
-    const response = await getUsersByRole("lecturer");
+    const offset = (currentPage.value - 1) * itemsPerPage.value;
+    const response = await getUsersByRole("lecturer", itemsPerPage.value, offset);
     dosenList.value = response.data || [];
+    totalItems.value = response.total || 0;
+    error.value = null; 
   } catch (err) {
     console.error("Gagal mengambil data dosen:", err);
     error.value = "Tidak dapat memuat data. Silakan coba lagi nanti.";
+    dosenList.value = [];
+    totalItems.value = 0;
   } finally {
     loading.value = false;
   }
@@ -228,19 +272,35 @@ onMounted(() => {
   fetchDosen();
 });
 
+watch(currentPage, (newPage, oldPage) => {
+  if (newPage !== oldPage) {
+    fetchDosen();
+  }
+});
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
 const openAddModal = () => {
   editMode.value = false;
   form.value = { ...initialFormState, role: "lecturer" };
-  originalRole.value = null; // Reset
   showModal.value = true;
 };
 
 const closeModal = () => {
   showModal.value = false;
-  originalRole.value = null; // Reset
 };
 
-// ## PERBAIKAN 2: Logika simpanDosen diperbarui TOTAL ##
+// ## FUNGSI SIMPAN DIPERBARUI ##
 const simpanDosen = async () => {
   try {
     const userId = form.value.id;
@@ -258,58 +318,52 @@ const simpanDosen = async () => {
         return;
       }
       
-      const roleChanged = form.value.role !== originalRole.value;
+      let passwordSuccess = false;
       let passwordErrorMessage = "";
 
-      // 1. Siapkan payload dasar
       const dataToUpdate = { 
         name: form.value.name, 
         email: form.value.email,
+        role: form.value.role,
       };
 
-      // 2. Logika jika Role DIUBAH
-      if (roleChanged) {
-        // Panggil changeRole PERTAMA
-        await changeRole(userId, adminId, form.value.role);
-        
-        // Atur payload berdasarkan ROLE BARU
-        if (form.value.role === 'lecturer') {
-          dataToUpdate.nip = form.value.nip || null;
-          dataToUpdate.nidn = form.value.nidn || null;
-          dataToUpdate.nim = null; // Bersihkan data mahasiswa
-        } else if (form.value.role === 'user') {
-          dataToUpdate.nim = form.value.nim || null;
-          dataToUpdate.nip = null; // Bersihkan data dosen
-          dataToUpdate.nidn = null;
-        }
-      } 
-      // 3. Logika jika Role TIDAK DIUBAH
-      else {
-        // Hanya kirim field yang relevan dengan role saat ini
-        if (form.value.role === 'lecturer') {
-          dataToUpdate.nip = form.value.nip;
-          dataToUpdate.nidn = form.value.nidn;
-        }
-        // (Kita tidak perlu menangani 'user' di sini karena ini ManageDosen)
+      if (form.value.role === 'lecturer') {
+        dataToUpdate.nip = form.value.nip || null;
+        dataToUpdate.nidn = form.value.nidn || null;
+        dataToUpdate.nim = null;
+        dataToUpdate.major = null;
+        dataToUpdate.faculty = null;
+        // 'academic_year' tidak dikirim
+      } else if (form.value.role === 'user') {
+        dataToUpdate.nim = form.value.nim || null;
+        dataToUpdate.major = form.value.major || null;
+        dataToUpdate.faculty = form.value.faculty || null;
+        dataToUpdate.academic_year = form.value.academic_year || null;
+        dataToUpdate.nip = null;
+        dataToUpdate.nidn = null;
       }
       
-      // 4. Panggil updateUser (provider sudah FormData)
+      // 1. Update data utama
       await updateUser(dataToUpdate, userId);
       
-      // 5. Coba ganti password (jika diisi)
+      // 2. Update password HANYA jika diisi
       if (form.value.password && form.value.password.trim() !== "") {
         try {
           await changePassword(userId, form.value.password, adminId);
+          passwordSuccess = true;
         } catch (passwordError) {
-          console.warn("Gagal mengganti password:", passwordError);
+          console.error("Gagal mengganti password:", passwordError);
           passwordErrorMessage = passwordError.response?.data?.message || "Gagal ganti password";
         }
       }
       
+      // 3. Tampilkan pesan sukses/error
       if (passwordErrorMessage) {
         alert(`Data berhasil diperbarui, TAPI: ${passwordErrorMessage}`);
+      } else if (passwordSuccess) {
+         alert("Data dan password berhasil diperbarui!");
       } else {
-        alert("Data berhasil diperbarui!");
+         alert("Data berhasil diperbarui!");
       }
 
     } else {
@@ -324,14 +378,15 @@ const simpanDosen = async () => {
       if (form.value.role === 'lecturer') {
         dataToCreate.nip = form.value.nip || null;
         dataToCreate.nidn = form.value.nidn || null;
-        dataToCreate.major = form.value.major || null;
-        dataToCreate.faculty = form.value.faculty || null;
+        dataToCreate.major = form.value.major || "N/A";
+        dataToCreate.faculty = form.value.faculty || "N/A";
         dataToCreate.nim = null;
+        // 'academic_year' tidak dikirim
       } else if (form.value.role === 'user') {
-        // (Meskipun ini ManageDosen, kita handle jika admin mau tambah user)
         dataToCreate.nim = form.value.nim || null;
         dataToCreate.major = form.value.major || null;
         dataToCreate.faculty = form.value.faculty || null;
+        dataToCreate.academic_year = form.value.academic_year || null;
         dataToCreate.nip = null;
         dataToCreate.nidn = null;
       }
@@ -341,30 +396,39 @@ const simpanDosen = async () => {
     }
 
     closeModal();
-    fetchDosen(); // Muat ulang data
+    
+    if (!editMode.value) {
+      try {
+        const response = await getUsersByRole("lecturer", 1, 0);
+        totalItems.value = response.total || 0;
+        currentPage.value = totalPages.value; 
+      } catch (e) {
+        fetchDosen(); 
+      }
+    } else {
+      fetchDosen(); 
+    }
+
   } catch (err) {
     console.error("Gagal menyimpan data:", err);
     const errorMsg = err.response?.data?.message || "Terjadi kesalahan saat menyimpan data.";
     alert(errorMsg);
-    fetchDosen();
   }
 };
 
-// ## PERBAIKAN 3: Simpan Role Asli saat Buka Modal ##
 const editDosen = (dosen) => {
   editMode.value = true;
-  originalRole.value = dosen.role; // <-- Simpan role asli
   const userId = dosen.id || dosen.ID || dosen._id;
   
   form.value = { 
     ...initialFormState, 
     ...dosen,
-    // Konversi null dari DB menjadi string kosong untuk v-model
     nip: dosen.nip || "",
     nidn: dosen.nidn || "",
     nim: dosen.nim || "",
     major: dosen.major || "",
     faculty: dosen.faculty || "",
+    academic_year: dosen.academic_year || "",
     id: userId,          
     password: ""         
   };
@@ -372,7 +436,6 @@ const editDosen = (dosen) => {
 };
 
 const hapusDosen = async (dosen) => {
-  // (Logika hapus tidak berubah)
   const userId = dosen.id || dosen.ID || dosen._id;
   if (!userId) {
     alert("Error: ID pengguna tidak ditemukan. Tidak dapat menghapus.");
@@ -383,7 +446,13 @@ const hapusDosen = async (dosen) => {
     try {
       await deleteUser(userId);
       alert("Dosen berhasil dihapus.");
-      fetchDosen();
+      
+      if (dosenList.value.length === 1 && currentPage.value > 1) {
+        currentPage.value--;
+      } else {
+        fetchDosen();
+      }
+
     } catch (err) {
       console.error("Gagal menghapus dosen:", err);
       const errorMsg = err.response?.data?.message || err.response?.data || "Gagal menghapus data.";

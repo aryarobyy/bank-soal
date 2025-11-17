@@ -71,10 +71,8 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-// ## 3. Impor 'BookOpen' dikembalikan ##
 import { Users, Shield, UserCheck, FileText, BookOpen } from "lucide-vue-next";
 import { getUsers } from "../../provider/user.provider";
-// ## 4. Impor 'getAllExam' dikembalikan ##
 import { getAllExam } from "../../provider/exam.provider";
 import { getmanyQuestions } from "../../provider/question.provider";
 
@@ -86,21 +84,24 @@ const stats = ref({
   totalAdmins: 0,
   totalDosen: 0,
   totalSoal: 0,
-  totalExam: 0, // <-- Dikembalikan
+  totalExam: 0,
 });
 
-// ## 5. Fungsi fetch data dikembalikan seperti semula ##
 const fetchDashboardData = async () => {
   try {
     const [userResult, examResult, questionResult] = await Promise.allSettled([
-      getUsers(),
-      getAllExam(), // <-- Panggilan API dikembalikan
+      // ## PERBAIKAN: Ubah getUsers() menjadi getUsers(99999, 0) ##
+      getUsers(99999, 0),
+      getAllExam(99999, 0), 
       getmanyQuestions(1, 0),
     ]);
 
     // Cek hasil Panggilan User
     if (userResult.status === 'fulfilled') {
+      // 'userResult.value' sekarang adalah { data: [SEMUA PENGGUNA], total: ... }
       const userList = userResult.value.data || [];
+      
+      // Sekarang 'userList' berisi SEMUA pengguna, jadi perhitungan ini sudah benar
       stats.value.totalUsers = userList.length;
       stats.value.totalAdmins = userList.filter((u) => u.role === "admin").length;
       stats.value.totalDosen = userList.filter((u) => u.role === "lecturer").length;
@@ -109,17 +110,16 @@ const fetchDashboardData = async () => {
       errorStats.value = "Gagal memuat data pengguna.";
     }
 
-    // Cek hasil Panggilan Ujian
+    // Cek hasil Panggilan Ujian (Ini sudah benar)
     if (examResult.status === 'fulfilled') {
-      stats.value.totalExam = (examResult.value.data || []).length;
+      stats.value.totalExam = (examResult.value || []).length;
     } else {
-       // Jika error 403 terjadi lagi, ini akan menampilkannya di konsol
        console.error("Gagal mengambil data ujian:", examResult.reason);
        stats.value.totalExam = "N/A";
        if (!errorStats.value) errorStats.value = "Gagal memuat data ujian.";
     }
 
-    // Cek hasil Panggilan Soal
+    // Cek hasil Panggilan Soal (Ini sudah benar)
     if (questionResult.status === 'fulfilled') {
       stats.value.totalSoal = questionResult.value.total || 0;
     } else {
@@ -139,7 +139,3 @@ onMounted(() => {
   fetchDashboardData();
 });
 </script>
-
-<style scoped>
-/* Style tidak diperlukan lagi karena tabel sudah dihapus */
-</style>
