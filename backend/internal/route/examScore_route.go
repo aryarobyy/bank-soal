@@ -4,19 +4,20 @@ import (
 	"github.com/gin-gonic/gin"
 	"latih.in-be/internal/controller"
 	"latih.in-be/internal/middleware"
+	"latih.in-be/internal/model"
 )
 
 func ExamScoreRoutes(r *gin.Engine, examScore *controller.ExamScoreController) {
-	examScores := r.Group("/exam-score")
+	routes := r.Group("/exam-score")
 	{
-		auth := examScores.Group("")
+		auth := routes.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			examScores.POST("/", middleware.RoleGuard("admin", "lecturer"), middleware.InputValidate([]string{"exam_id", "user_id", "status"}), examScore.Create)
-			examScores.GET("/", examScore.GetMany)
-			examScores.GET("/id", examScore.GetById)
-			examScores.PUT("/:id", examScore.Update)
-			examScores.DELETE("/:id", examScore.Delete)
+			auth.POST("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), middleware.InputValidate([]string{"exam_id", "user_id", "status"}), examScore.Create)
+			auth.GET("/", examScore.GetMany)
+			auth.GET("/id", examScore.GetById)
+			auth.PUT("/:id", examScore.Update)
+			auth.DELETE("/:id", examScore.Delete)
 		}
 	}
 }

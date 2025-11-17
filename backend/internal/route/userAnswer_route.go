@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"latih.in-be/internal/controller"
 	"latih.in-be/internal/middleware"
+	"latih.in-be/internal/model"
 )
 
 func UserAnswerRoutes(r *gin.Engine, userAnswer *controller.UserAnswerController) {
@@ -19,10 +20,10 @@ func UserAnswerRoutes(r *gin.Engine, userAnswer *controller.UserAnswerController
 			auth.GET("/", userAnswer.GetMany)
 			auth.GET("/id", userAnswer.GetById)
 			auth.PUT("/:id", userAnswer.Update)
-			auth.DELETE("/:id", middleware.RoleGuard("admin", "lecturer"), userAnswer.Delete)
+			auth.DELETE("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), userAnswer.Delete)
 			auth.GET("/session", userAnswer.GetByExamSessionId)
 			auth.GET("/question", userAnswer.GetByQuestionId)
-			auth.GET("/user", userAnswer.GetByUserId)
+			auth.GET("/user", userAnswer.GetUserAnswer)
 		}
 	}
 }

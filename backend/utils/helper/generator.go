@@ -7,8 +7,10 @@ import (
 
 func GenerateNim(prefix string, start, end int) []string {
 	var users []string
+
+	prefixes := "G1A" + prefix
 	for i := start; i <= end; i++ {
-		users = append(users, fmt.Sprintf("%s%03d", prefix, i))
+		users = append(users, fmt.Sprintf("%s%03d", prefixes, i))
 	}
 	return users
 }
