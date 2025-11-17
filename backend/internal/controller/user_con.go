@@ -164,8 +164,9 @@ func (h *UserController) Update(c *gin.Context) {
 	nim := c.PostForm("nim")
 	nip := c.PostForm("nip")
 	nidn := c.PostForm("nidn")
+	username := c.PostForm("username")
 
-	var nimPtr, nipPtr, nidnPtr *string
+	var nimPtr, nipPtr, nidnPtr, usernamePtr *string
 	if nim != "" {
 		nimPtr = &nim
 	}
@@ -175,10 +176,14 @@ func (h *UserController) Update(c *gin.Context) {
 	if nidn != "" {
 		nidnPtr = &nidn
 	}
+	if username != "" {
+		usernamePtr = &username
+	}
 
 	user := model.User{
 		Name:         c.PostForm("name"),
 		Email:        email,
+		Username:     usernamePtr,
 		Nim:          nimPtr,
 		Nip:          nipPtr,
 		Nidn:         nidnPtr,
