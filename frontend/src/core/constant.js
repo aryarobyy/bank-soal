@@ -4,3 +4,6 @@ export const USER = "user";
 export const EXAM = "exam";
 export const QUESTION = "question"
 export const SCORE = "score"
+export const SUBJECT = "subject"
+export const EXAM_QUESTION = "exam-question";
+export const XLSPATH = "xlspath"

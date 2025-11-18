@@ -17,13 +17,14 @@
       <p class="text-red-600">{{ error }}</p>
     </div>
 
-    <div v-else class="bg-white shadow rounded-lg overflow-hidden">
+    <div velse class="bg-white shadow rounded-lg overflow-hidden">
       <table class="min-w-full border-collapse">
         <thead class="bg-gray-100 text-gray-700 text-sm">
           <tr>
             <th class="px-4 py-3 text-left">No</th>
             <th class="px-4 py-3 text-left">Nama</th>
             <th class="px-4 py-3 text-left">Email</th>
+            <th class="px-4 py-3 text-left">Username</th>
             <th class="px-4 py-3 text-left">Role</th>
             <th class="px-4 py-3 text-left">Tanggal Dibuat</th>
             <th class="px-4 py-3 text-left">Aksi</th>
@@ -35,9 +36,10 @@
             :key="admin.id || admin.ID || admin._id"
             class="border-t hover:bg-gray-50 transition"
           >
-            <td class="px-4 py-3">{{ index + 1 }}</td>
+            <td class="px-4 py-3">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
             <td class="px-4 py-3 font-medium">{{ admin.name }}</td>
             <td class="px-4 py-3">{{ admin.email }}</td>
+            <td class="px-4 py-3">{{ admin.username }}</td>
             <td class="px-4 py-3">
               <span 
                 :class="roleClass(admin.role)" 
@@ -63,12 +65,34 @@
             </td>
           </tr>
           <tr v-if="adminList.length === 0">
-            <td colspan="6" class="px-4 py-4 text-center text-gray-500">
+            <td colspan="7" class="px-4 py-4 text-center text-gray-500">
               Belum ada data admin
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div v-if="!loading && totalPages > 1" class="flex justify-between items-center mt-6">
+      <span class="text-sm text-gray-700">
+        Halaman <span class="font-semibold">{{ currentPage }}</span> dari <span class="font-semibold">{{ totalPages }}</span> (Total <span class="font-semibold">{{ totalItems }}</span> admin)
+      </span>
+      <div class="flex gap-1">
+        <button
+          @click="prevPage"
+          :disabled="currentPage === 1"
+          class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          &lt; Sebelumnya
+        </button>
+        <button
+          @click="nextPage"
+          :disabled="currentPage === totalPages"
+          class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Berikutnya &gt;
+        </button>
+      </div>
     </div>
 
     <div
@@ -90,22 +114,24 @@
             <input v-model="form.email" type="email" required class="w-full p-2 border rounded-md"/>
           </div>
 
+          <div class="mb-3">
+            <label class="block mb-1 text-sm font-medium text-gray-700">Username</label>
+            <input v-model="form.username" type="text" required class="w-full p-2 border rounded-md"/>
+          </div>
+
           <template v-if="!editMode">
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Password</label>
               <input v-model="form.password" type="password" required class="w-full p-2 border rounded-md"/>
             </div>
-            <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700">NIM/NIDN</label>
-              <input v-model="form.nim" type="text" required class="w-full p-2 border rounded-md" placeholder="Gunakan 'N/A' jika tidak ada"/>
-            </div>
+            
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
-              <input v-model="form.major" type="text" required class="w-full p-2 border rounded-md" placeholder="Gunakan 'N/A' jika tidak ada"/>
+              <input v-model="form.major" type="text" class="w-full p-2 border rounded-md" />
             </div>
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas (Faculty)</label>
-              <input v-model="form.faculty" type="text" required class="w-full p-2 border rounded-md" placeholder="Gunakan 'N/A' jika tidak ada"/>
+              <input v-model="form.faculty" type="text" class="w-full p-2 border rounded-md" />
             </div>
           </template>
 
@@ -146,14 +172,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import {
   getUsersByRole,
   register,
   updateUser,
   deleteUser,
   changePassword,
-  changeRole, // <-- Impor provider baru
+  changeRole,
 } from "../../provider/user.provider.js";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 
@@ -163,17 +189,17 @@ const error = ref(null);
 const showModal = ref(false);
 const editMode = ref(false);
 
-// ## PERUBAHAN 2: Menambahkan ref baru ##
 const availableRoles = ref(['admin', 'lecturer', 'user']);
-const originalAdminData = ref(null); // Untuk menyimpan data asli saat edit
+const originalAdminData = ref(null); 
 
 const initialFormState = {
   id: null,
   name: "",
   email: "",
+  username: "",
   password: "",
   role: "admin", 
-  nim: "",       
+  nim: null, 
   major: "",   
   faculty: ""  
 };
@@ -181,11 +207,21 @@ const form = ref({ ...initialFormState });
 
 const { user: storedUser } = useGetCurrentUser();
 
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const totalItems = ref(0);
+
+const totalPages = computed(() => {
+  return Math.ceil(totalItems.value / itemsPerPage.value);
+});
+
 const fetchAdmins = async () => {
   try {
     loading.value = true;
-    const response = await getUsersByRole("admin");
+    const offset = (currentPage.value - 1) * itemsPerPage.value;
+    const response = await getUsersByRole("admin", itemsPerPage.value, offset);
     adminList.value = response.data || [];
+    totalItems.value = response.total || 0;
   } catch (err) {
     console.error("Gagal mengambil data admin:", err);
     error.value = "Tidak dapat memuat data. Silakan coba lagi nanti.";
@@ -196,19 +232,35 @@ const fetchAdmins = async () => {
 
 onMounted(fetchAdmins);
 
+watch(currentPage, (newPage, oldPage) => {
+  if (newPage !== oldPage) {
+    fetchAdmins();
+  }
+});
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
 const openAddModal = () => {
   editMode.value = false;
   form.value = { ...initialFormState };
-  originalAdminData.value = null; // Reset data original
+  originalAdminData.value = null; 
   showModal.value = true;
 };
 
 const closeModal = () => {
   showModal.value = false;
-  originalAdminData.value = null; // Reset data original
+  originalAdminData.value = null; 
 };
 
-// ## PERUBAHAN 3: Memperbarui fungsi simpanAdmin ##
 const simpanAdmin = async () => {
   try {
     const userId = form.value.id;
@@ -220,69 +272,73 @@ const simpanAdmin = async () => {
     }
 
     if (editMode.value) {
-      // --- MODE EDIT ---
       if (!userId) {
         alert("Error: ID admin tidak ditemukan."); return;
       }
       
-      // 1. Update Nama/Email (Logika Lama)
-      const dataToUpdate = { name: form.value.name, email: form.value.email };
+      const dataToUpdate = { 
+        name: form.value.name, 
+        email: form.value.email,
+        username: form.value.username 
+      };
       await updateUser(dataToUpdate, userId);
 
-      // 2. Update Password (Logika Lama)
       let passwordErrorMessage = "";
       if (form.value.password && form.value.password.trim() !== "") {
         try {
           await changePassword(userId, form.value.password, adminId);
         } catch (passwordError) {
           console.warn("Gagal mengganti password:", passwordError);
-          passwordErrorMessage = passwordError.response?.data?.message || "Gagal ganti password (backend error)";
+          passwordErrorMessage = passwordError.response?.data?.message || "";
         }
       }
-
-      // 3. LOGIKA BARU: Update Role
       let roleErrorMessage = "";
-      const originalRole = originalAdminData.value?.role; // Ambil role asli
+      const originalRole = originalAdminData.value?.role; 
       const newRole = form.value.role;
-
-      // Cek jika role berubah
       if (newRole && originalRole && newRole !== originalRole) {
         try {
-          await changeRole(userId, adminId, newRole); // Panggil provider
+          await changeRole(userId, adminId, newRole); 
         } catch (roleError) {
           console.warn("Gagal mengganti role:", roleError);
-          roleErrorMessage = roleError.response?.data?.message || "Gagal ganti role (backend error)";
+          roleErrorMessage = roleError.response?.data?.message || ")";
         }
       }
-      // --- AKHIR LOGIKA BARU ---
-
-      // Gabungkan pesan error jika ada
       let finalMessage = "Data admin berhasil diperbarui!";
       let errors = [];
       if (passwordErrorMessage) errors.push(passwordErrorMessage);
       if (roleErrorMessage) errors.push(roleErrorMessage);
-
       if (errors.length > 0) {
         finalMessage = `Data admin diperbarui, TAPI: ${errors.join(', ')}`;
       }
       alert(finalMessage);
 
     } else {
-      // --- MODE TAMBAH --- (Logika Lama)
       const dataToCreate = {
         name: form.value.name,
         email: form.value.email,
+        username: form.value.username,
         password: form.value.password,
         role: "admin", 
-        nim: form.value.nim || "N/A", 
-        major: form.value.major || "N/A",  
-        faculty: form.value.faculty || "N/A"
+        nim: null, 
+        major: form.value.major.trim() || null, 
+        faculty: form.value.faculty.trim() || null
       };
       await register(dataToCreate);
       alert("Admin baru berhasil ditambahkan!");
     }
     closeModal();
-    fetchAdmins();
+    
+    if (!editMode.value) {
+      try {
+        const response = await getUsersByRole("admin", 1, 0);
+        totalItems.value = response.total || 0;
+        currentPage.value = totalPages.value; 
+      } catch (e) {
+        fetchAdmins(); 
+      }
+    } else {
+      fetchAdmins(); 
+    }
   } catch (err) {
     console.error("Gagal menyimpan data:", err);
     alert(err.response?.data?.message || "Terjadi kesalahan.");
@@ -291,11 +347,14 @@ const simpanAdmin = async () => {
 
 const editAdmin = (admin) => {
   editMode.value = true;
-  originalAdminData.value = { ...admin }; // Simpan data asli
+  originalAdminData.value = { ...admin }; 
   const userId = admin.id || admin.ID || admin._id;
   form.value = { 
     ...initialFormState, 
-    ...admin,            
+    ...admin,
+    username: admin.username || "",
+    major: admin.major || "",
+    faculty: admin.faculty || "",
     id: userId,
     password: "" 
   };
@@ -312,7 +371,11 @@ const hapusAdmin = async (admin) => {
     try {
       await deleteUser(userId);
       alert("Admin berhasil dihapus.");
-      fetchAdmins();
+      if (adminList.value.length === 1 && currentPage.value > 1) {
+        currentPage.value--;
+      } else {
+        fetchAdmins();
+      }
     } catch (err) {
       console.error("Gagal menghapus admin:", err);
       alert(err.response?.data?.message || err.response?.data || "Gagal menghapus data.");
@@ -321,7 +384,6 @@ const hapusAdmin = async (admin) => {
 };
 
 const roleClass = (role) => {
-  // Perbarui ini untuk menangani role baru jika perlu
   if (role === 'admin') return 'bg-red-100 text-red-800';
   if (role === 'lecturer') return 'bg-green-100 text-green-800';
   if (role === 'user') return 'bg-blue-100 text-blue-800';
