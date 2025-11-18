@@ -2,122 +2,160 @@
   <div v-if="loading" class="text-center p-10">
     <p>Memuat data bank soal...</p>
   </div>
+  
   <SoalManagement
     v-else
-    :soal-data="lecturerSoalData"
+    :subjects="paginatedSubjects" :search-query="searchQuery"
+    @update:searchQuery="searchQuery = $event"
     @buat-soal="handleBuatSoal"
     @view-details="handleViewDetails"
-    @delete-soal="handleDeleteSoal"
+    @delete-subject="handleDeleteSubject" 
   />
+
+  <div v-if="!loading && totalPages > 1" class="flex justify-center items-center space-x-2 mt-8">
+    <button
+      @click="prevPage"
+      :disabled="currentPage === 1"
+      class="px-3 py-1 rounded-md"
+      :class="currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'"
+    >
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    
+    <button
+      v-for="page in totalPages"
+      :key="page"
+      @click="goToPage(page)"
+      class="w-8 h-8 text-sm font-medium rounded-md"
+      :class="page === currentPage ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 border'"
+    >
+      {{ page }}
+    </button>
+    
+    <button
+      @click="nextPage"
+      :disabled="currentPage === totalPages"
+      class="px-3 py-1 rounded-md"
+       :class="currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'"
+    >
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
 </template>
 
 <script>
 import SoalManagement from './components/SoalManagement.vue';
-// ## 1. HAPUS 'deleteQuestion' (sudah ada di provider) dan impor 'getAllQuestions' ##
-import { getAllQuestions, deleteQuestion } from '../../provider/question.provider';
-
-// ## 2. BUAT MAP UNTUK SUBJECT (SAMA SEPERTI DI HALAMAN CREATE) ##
-// (Anda harus melengkapi ini agar sesuai dengan data Anda)
-const subjects = [
-  { id: 1, title: 'Kalkulus' },
-  { id: 2, title: 'Matematika Diskrit' },
-  { id: 3, title: 'Teori Bahasa dan Automata' },
-  { id: 4, title: 'Basis Data Lanjut' },
-  { id: 5, title: 'Metode Numerik' },
-];
-const subjectsMap = new Map(subjects.map(s => [s.id, s.title]));
-
+import { getPaginatedSubjects, deleteSubject } from '../../provider/subject.provider';
 
 export default {
   name: 'LecturerSoal',
   components: { SoalManagement },
   data() {
     return {
-      lecturerSoalData: [],
+      allSubjects: [], 
+      totalSubjects: 0, 
       loading: true,
+      currentPage: 1,
+      itemsPerPage: 10,
+      searchQuery: '',
+      // sortBy DIHAPUS
     };
+  },
+  watch: {
+    searchQuery() {
+      this.currentPage = 1;
+      // Kita tidak perlu memanggil API, filter dilakukan di frontend
+    },
   },
   computed: {
     isAdminRoute() {
       return this.$route.path.startsWith('/admin/soal');
+    },
+    
+    // ## 2. Logika filter diperbarui untuk membaca 'subject.title' ##
+    filteredSubjects() {
+      if (!this.searchQuery) {
+        return this.allSubjects; // Kembalikan semua jika tidak ada search
+      }
+      const searchLower = this.searchQuery.toLowerCase();
+      return this.allSubjects.filter(subject => 
+        subject.title.toLowerCase().includes(searchLower) // Ganti 'name' ke 'title'
+      );
+    },
+
+    totalPages() {
+      // Paginasi berdasarkan data yang sudah difilter
+      return Math.ceil(this.filteredSubjects.length / this.itemsPerPage);
+    },
+    
+    // Paginasi
+    paginatedSubjects() {
+      // Slice dari data yang sudah difilter
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      return this.filteredSubjects.slice(start, end);
     }
   },
   methods: {
+    // ## 3. 'fetchSoalData' diperbarui sesuai info backend ##
     async fetchSoalData() {
       this.loading = true;
       try {
-        const response = await getAllQuestions();
-        const questions = response.data || [];
+        // Panggil provider (minta semua data, karena API belum dukung search/pagination)
+        const response = await getPaginatedSubjects(0, 0, ''); 
         
-        // ## 3. UBAH LOGIKA PENGELOMPOKAN (GROUPING) ##
-        // Mengelompokkan berdasarkan subject_id, bukan category
-        const groupedSoal = questions.reduce((acc, soal) => {
-          // Mengambil nama subjek dari map, atau 'Lainnya' jika tidak ditemukan
-          const groupTitle = subjectsMap.get(soal.subject_id) || 'Soal Lainnya';
-          
-          if (!acc[groupTitle]) {
-            acc[groupTitle] = { title: groupTitle, items: [] };
-          }
-          
-          // Simpan subject_id bersama data soal
-          acc[groupTitle].items.push({ 
-            id: soal.id, 
-            nama: soal.question_text, 
-            status: soal.difficulty,
-            subject_id: soal.subject_id // <-- PENTING: Simpan subject_id
-          });
-          return acc;
-        }, {});
-
-        this.lecturerSoalData = Object.values(groupedSoal);
+        // Sesuai info backend: "Data.data.data" dan "response.data.total"
+        this.allSubjects = response.data.data || []; // <-- PERBAIKAN BUG
+        this.totalSubjects = response.total || 0; // <-- PERBAIKAN BUG
 
       } catch (error) {
-        console.error("Gagal mengambil data soal:", error);
+        console.error("Gagal mengambil data subjek:", error);
         alert('Gagal memuat data bank soal.');
       } finally {
         this.loading = false;
       }
     },
+    
     handleBuatSoal() {
       const routeName = this.isAdminRoute ? 'AdminSoalCreate' : 'DosenSoalCreate';
       this.$router.push({ name: routeName });
     },
 
-    // ## 4. UBAH LOGIKA "VIEW DETAILS" ##
-    handleViewDetails(soalId) {
-      let foundSubjectId = null;
-      
-      // Cari soal di dalam data yang sudah dikelompokkan
-      for (const group of this.lecturerSoalData) {
-        const foundSoal = group.items.find(soal => soal.id === soalId);
-        if (foundSoal) {
-          foundSubjectId = foundSoal.subject_id;
-          break; 
-        }
-      }
-
+    handleViewDetails(subject) {
       const routeName = this.isAdminRoute ? 'AdminSoalList' : 'DosenSoalList';
+      this.$router.push({ name: routeName, query: { subject_id: subject.id } });
+    },
+
+    // ## 4. 'handleDeleteSubject' diperbarui untuk membaca 'subject.title' ##
+    async handleDeleteSubject(subject) {
+      // Ganti '.name' menjadi '.title'
+      if (!confirm(`Anda yakin ingin menghapus mata kuliah "${subject.title}"?`)) {
+        return;
+      }
       
-      if (foundSubjectId) {
-        // Navigasi ke halaman list DENGAN query parameter subject_id
-        this.$router.push({ name: routeName, query: { subject_id: foundSubjectId } });
-      } else {
-        // Fallback jika soal tidak ditemukan (seharusnya tidak terjadi)
-        console.warn(`Soal dengan ID ${soalId} tidak ditemukan.`);
-        this.$router.push({ name: routeName });
+      try {
+        await deleteSubject(subject.id); // Panggil API
+        alert(`Mata kuliah "${subject.title}" berhasil dihapus.`);
+        this.fetchSoalData(); // Ambil ulang data
+        
+      } catch (error) {
+        console.error("Gagal menghapus subjek:", error);
+        alert('Terjadi kesalahan saat proses penghapusan.');
       }
     },
 
-    async handleDeleteSoal(soalId) {
-      if (confirm(`Anda yakin ingin menghapus soal dengan ID: ${soalId}?`)) {
-        try {
-          await deleteQuestion(soalId);
-          alert('Soal berhasil dihapus!');
-          this.fetchSoalData(); 
-        } catch (error) {
-          alert('Gagal menghapus soal.');
-        }
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
       }
+    },
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
+    goToPage(page) {
+      this.currentPage = page;
     }
   },
   mounted() {

@@ -74,10 +74,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-// ## 3. Impor 'BookOpen' dikembalikan ##
 import { Users, UserCheck, BookOpen, FileText } from 'lucide-vue-next';
-import { getUsers } from '../../provider/user.provider';
-// ## 4. Impor 'getAllExam' dikembalikan ##
+// ## 1. Impor 'getUsersByRole' ##
+import { getUsers, getUsersByRole } from '../../provider/user.provider';
 import { getAllExam } from '../../provider/exam.provider';
 import { getmanyQuestions } from '../../provider/question.provider';
 
@@ -86,30 +85,39 @@ const error = ref(null);
 const stats = ref({
   totalUsers: 0,
   totalLecturers: 0,
-  totalExams: 0, // <-- Dikembalikan
+  totalExams: 0, 
   totalQuestions: 0,
 });
 const recentUsers = ref([]);
 
 const fetchDashboardData = async () => {
   try {
-    // ## 5. Panggilan API 'getAllExam' dikembalikan ##
-    const [userResponse, examResponse, questionResponse] = await Promise.all([
-      getUsers(),
-      getAllExam(),
+    // ## 2. Tambahkan 'getUsersByRole' ke Promise.all ##
+    const [userResponse, lecturerResponse, examResponse, questionResponse] = await Promise.all([
+      getUsers(10, 0), // Ambil 10 pengguna terbaru + total
+      getUsersByRole('lecturer', 1, 0), // Ambil HANYA total dosen
+      getAllExam(99999, 0),
       getmanyQuestions(1, 0)
     ]);
 
+    // Data Pengguna (untuk 'Total Pengguna' dan 'Pengguna Baru')
     const userList = userResponse.data || [];
-    const examList = examResponse.data || []; // <-- Dikembalikan
-    const totalQuestions = questionResponse.data.total || 0;
+    const totalUsers = userResponse.total || 0;
+    
+    // ## 3. Ambil 'total' dari lecturerResponse ##
+    const totalLecturers = lecturerResponse.total || 0;
+    
+    // Data Ujian & Soal (sudah benar)
+    const examList = examResponse || []; 
+    const totalQuestions = questionResponse.total || 0; 
 
-    // Menghitung statistik
-    stats.value.totalUsers = userList.length;
-    stats.value.totalLecturers = userList.filter(u => u.role === 'lecturer').length;
-    stats.value.totalExams = examList.length; // <-- Dikembalikan
+    // ## 4. Atur statistik dengan data yang benar ##
+    stats.value.totalUsers = totalUsers;
+    stats.value.totalLecturers = totalLecturers; // <-- PERBAIKAN
+    stats.value.totalExams = examList.length;
     stats.value.totalQuestions = totalQuestions;
 
+    // Ini tetap benar (mengambil 5 pengguna terbaru dari 10 yang di-fetch)
     recentUsers.value = userList.slice(-5).reverse();
 
   } catch (err) {
