@@ -72,7 +72,6 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 	if data.Role == model.RoleAdmin && requesterRole != model.RoleSuperAdmin {
 		return fmt.Errorf("you cant access this role")
 	}
-
 	if data.Role == model.RoleSuperAdmin {
 		return fmt.Errorf("you cant access this role")
 	}
@@ -91,52 +90,33 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 		return fmt.Errorf("invalid role: %s", data.Role)
 	}
 
-	var nimPtr, nipPtr, nidnPtr, academicYearPtr, usernamePtr *string
+	finalAcademicYear := ""
 
-	if data.Nim != "" {
-		nimPtr = &data.Nim
-	}
-	if data.Nip != "" {
-		nipPtr = &data.Nip
-	}
-	if data.Nidn != "" {
-		nidnPtr = &data.Nidn
-	}
-	if data.Username != "" {
-		usernamePtr = &data.Username
-	}
-	if data.Role == model.RoleAdmin {
-		academicYearPtr = &data.AcademicYear
+	if data.Role != model.RoleLecturer {
+		finalAcademicYear = data.AcademicYear
 	}
 
-	if data.Role == model.RoleLecturer || data.Role == model.RoleAdmin {
-		academicYearPtr = nil
-	}
+	finalUsername := data.Username
 
 	if data.Role == model.RoleLecturer || data.Role == model.RoleUser {
-		usernamePtr = nil
+		finalUsername = ""
 	}
 
-	var academicYearVal string
-	if academicYearPtr != nil {
-		academicYearVal = *academicYearPtr
-	}
-
-	userData := model.User{
+	registerCred := model.RegisterCredential{
 		Name:         data.Name,
 		Email:        data.Email,
 		Password:     string(hashedPassword),
 		Major:        data.Major,
 		Faculty:      data.Faculty,
-		AcademicYear: academicYearVal,
-		Nim:          nimPtr,
-		Nip:          nipPtr,
-		Username:     usernamePtr,
-		Nidn:         nidnPtr,
-		Role:         model.Role(data.Role),
+		AcademicYear: finalAcademicYear,
+		Nim:          data.Nim,
+		Nip:          data.Nip,
+		Username:     finalUsername,
+		Nidn:         data.Nidn,
+		Role:         data.Role,
 	}
 
-	_, err = s.repo.Register(ctx, userData)
+	_, err = s.repo.Register(ctx, registerCred)
 	if err != nil {
 		return fmt.Errorf("failed to register user: %w", err)
 	}
@@ -401,7 +381,7 @@ func (s *userService) GetByNidn(ctx context.Context, nidn string, requesterRole 
 
 func (s *userService) GetByUsn(ctx context.Context, username string, requesterRole model.Role) (*model.User, error) {
 	if len(username) > 256 {
-		return nil, fmt.Errorf("username cannot be more than 9 characters: %s", username)
+		return nil, fmt.Errorf("username cannot be more than 256 characters: %s", username)
 	}
 
 	data, err := s.repo.GetByUsn(ctx, username)

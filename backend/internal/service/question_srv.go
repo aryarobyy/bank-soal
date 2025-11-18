@@ -44,7 +44,6 @@ func NewQuestionService(repo repository.QuestionRepository, userRepo repository.
 }
 
 func (s *questionService) Create(ctx context.Context, c *gin.Context, data *model.Question) error {
-
 	if len(data.Options) == 0 {
 		return fmt.Errorf("options can't be null")
 	}
@@ -83,9 +82,13 @@ func (s *questionService) Create(ctx context.Context, c *gin.Context, data *mode
 	}
 
 	imgDir := "./storages/images/question"
-	_, err := helper.UploadImage(c, data.Id, imgDir)
+	imageURL, err := helper.UploadImage(c, data.Id, imgDir)
 	if err != nil {
 		return fmt.Errorf("failed to upload image: %w", err)
+	}
+
+	if imageURL != "" {
+		data.ImgUrl = imageURL
 	}
 
 	return nil
@@ -149,21 +152,26 @@ func (s *questionService) Update(ctx context.Context, c *gin.Context, req *model
 		}
 
 		if data.ImgUrl != "" {
-			if err := helper.DeleteImage(data.ImgUrl); err != nil {
-				fmt.Printf("Warning: failed to delete old image: %v\n", err)
-			}
+			_ = helper.DeleteImage(data.ImgUrl)
 		}
 
 		imgDir := "./storages/images/question"
-		imageURL, err := helper.UploadImage(c, id, imgDir)
+		imageURL, err := helper.UploadImage(c, data.Id, imgDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to upload image: %w", err)
+		}
+
+		if imageURL != "" {
+			data.ImgUrl = imageURL
 		}
 
 		req.ImgUrl = imageURL
 	} else {
 		req.ImgUrl = data.ImgUrl
 	}
+
+	req.Id = data.Id
+	req.CreatorId = data.CreatorId
 
 	updatedData, err := s.repo.Update(ctx, *req, id)
 	if err != nil {
