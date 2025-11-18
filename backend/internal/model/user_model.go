@@ -33,7 +33,7 @@ type RegisterCredential struct {
 	Nim          string `json:"nim,omitempty"`
 	Nip          string `json:"nip,omitempty"`
 	Nidn         string `json:"nidn,omitempty"`
-	Username     string `json:"username,omitempty"`
+	Username     string `json:"username,omitempty" gorm:"unique"`
 	Major        string `json:"major" validate:"required" gorm:"default:informatika"`
 	Faculty      string `json:"faculty" validate:"required" gorm:"default:teknik"`
 	Role         Role   `json:"role" gorm:"default:user"`

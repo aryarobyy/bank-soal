@@ -9,7 +9,7 @@ import (
 )
 
 type UserRepository interface {
-	Register(ctx context.Context, user model.User) (*model.User, error)
+	Register(ctx context.Context, user model.RegisterCredential) (*model.RegisterCredential, error)
 	GetById(ctx context.Context, id int) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	Update(ctx context.Context, user model.User, id int) (*model.User, error)
@@ -33,7 +33,7 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
-func (r *userRepository) Register(ctx context.Context, user model.User) (*model.User, error) {
+func (r *userRepository) Register(ctx context.Context, user model.RegisterCredential) (*model.RegisterCredential, error) {
 	if err := r.db.
 		WithContext(ctx).
 		Create(&user).
