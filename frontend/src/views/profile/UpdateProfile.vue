@@ -79,7 +79,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { ArrowLeft, User, CreditCard, Mail, Camera, Clipboard } from 'lucide-vue-next';
+// ## 1. IMPORT ICON BARU (BookText) ##
+import { ArrowLeft, User, CreditCard, Mail, Camera, Clipboard, BookText } from 'lucide-vue-next';
 import { useUser } from '../../hooks/useGetCurrentUser'; 
 import Button from '../../components/ui/Button.vue';
 import { updateUser, getUserById } from '../../provider/user.provider';
@@ -97,12 +98,15 @@ const avatarInputRef = ref(null);
 const avatarFile = ref(null);
 const avatarPreview = ref(null);
 
+// ## 2. TAMBAHKAN 'major' DAN 'faculty' KE formData ##
 const formData = ref({
   name: '',
   nim: '',
   email: '',
   nip: '',
   nidn: '',
+  major: '',
+  faculty: '',
 });
 
 const errors = ref({});
@@ -112,12 +116,15 @@ onMounted(() => {
   console.log("Mounted user:", user.value)
 
   if (user.value) {
+    // ## 2. POPULATE 'major' DAN 'faculty' SAAT MOUNTED ##
     formData.value = {
       name: user.value.name || '',
       email: user.value.email || '',
       nim: user.value.nim || '',
       nip: user.value.nip || '',
       nidn: user.value.nidn || '',
+      major: user.value.major || '',
+      faculty: user.value.faculty || '',
     };
     
     // Set avatar preview dari database
@@ -153,7 +160,17 @@ onMounted(() => {
         placeholder: 'Enter your NIDN', icon: Clipboard, type: 'text'
       });
     } 
-    // ## BLOK 'else if (user.value.role === 'admin')' DIHAPUS DARI SINI ##
+    // ## 3. TAMBAHKAN BLOK 'else if' UNTUK ROLE 'admin' ##
+    else if (user.value.role === 'admin') {
+      fields.value.push({
+        name: 'major', title: 'Jurusan (Major)',
+        placeholder: 'Enter your major', icon: BookText, type: 'text'
+      });
+      fields.value.push({
+        name: 'faculty', title: 'Fakultas (Faculty)',
+        placeholder: 'Enter your faculty', icon: BookText, type: 'text'
+      });
+    }
   }
 });
 
@@ -221,7 +238,11 @@ const handleSubmit = async () => {
       dataToUpdate.nip = formData.value.nip;
       dataToUpdate.nidn = formData.value.nidn;
     }
-    // ## BLOK 'else if (user.value.role === 'admin')' DIHAPUS DARI SINI ##
+    // ## 4. TAMBAHKAN BLOK 'else if' UNTUK SUBMIT DATA 'admin' ##
+    else if (user.value.role === 'admin') {
+      dataToUpdate.major = formData.value.major;
+      dataToUpdate.faculty = formData.value.faculty;
+    }
 
     // Kirim file gambar jika ada
     if (avatarFile.value) {

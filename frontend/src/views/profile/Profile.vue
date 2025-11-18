@@ -103,7 +103,25 @@
               </div>
             </div>
           </template>
-          
+
+          <template v-if="user?.role === 'admin'">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Jurusan (Major)
+              </label>
+              <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
+                {{ user?.major || '-' }}
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Fakultas (Faculty)
+              </label>
+              <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
+                {{ user?.faculty || '-' }}
+              </div>
+            </div>
+          </template>
           </div>
 
         <div class="mb-6">
