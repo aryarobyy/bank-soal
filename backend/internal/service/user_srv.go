@@ -91,28 +91,26 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 	}
 
 	finalAcademicYear := ""
-
 	if data.Role != model.RoleLecturer {
 		finalAcademicYear = data.AcademicYear
 	}
 
 	finalUsername := data.Username
-
 	if data.Role == model.RoleLecturer || data.Role == model.RoleUser {
 		finalUsername = ""
 	}
 
-	registerCred := model.RegisterCredential{
+	registerCred := model.User{
 		Name:         data.Name,
 		Email:        data.Email,
 		Password:     string(hashedPassword),
 		Major:        data.Major,
 		Faculty:      data.Faculty,
 		AcademicYear: finalAcademicYear,
-		Nim:          data.Nim,
-		Nip:          data.Nip,
-		Username:     finalUsername,
-		Nidn:         data.Nidn,
+		Nim:          helper.StrPtr(data.Nim),
+		Nip:          helper.StrPtr(data.Nip),
+		Nidn:         helper.StrPtr(data.Nidn),
+		Username:     helper.StrPtr(finalUsername),
 		Role:         data.Role,
 	}
 
