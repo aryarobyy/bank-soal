@@ -6,36 +6,33 @@
       <div
         class="w-full max-w-4xl bg-white rounded-3xl shadow-lg p-8 sm:p-10 border border-gray-200"
       >
-        <!-- Loading State -->
+        <!-- Loading -->
         <div v-if="loading" class="text-center text-gray-600 py-10">
           Memuat data ujian...
         </div>
 
-        <!-- Error State -->
+        <!-- Error -->
         <div v-else-if="error" class="text-center text-red-500 py-10">
-          Gagal memuat data ujian 😢
+          {{ error }}
         </div>
 
-        <!-- Konten Ujian -->
+        <!-- Data Ujian -->
         <div v-else>
-          <!-- Header Ujian -->
-          <div
-            class="bg-[#f5f7ff] p-8 rounded-2xl text-center mb-8 border border-gray-100"
-          >
+          <div class="bg-[#f5f7ff] p-8 rounded-2xl text-center mb-8 border">
             <h2 class="text-3xl font-bold text-gray-800 mb-2">
               {{ exam.title }}
             </h2>
             <p class="text-gray-600 text-sm sm:text-base">
               {{ formattedDate }}
             </p>
-            <p class="font-medium text-gray-700 mt-2 text-sm sm:text-base">
-              Durasi Ujian :
+            <p class="font-medium text-gray-700 mt-2">
+              Durasi:
               <span class="font-semibold text-blue-700">
-                {{ exam.long_time }} Menit
+                {{ exam.long_time }} menit
               </span>
             </p>
-            <p class="font-medium text-gray-600 mt-2 text-sm sm:text-base">
-              Kesulitan :
+            <p class="font-medium text-gray-600 mt-2">
+              Kesulitan:
               <span class="font-semibold capitalize text-blue-700">
                 {{ exam.difficulty }}
               </span>
@@ -47,37 +44,33 @@
             <h3 class="font-semibold text-gray-900 mb-3 text-lg">
               Deskripsi :
             </h3>
-            <p class="text-gray-700 leading-relaxed text-sm sm:text-base">
-              {{ exam.description }}
+            <p class="text-gray-700 leading-relaxed">
+              {{ exam.description || "Tidak ada deskripsi." }}
             </p>
           </div>
 
-          <!-- Aturan Ujian -->
+          <!-- Aturan -->
           <div class="px-2 sm:px-6">
             <h3 class="font-semibold text-gray-900 mb-4 text-lg">
               Aturan Ujian :
             </h3>
-            <ul
-              class="text-gray-700 space-y-3 text-sm sm:text-base leading-relaxed"
-            >
-              <li class="flex items-start">
+            <ul class="text-gray-700 space-y-3 leading-relaxed">
+              <li class="flex">
                 <span class="mr-2 font-bold text-blue-600">&gt;</span>
-                Tidak diizinkan keluar dari ujian kecuali telah selesai / waktu
-                ujian telah habis.
+                Tidak boleh keluar sebelum ujian selesai.
               </li>
-              <li class="flex items-start">
+              <li class="flex">
                 <span class="mr-2 font-bold text-blue-600">&gt;</span>
-                Timer akan tetap berjalan meskipun koneksi internet Anda
-                terputus.
+                Timer tetap berjalan walaupun internet mati.
               </li>
             </ul>
           </div>
 
-          <!-- Tombol Mulai -->
+          <!-- Tombol -->
           <div class="flex justify-end mt-8">
             <button
               @click="startExam"
-              class="bg-[#2ecc71] hover:bg-[#27ae60] text-white text-sm sm:text-base px-5 py-2.5 rounded-md font-semibold transition-all shadow-sm hover:shadow-md"
+              class="bg-[#2ecc71] hover:bg-[#27ae60] text-white px-5 py-2.5 rounded-md font-semibold shadow-sm hover:shadow-md"
             >
               Mulai Ujian
             </button>
@@ -102,54 +95,65 @@ const router = useRouter();
 const route = useRoute();
 const { user } = useGetCurrentUser();
 
-// --- State
-const exam = ref({});
+const exam = ref(null);
 const loading = ref(true);
-const error = ref(false);
+const error = ref("");
 
-// --- Format waktu jadi lebih rapi
+// Format tanggal
 const formattedDate = computed(() => {
-  if (!exam.value.started_at || !exam.value.finished_at) return "";
-  const start = new Date(exam.value.started_at);
-  const finish = new Date(exam.value.finished_at);
+  if (!exam.value?.started_at || !exam.value?.finished_at) return "";
+  const s = new Date(exam.value.started_at);
+  const f = new Date(exam.value.finished_at);
 
-  return `${start.toLocaleDateString("id-ID", {
+  return `${s.toLocaleDateString("id-ID", {
     day: "2-digit",
     month: "long",
     year: "numeric",
-  })} | ${start.toLocaleTimeString("id-ID", {
+  })} | ${s.toLocaleTimeString("id-ID", {
     hour: "2-digit",
     minute: "2-digit",
-  })} - ${finish.toLocaleTimeString("id-ID", {
+  })} - ${f.toLocaleTimeString("id-ID", {
     hour: "2-digit",
     minute: "2-digit",
   })} WIB`;
 });
 
-// --- Ambil data ujian berdasarkan ID
+// Ambil data ujian
 onMounted(async () => {
-  if (!user) {
-    toastRef.value.showToast(
-      "error",
-      "User tidak dikenali",
-      "Anda harus login terlebih dahulu"
-    );
-    return router.push("/login");
-  }
-
   try {
-    const id = route.query.id || 1; // Default ke ID 1
-    const data = await getExamById(id);
-    exam.value = data;
+    if (!user.value) {
+      toastRef.value.showToast("error", "Harus login!", "Silakan login dulu");
+      return router.push("/login");
+    }
+
+    // --- Ambil ID dari query atau param ---
+    const id = route.query.id || route.params.id;
+
+    if (!id) {
+      error.value = "ID ujian tidak ditemukan!";
+      return;
+    }
+
+    const res = await getExamById(id);
+
+    // --- Cocokkan format BE ---
+    exam.value =
+      res?.data?.data || // format 1
+      res?.data || // format 2
+      res || // format 3
+      null;
+
+    if (!exam.value) error.value = "Data ujian tidak ditemukan!";
   } catch (err) {
-    console.error("Gagal ambil data ujian:", err);
-    error.value = true;
+    console.error("ERROR GET EXAM:", err);
+    error.value = "Gagal mengambil data ujian!";
   } finally {
     loading.value = false;
   }
 });
 
+// Mulai ujian → halaman /exam/start?id=xx
 const startExam = () => {
-  router.push("/exam/start");
+  router.push(`/exam/start?id=${exam.value.id}`);
 };
 </script>
