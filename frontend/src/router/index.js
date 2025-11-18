@@ -31,12 +31,15 @@ import CreateSoal from "../views/question/CreateSoal.vue";
 import CreateManualSoal from "../views/question/CreateManualSoal.vue";
 import UploadJsonSoal from "../views/question/UploadJsonSoal.vue";
 
-// Exam
+// Halaman Ujian (yang akan dipakai bersama)
 import ManageExam from "../views/exam/ManageExam.vue";
 import CreateExamView from "../views/exam/CreateExamView.vue";
 import ExamReports from "../views/exam/ExamReports.vue";
+// ## 1. Impor 2 Halaman Baru Anda ##
+import ExamDetail from "../views/exam/ExamDetail.vue";
+import ExamEdit from "../views/exam/ExamEdit.vue";
 
-// Super Admin
+// Halaman Super Admin
 import SuperAdminDashboard from "../views/SuperAdmin/SuperAdminDashboard.vue";
 import ManageAdmin from "../views/ManageAdmin/ManageAdmin.vue";
 
@@ -54,10 +57,24 @@ const soalRoutes = [
   { path: "upload-json", name: "SoalUploadJson", component: UploadJsonSoal },
 ];
 
+// ## 2. Buat Grup Rute Ujian (BARU) ##
+const examRoutes = [
+  { path: "", name: "ManageExam", component: ManageExam },
+  { path: "create", name: "CreateExam", component: CreateExamView },
+  { path: "detail/:id", name: "ExamDetail", component: ExamDetail },
+  { path: "edit/:id", name: "ExamEdit", component: ExamEdit },
+];
+
 const routes = [
-  // AUTH & UMUM
+  // --- Rute Autentikasi & Pengguna Umum ---
+  // (Tidak ada perubahan di sini)
   { path: "/login", name: "login", component: LoginView },
   { path: "/register", name: "register", component: RegisterView },
+  {
+    path: "/forgot-password",
+    name: "ForgotPassword",
+    component: ForgotPassword,
+  },
   {
     path: "/forgot-password",
     name: "ForgotPassword",
@@ -87,64 +104,18 @@ const routes = [
     redirect: "/dosen/dashboard",
     children: [
       {
-        path: "dashboard",
-        name: "LecturerDashboard",
-        component: LecturerDashboard,
-      },
-
-      // Soal routes
-      { path: "soal", name: "LecturerSoal", component: LecturerSoal },
-      {
-        path: "soal/list",
-        name: "LecturerSoalList",
-        component: LecturerSoalList,
-      },
-      { path: "soal/create", name: "CreateSoal", component: CreateSoal },
-      {
-        path: "soal/create-manual",
-        name: "CreateManualSoal",
-        component: CreateManualSoal,
-      },
-      { path: "soal/edit/:id", name: "EditSoal", component: CreateManualSoal },
-      {
-        path: "soal/upload-json",
-        name: "UploadJsonSoal",
-        component: UploadJsonSoal,
-      },
-
-      // ✅ Exam routes
-      {
-        path: "exam",
-        name: "LecturerExamList",
-        component: () => import("../views/exam/LecturerExamList.vue"),
-      },
-      {
-        path: "exam/create",
-        name: "CreateExam",
-        component: () => import("../views/exam/LecturerExamCreate.vue"),
-      },
-      {
-        path: "exam/detail/:id",
-        name: "LecturerExamDetail",
-        component: () => import("../views/exam/LecturerExamDetail.vue"),
-      },
-      {
-        path: "exam/edit/:id",
-        name: "LecturerExamEdit",
-        component: () => import("../views/exam/LecturerExamEdit.vue"),
-      },
-      { path: "profile/:id", name: "DosenProfile", component: Profile },
-      {
-        path: "update-profile",
-        name: "DosenUpdateProfile",
-        component: UpdateProfile,
-      },
-
-      // ✅ Integrasi soalRoutes (pakai map)
-      {
         path: "soal",
         component: RouterWrapper,
         children: soalRoutes.map((route) => ({
+          ...route,
+          name: `Dosen${route.name}`,
+        })),
+      },
+      // ## 3. Tambahkan Rute Ujian ke Dosen (BARU) ##
+      {
+        path: "exam", // akan menjadi /dosen/exam
+        component: RouterWrapper,
+        children: examRoutes.map((route) => ({
           ...route,
           name: `Dosen${route.name}`,
         })),
@@ -164,23 +135,36 @@ const routes = [
         name: "AdminManageMahasiswa",
         component: ManageMahasiswa,
       },
-      { path: "dosen", name: "AdminManageDosen", component: ManageDosen },
-      { path: "ujian", name: "AdminManageExam", component: ManageExam },
+      // ## 4. Ganti Rute Ujian Admin dengan Grup Rute (DIPERBARUI) ##
       {
-        path: "ujian/create",
-        name: "AdminCreateExam",
-        component: CreateExamView,
+        path: "ujian", // akan menjadi /admin/ujian
+        component: RouterWrapper,
+        children: examRoutes.map((route) => ({
+          ...route,
+          name: `Admin${route.name}`,
+        })),
       },
-      { path: "reports", name: "AdminExamReports", component: ExamReports },
+      {
+        path: "reports",
+        name: "AdminExamReports",
+        component: ExamReports,
+      },
       {
         path: "update-profile",
         name: "AdminUpdateProfile",
         component: UpdateProfile,
       },
+      {
+        path: "excel-files",
+        name: "AdminXlsFiles",
+        component: () => import("../views/Admin/ManageXlsFiles.vue"),
+        meta: { requiresAuth: true, role: "admin" },
+      },
     ],
   },
 
-  // SUPER ADMIN
+  // --- Rute Super Admin ---
+  // (Tidak ada perubahan di sini)
   {
     path: "/superadmin",
     component: SuperAdminLayout,
@@ -190,11 +174,13 @@ const routes = [
         path: "dashboard",
         name: "SuperAdminDashboard",
         component: SuperAdminDashboard,
+        meta: { title: "Dashboard Aktivitas" },
       },
       {
         path: "admins",
         name: "SuperAdminManageAdmins",
         component: ManageAdmin,
+        meta: { title: "Manajemen Admin" },
       },
     ],
   },

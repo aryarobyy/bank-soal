@@ -121,29 +121,9 @@ const formattedDate = computed(() => {
 // Ambil data ujian
 onMounted(async () => {
   try {
-    if (!user.value) {
-      toastRef.value.showToast("error", "Harus login!", "Silakan login dulu");
-      return router.push("/login");
-    }
-
-    // --- Ambil ID dari query atau param ---
-    const id = route.query.id || route.params.id;
-
-    if (!id) {
-      error.value = "ID ujian tidak ditemukan!";
-      return;
-    }
-
-    const res = await getExamById(id);
-
-    // --- Cocokkan format BE ---
-    exam.value =
-      res?.data?.data || // format 1
-      res?.data || // format 2
-      res || // format 3
-      null;
-
-    if (!exam.value) error.value = "Data ujian tidak ditemukan!";
+    const id = route.query.id || 2; // Default ke ID 1
+    const data = await getExamById(id);
+    exam.value = data;
   } catch (err) {
     console.error("ERROR GET EXAM:", err);
     error.value = "Gagal mengambil data ujian!";

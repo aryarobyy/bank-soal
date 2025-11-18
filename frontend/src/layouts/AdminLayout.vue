@@ -76,6 +76,15 @@
           >
             <i class="fas fa-chart-line"></i> Reports
           </router-link>
+
+          <router-link
+            to="/admin/excel-files"
+            class="flex items-center gap-3 px-4 py-2 font-semibold rounded-md transition-colors"
+            :class="isActive('/admin/excel-files') ? 'text-primary bg-indigo-50' : 'text-gray-600 hover:bg-gray-100'"
+          >
+            <i class="fas fa-file-excel"></i> File Excel
+          </router-link>
+          
         </div>
       </aside>
 

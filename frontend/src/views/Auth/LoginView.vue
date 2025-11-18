@@ -43,16 +43,6 @@
           @click="handleSubmit"
         />
       </form>
-
-      <p class="text-center text-gray-600 mt-6">
-        Belum Punya Akun?
-        <router-link
-          to="/register"
-          class="text-indigo-600 font-semibold hover:underline cursor-pointer"
-        >
-          Daftar di sini
-        </router-link>
-      </p>
     </div>
 
     <Toast ref="toastRef" />
@@ -61,40 +51,45 @@
 
 <script setup>
 import { ref } from "vue";
-import { Mail, Lock, GraduationCap } from "lucide-vue-next";
+// <-- PERUBAHAN: Impor 'User' menggantikan 'Mail'
+import { User, Lock, GraduationCap } from "lucide-vue-next";
 import Input from "../../components/ui/Input.vue";
 import Button from "../../components/ui/Button.vue";
 import { login } from "../../provider/user.provider";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import Toast from "../../components/utils/Toast.vue";
 import { useRouter } from "vue-router";
-// ## 1. Impor `useUser` (bukan `useGetCurrentUser`) ##
 import { useUser } from "../../hooks/useGetCurrentUser";
 
 const { setValue: setToken } = useLocalStorage("token");
-const { setValue: setUser } = useLocalStorage("id");
+const { setValue: setId } = useLocalStorage("id");
+const { setUser: setGlobalUser } = useUser();
 
 const toastRef = ref(null);
+// <-- PERUBAHAN: 'email' diubah menjadi 'login_id'
 const formData = ref({
-  email: "",
+  login_id: "",
   password: "",
 });
 const errors = ref({});
 const isSubmitting = ref(false);
 const router = useRouter();
 
+// <-- PERUBAHAN: Field email diganti dengan login_id
 const fields = [
   {
     id: 1,
-    name: "email",
-    title: "Email",
-    type: "email",
-    placeholder: "email@example.com",
-    icon: Mail,
+    name: "login_id",
+
+    title: "Login ID",
+    type: "text",
+    placeholder: "NIM / NIDN / Username",
+    icon: User, // <-- Ikon diubah
   },
   {
     id: 2,
     name: "password",
+
     title: "Password",
     type: "password",
     placeholder: "Minimal 6 karakter",
@@ -105,21 +100,20 @@ const fields = [
 const handleSubmit = async () => {
   try {
     isSubmitting.value = true;
+    // Panggilan 'login' tidak perlu diubah,
+    // karena 'formData.value' sekarang sudah berisi { login_id: "...", password: "..." }
     const data = await login(formData.value);
 
-    // Ambil data pengguna dari respons
     const userData = data.data.data;
 
-    // Simpan token dan data user ke Local Storage
     if (data.data.token && userData) {
       setToken(data.data.token);
-      setUser(data.data.data.id);
+      setId(userData.id);
+      setGlobalUser(userData);
     }
 
-    // ## 6. Logika Redirect untuk SEMUA ROLE (termasuk admin/super_admin) ##
-
     const userRole = userData.role;
-    let redirectPath = "/"; // Default untuk 'user'
+    let redirectPath = "/";
 
     if (userRole === "lecturer") {
       redirectPath = "/dosen/dashboard";
@@ -145,7 +139,7 @@ const handleSubmit = async () => {
     toastRef.value.showToast(
       "error",
       "Login Gagal",
-      "Email atau password salah."
+      "Login ID atau password salah." // <-- Pesan error diperbarui
     );
     isSubmitting.value = false;
   }

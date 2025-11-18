@@ -15,21 +15,18 @@
         <router-link
           to="/dosen/dashboard"
           class="font-semibold no-underline text-medium-text hover:text-primary"
+          >Dashboard</router-link
         >
-          Dashboard
-        </router-link>
         <router-link
           to="/dosen/soal"
           class="font-semibold no-underline text-medium-text hover:text-primary"
+          >Soal</router-link
         >
-          Soal
-        </router-link>
         <router-link
           to="/dosen/exam"
           class="font-semibold no-underline text-medium-text hover:text-primary"
+          >Ujian</router-link
         >
-          Exam
-        </router-link>
       </nav>
 
       <!-- Profile Dropdown -->
@@ -110,7 +107,7 @@
                 : 'text-gray-600 hover:bg-gray-100'
             "
           >
-            <i class="fas fa-clipboard-list"></i> Exam
+            <i class="fas fa-chalkboard-teacher"></i> Ujian
           </router-link>
         </div>
       </aside>
@@ -127,39 +124,24 @@
 import { ref, onMounted } from "vue";
 import { useRouter, useRoute, RouterLink } from "vue-router";
 import { UserCircle } from "lucide-vue-next";
-// 1. Impor hook state global yang baru
 import { useGetCurrentUser } from "../hooks/useGetCurrentUser";
-// 2. Impor useLocalStorage (masih dipakai untuk logout)
 import { useLocalStorage } from "../hooks/useLocalStorage";
 
 const showProfileDropdown = ref(false);
 const router = useRouter();
 const route = useRoute();
 
-// 3. Gunakan hook BARU untuk mendapatkan 'user'
-// 'user' sekarang reaktif dan diisi oleh App.vue
 const { user } = useGetCurrentUser();
-
-// 4. Hapus 'onMounted' lama
-// (App.vue dan layout lain sudah mengurus pengecekan token/login)
-/* onMounted(() => {
-  // Logika lama yang membaca localStorage('user') dihapus
-});
-*/
 
 const toggleProfileDropdown = () => {
   showProfileDropdown.value = !showProfileDropdown.value;
 };
 
-// 5. Perbarui fungsi logout
 const logout = () => {
   const { removeValue: removeToken } = useLocalStorage("token");
-  // Pastikan menghapus 'id' (sistem baru), bukan 'user' (sistem lama)
   const { removeValue: removeId } = useLocalStorage("id");
   removeToken();
   removeId();
-
-  // Lakukan hard reload ke halaman login
   window.location.href = "/login";
 };
 

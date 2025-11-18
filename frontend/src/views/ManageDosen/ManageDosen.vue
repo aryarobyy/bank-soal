@@ -16,7 +16,6 @@
     <div v-else-if="error" class="text-center py-10 bg-red-50 p-4 rounded-lg">
       <p class="text-red-600">{{ error }}</p>
     </div>
-
     <div v-else class="bg-white shadow rounded-lg overflow-hidden">
       <table class="min-w-full border-collapse">
         <thead class="bg-gray-100 text-gray-700 text-sm">
@@ -37,7 +36,7 @@
             :key="dosen.id || dosen.ID || dosen._id"
             class="border-t hover:bg-gray-50 transition"
           >
-            <td class="px-4 py-3">{{ index + 1 }}</td>
+            <td class="px-4 py-3">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
             <td class="px-4 py-3 font-medium">{{ dosen.name }}</td>
             <td class="px-4 py-3">{{ dosen.email }}</td>
             <td class="px-4 py-3">{{ dosen.nip }}</td>
@@ -74,6 +73,27 @@
         </tbody>
       </table>
     </div>
+    <div v-if="!loading && totalPages > 1" class="flex justify-between items-center mt-6">
+      <span class="text-sm text-gray-700">
+        Halaman <span class="font-semibold">{{ currentPage }}</span> dari <span class="font-semibold">{{ totalPages }}</span> (Total <span class="font-semibold">{{ totalItems }}</span> dosen)
+      </span>
+      <div class="flex gap-1">
+        <button
+          @click="prevPage"
+          :disabled="currentPage === 1"
+          class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          &lt; Sebelumnya
+        </button>
+        <button
+          @click="nextPage"
+          :disabled="currentPage === totalPages"
+          class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Berikutnya &gt;
+        </button>
+      </div>
+    </div>
 
     <div
       v-if="showModal"
@@ -81,7 +101,7 @@
     >
       <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
         <h3 class="text-lg font-semibold mb-4">
-          {{ editMode ? "Edit Dosen" : "Tambah Dosen" }}
+          {{ editMode ? "Edit Akun" : "Tambah Dosen" }}
         </h3>
 
         <form @submit.prevent="simpanDosen">
@@ -109,23 +129,53 @@
             </div>
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
-              <input v-model="form.major" type="text" required class="w-full p-2 border rounded-md"/>
+              <input v-model="form.major" type="text" class="w-full p-2 border rounded-md" placeholder="Opsional (Isi N/A jika tidak ada)"/>
             </div>
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas (Faculty)</label>
-              <input v-model="form.faculty" type="text" required class="w-full p-2 border rounded-md"/>
+              <input v-model="form.faculty" type="text" class="w-full p-2 border rounded-md" placeholder="Opsional (Isi N/A jika tidak ada)"/>
             </div>
           </template>
           
           <template v-else>
             <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700">NIP</label>
-              <input v-model="form.nip" type="text" required class="w-full p-2 border rounded-md"/>
+              <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
+              <select v-model="form.role" required class="w-full p-2 border rounded-md bg-white">
+                <option value="user">Mahasiswa (user)</option>
+                <option value="lecturer">Dosen (lecturer)</option>
+              </select>
             </div>
-            <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700">NIDN</label>
-              <input v-model="form.nidn" type="text" required class="w-full p-2 border rounded-md"/>
+
+            <div v-if="form.role === 'lecturer'">
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700">NIP</label>
+                <input v-model="form.nip" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk dosen"/>
+              </div>
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700">NIDN</label>
+                <input v-model="form.nidn" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk dosen"/>
+              </div>
             </div>
+
+            <div v-if="form.role === 'user'">
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700">NIM</label>
+                <input v-model="form.nim" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk mahasiswa"/>
+              </div>
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
+                <input v-model="form.major" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk mahasiswa"/>
+              </div>
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas (Faculty)</label>
+                <input v-model="form.faculty" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk mahasiswa"/>
+              </div>
+              <div class="mb-3">
+                <label class="block mb-1 text-sm font-medium text-gray-700">Tahun Ajaran (Academic Year)</label>
+                <input v-model="form.academic_year" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk mahasiswa"/>
+              </div>
+            </div>
+            
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Password Baru (Opsional)</label>
               <input
@@ -137,13 +187,12 @@
             </div>
           </template>
 
-          <div class="mb-3">
+          <div class="mb-3" v-if="!editMode">
             <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
             <select v-model="form.role" required class="w-full p-2 border rounded-md bg-white">
+              <option value="lecturer" selected>Dosen (lecturer)</option>
               <option value="user">Mahasiswa (user)</option>
-              <option value="lecturer">Dosen (lecturer)</option>
-              <option value="admin">Admin</option>
-            </select>
+              </select>
           </div>
 
           <div class="flex justify-end gap-2 mt-4">
@@ -167,18 +216,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import {
   getUsersByRole,
   register,
   updateUser,
   deleteUser,
-  changeRole,
   changePassword,
 } from "../../provider/user.provider.js";
-// ## 1. HAPUS `useLocalStorage` ##
-// import { useLocalStorage } from "../../hooks/useLocalStorage.js";
-// ## 2. IMPOR `useGetCurrentUser` (state global) ##
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 
 const dosenList = ref([]);
@@ -187,31 +232,37 @@ const error = ref(null);
 const showModal = ref(false);
 const editMode = ref(false);
 
+// Hapus 'academic_year' dari initial state dosen
 const initialFormState = {
-  id: null,
-  name: "",
-  email: "",
-  password: "",
-  role: "lecturer",
-  nip: "", 
-  nidn: "", 
-  major: "",
-  faculty: "",
-  nim: ""
+  id: null, name: "", email: "", password: "",
+  role: "lecturer", nip: "", nidn: "", 
+  major: "", faculty: "", nim: "", academic_year: "" // (kita biarkan ini untuk role 'user')
 };
 const form = ref({ ...initialFormState });
 
-// ## 3. DAPATKAN PENGGUNA (Admin) DARI STATE GLOBAL ##
 const { user: storedUser } = useGetCurrentUser();
+
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const totalItems = ref(0);
+
+const totalPages = computed(() => {
+  return Math.ceil(totalItems.value / itemsPerPage.value);
+});
 
 const fetchDosen = async () => {
   try {
     loading.value = true;
-    const response = await getUsersByRole("lecturer");
+    const offset = (currentPage.value - 1) * itemsPerPage.value;
+    const response = await getUsersByRole("lecturer", itemsPerPage.value, offset);
     dosenList.value = response.data || [];
+    totalItems.value = response.total || 0;
+    error.value = null; 
   } catch (err) {
     console.error("Gagal mengambil data dosen:", err);
     error.value = "Tidak dapat memuat data. Silakan coba lagi nanti.";
+    dosenList.value = [];
+    totalItems.value = 0;
   } finally {
     loading.value = false;
   }
@@ -221,9 +272,27 @@ onMounted(() => {
   fetchDosen();
 });
 
+watch(currentPage, (newPage, oldPage) => {
+  if (newPage !== oldPage) {
+    fetchDosen();
+  }
+});
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
 const openAddModal = () => {
   editMode.value = false;
-  form.value = { ...initialFormState };
+  form.value = { ...initialFormState, role: "lecturer" };
   showModal.value = true;
 };
 
@@ -231,14 +300,13 @@ const closeModal = () => {
   showModal.value = false;
 };
 
+// ## FUNGSI SIMPAN DIPERBARUI ##
 const simpanDosen = async () => {
   try {
     const userId = form.value.id;
-    // ## 4. 'adminId' SEKARANG DIAMBIL DARI STATE GLOBAL 'storedUser' ##
     const adminId = storedUser.value?.id || storedUser.value?.ID;
 
     if (!adminId) {
-      // Ini sekarang akan membaca ID Admin dari state global
       alert("Error: Sesi Admin tidak ditemukan. Silakan login ulang.");
       return;
     }
@@ -249,31 +317,53 @@ const simpanDosen = async () => {
         alert("Error: ID pengguna tidak ditemukan. Tidak dapat mengedit.");
         return;
       }
-      let passwordErrorMessage = "";
       
+      let passwordSuccess = false;
+      let passwordErrorMessage = "";
+
       const dataToUpdate = { 
         name: form.value.name, 
         email: form.value.email,
-        nip: form.value.nip,
-        nidn: form.value.nidn
+        role: form.value.role,
       };
+
+      if (form.value.role === 'lecturer') {
+        dataToUpdate.nip = form.value.nip || null;
+        dataToUpdate.nidn = form.value.nidn || null;
+        dataToUpdate.nim = null;
+        dataToUpdate.major = null;
+        dataToUpdate.faculty = null;
+        // 'academic_year' tidak dikirim
+      } else if (form.value.role === 'user') {
+        dataToUpdate.nim = form.value.nim || null;
+        dataToUpdate.major = form.value.major || null;
+        dataToUpdate.faculty = form.value.faculty || null;
+        dataToUpdate.academic_year = form.value.academic_year || null;
+        dataToUpdate.nip = null;
+        dataToUpdate.nidn = null;
+      }
+      
+      // 1. Update data utama
       await updateUser(dataToUpdate, userId);
-
-      await changeRole(userId, adminId, form.value.role);
-
+      
+      // 2. Update password HANYA jika diisi
       if (form.value.password && form.value.password.trim() !== "") {
         try {
           await changePassword(userId, form.value.password, adminId);
+          passwordSuccess = true;
         } catch (passwordError) {
-          console.warn("Gagal mengganti password (API backend belum siap):", passwordError);
-          passwordErrorMessage = passwordError.response?.data?.message || "Gagal ganti password (backend error)";
+          console.error("Gagal mengganti password:", passwordError);
+          passwordErrorMessage = passwordError.response?.data?.message || "Gagal ganti password";
         }
       }
       
+      // 3. Tampilkan pesan sukses/error
       if (passwordErrorMessage) {
-        alert(`Data (Nama, Email, NIP, NIDN, Role) berhasil diperbarui.\n\nInfo: ${passwordErrorMessage}`);
+        alert(`Data berhasil diperbarui, TAPI: ${passwordErrorMessage}`);
+      } else if (passwordSuccess) {
+         alert("Data dan password berhasil diperbarui!");
       } else {
-        alert("Data berhasil diperbarui!");
+         alert("Data berhasil diperbarui!");
       }
 
     } else {
@@ -283,18 +373,42 @@ const simpanDosen = async () => {
         email: form.value.email,
         password: form.value.password,
         role: form.value.role,
-        nip: form.value.nip,
-        nidn: form.value.nidn,
-        major: form.value.major,
-        faculty: form.value.faculty,
-        nim: form.value.nip // Menggunakan NIP sebagai NIM unik
       };
+
+      if (form.value.role === 'lecturer') {
+        dataToCreate.nip = form.value.nip || null;
+        dataToCreate.nidn = form.value.nidn || null;
+        dataToCreate.major = form.value.major || "N/A";
+        dataToCreate.faculty = form.value.faculty || "N/A";
+        dataToCreate.nim = null;
+        // 'academic_year' tidak dikirim
+      } else if (form.value.role === 'user') {
+        dataToCreate.nim = form.value.nim || null;
+        dataToCreate.major = form.value.major || null;
+        dataToCreate.faculty = form.value.faculty || null;
+        dataToCreate.academic_year = form.value.academic_year || null;
+        dataToCreate.nip = null;
+        dataToCreate.nidn = null;
+      }
+
       await register(dataToCreate);
-      alert("Dosen baru berhasil ditambahkan!");
+      alert("Akun baru berhasil ditambahkan!");
     }
 
     closeModal();
-    fetchDosen(); // Muat ulang data
+    
+    if (!editMode.value) {
+      try {
+        const response = await getUsersByRole("lecturer", 1, 0);
+        totalItems.value = response.total || 0;
+        currentPage.value = totalPages.value; 
+      } catch (e) {
+        fetchDosen(); 
+      }
+    } else {
+      fetchDosen(); 
+    }
+
   } catch (err) {
     console.error("Gagal menyimpan data:", err);
     const errorMsg = err.response?.data?.message || "Terjadi kesalahan saat menyimpan data.";
@@ -305,9 +419,16 @@ const simpanDosen = async () => {
 const editDosen = (dosen) => {
   editMode.value = true;
   const userId = dosen.id || dosen.ID || dosen._id;
+  
   form.value = { 
     ...initialFormState, 
-    ...dosen,            
+    ...dosen,
+    nip: dosen.nip || "",
+    nidn: dosen.nidn || "",
+    nim: dosen.nim || "",
+    major: dosen.major || "",
+    faculty: dosen.faculty || "",
+    academic_year: dosen.academic_year || "",
     id: userId,          
     password: ""         
   };
@@ -325,7 +446,13 @@ const hapusDosen = async (dosen) => {
     try {
       await deleteUser(userId);
       alert("Dosen berhasil dihapus.");
-      fetchDosen(); // Muat ulang data
+      
+      if (dosenList.value.length === 1 && currentPage.value > 1) {
+        currentPage.value--;
+      } else {
+        fetchDosen();
+      }
+
     } catch (err) {
       console.error("Gagal menghapus dosen:", err);
       const errorMsg = err.response?.data?.message || err.response?.data || "Gagal menghapus data.";

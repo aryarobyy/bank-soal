@@ -64,7 +64,7 @@ import SoalManagement from "./components/SoalManagement.vue";
 import {
   getPaginatedSubjects,
   deleteSubject,
-} from "../../provider/subject.provider.js";
+} from "../../provider/subject.provider";
 
 export default {
   name: "LecturerSoal",
@@ -126,6 +126,10 @@ export default {
         // Sesuai info backend: "Data.data.data" dan "response.data.total"
         this.allSubjects = response.data.data || []; // <-- PERBAIKAN BUG
         this.totalSubjects = response.total || 0; // <-- PERBAIKAN BUG
+
+        // Sesuai info backend: "Data.data.data" dan "response.data.total"
+        this.allSubjects = response.data.data || []; // <-- PERBAIKAN BUG
+        this.totalSubjects = response.total || 0; // <-- PERBAIKAN BUG
       } catch (error) {
         console.error("Gagal mengambil data subjek:", error);
         alert("Gagal memuat data bank soal.");
@@ -150,14 +154,14 @@ export default {
     async handleDeleteSubject(subject) {
       // Ganti '.name' menjadi '.title'
       if (
-        !confirm(`Anda yakin ingin menghapus mata kuliah ${subject.title}?`)
+        !confirm(`Anda yakin ingin menghapus mata kuliah "${subject.title}"?`)
       ) {
         return;
       }
 
       try {
         await deleteSubject(subject.id); // Panggil API
-        alert(`Mata kuliah ${subject.title} berhasil dihapus.`);
+        alert(`Mata kuliah "${subject.title}" berhasil dihapus.`);
         this.fetchSoalData(); // Ambil ulang data
       } catch (error) {
         console.error("Gagal menghapus subjek:", error);

@@ -98,3 +98,10 @@ func ContainsNumber(s string) bool {
 	}
 	return false
 }
+
+func StrPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}

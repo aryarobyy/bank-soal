@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
+	"path/filepath"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/repository"
@@ -14,9 +16,9 @@ import (
 )
 
 type QuestionService interface {
-	Create(ctx context.Context, data *model.Question) error
+	Create(ctx context.Context, c *gin.Context, data *model.Question) error
 	GetById(ctx context.Context, id int) (*model.Question, error)
-	Update(ctx context.Context, newData model.Question, id int, userId int) (*model.Question, error)
+	Update(ctx context.Context, c *gin.Context, req *model.Question, id int, userId int) (*model.Question, error)
 	Delete(ctx context.Context, id int, userId int) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.Question, int64, error)
 	CreateWithOptions(ctx context.Context, data model.Question) error
@@ -41,8 +43,8 @@ func NewQuestionService(repo repository.QuestionRepository, userRepo repository.
 	}
 }
 
-func (s *questionService) Create(ctx context.Context, data *model.Question) error {
-	if data.Options == nil {
+func (s *questionService) Create(ctx context.Context, c *gin.Context, data *model.Question) error {
+	if len(data.Options) == 0 {
 		return fmt.Errorf("options can't be null")
 	}
 
@@ -50,21 +52,24 @@ func (s *questionService) Create(ctx context.Context, data *model.Question) erro
 	case model.DifficultyEasy:
 		if data.Score == 0 {
 			data.Score = 5
-		} else if data.Score < 3 || data.Score > 8 {
+		}
+		if data.Score < 3 || data.Score > 8 {
 			return fmt.Errorf("score for easy difficulty must be between 3 and 8")
 		}
 
 	case model.DifficultyMedium:
 		if data.Score == 0 {
 			data.Score = 10
-		} else if data.Score < 10 || data.Score > 15 {
+		}
+		if data.Score < 10 || data.Score > 15 {
 			return fmt.Errorf("score for medium difficulty must be between 10 and 15")
 		}
 
 	case model.DifficultyHard:
 		if data.Score == 0 {
 			data.Score = 20
-		} else if data.Score < 18 || data.Score > 23 {
+		}
+		if data.Score < 18 || data.Score > 23 {
 			return fmt.Errorf("score for hard difficulty must be between 18 and 23")
 		}
 
@@ -74,6 +79,16 @@ func (s *questionService) Create(ctx context.Context, data *model.Question) erro
 
 	if err := s.repo.Create(ctx, data); err != nil {
 		return fmt.Errorf("failed to create question: %w", err)
+	}
+
+	imgDir := "./storages/images/question"
+	imageURL, err := helper.UploadImage(c, data.Id, imgDir)
+	if err != nil {
+		return fmt.Errorf("failed to upload image: %w", err)
+	}
+
+	if imageURL != "" {
+		data.ImgUrl = imageURL
 	}
 
 	return nil
@@ -90,42 +105,133 @@ func (s *questionService) GetById(ctx context.Context, id int) (*model.Question,
 	return data, nil
 }
 
-func (s *questionService) Update(ctx context.Context, newData model.Question, id int, userId int) (*model.Question, error) {
+func (s *questionService) Update(ctx context.Context, c *gin.Context, req *model.Question, id int, userId int) (*model.Question, error) {
 	data, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, fmt.Errorf("question with id %d not found", id)
 		}
-		return nil, fmt.Errorf("data is unavaible %w", err)
+		return nil, fmt.Errorf("data is unavailable: %w", err)
 	}
 
 	user, err := s.userRepo.GetById(ctx, userId)
 	if err != nil {
-		return nil, fmt.Errorf("user is unavaible %w", err)
+		return nil, fmt.Errorf("user is unavailable: %w", err)
 	}
 
 	if user.Id != data.CreatorId && user.Role != model.RoleAdmin {
 		return nil, fmt.Errorf("you are not the creator or admin")
 	}
 
-	updatedData, err := s.repo.Update(ctx, newData, id)
-	if err != nil {
-		if strings.Contains(err.Error(), "Unknown column") {
-			var fieldName string
-			parts := strings.Split(err.Error(), "'")
-			if len(parts) >= 2 {
-				fieldName = parts[1]
+	if req.Difficulty != "" {
+		switch req.Difficulty {
+		case model.DifficultyEasy:
+			if req.Score != 0 && (req.Score < 3 || req.Score > 8) {
+				return nil, fmt.Errorf("score for easy difficulty must be between 3 and 8")
 			}
-
-			val := helper.GetFieldValue(data, fieldName)
-
-			return nil, fmt.Errorf("field '%s' with value '%v' is undefined", fieldName, val)
+		case model.DifficultyMedium:
+			if req.Score != 0 && (req.Score < 10 || req.Score > 15) {
+				return nil, fmt.Errorf("score for medium difficulty must be between 10 and 15")
+			}
+		case model.DifficultyHard:
+			if req.Score != 0 && (req.Score < 18 || req.Score > 23) {
+				return nil, fmt.Errorf("score for hard difficulty must be between 18 and 23")
+			}
+		default:
+			return nil, fmt.Errorf("invalid difficulty level")
 		}
-
-		return nil, fmt.Errorf("update gagal: %v", err)
 	}
 
-	return updatedData, nil
+	fileHeader, err := c.FormFile("image")
+	hasNewImage := err == nil
+
+	if hasNewImage {
+		ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
+		if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
+			return nil, fmt.Errorf("invalid image format. Only JPG and PNG are allowed")
+		}
+
+		if data.ImgUrl != "" {
+			_ = helper.DeleteImage(data.ImgUrl)
+		}
+
+		imgDir := "./storages/images/question"
+		imageURL, err := helper.UploadImage(c, data.Id, imgDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to upload image: %w", err)
+		}
+
+		if imageURL != "" {
+			data.ImgUrl = imageURL
+		}
+
+		req.ImgUrl = imageURL
+	} else {
+		req.ImgUrl = data.ImgUrl
+	}
+
+	req.Id = data.Id
+	req.CreatorId = data.CreatorId
+
+	updatedData, err := s.repo.Update(ctx, *req, id)
+	if err != nil {
+		if strings.Contains(err.Error(), "Unknown column") {
+			parts := strings.Split(err.Error(), "'")
+			if len(parts) >= 2 {
+				fieldName := parts[1]
+				val := helper.GetFieldValue(*req, fieldName)
+				return nil, fmt.Errorf("field '%s' with value '%v' is undefined", fieldName, val)
+			}
+		}
+		return updatedData, fmt.Errorf("update gagal: %v", err)
+	}
+
+	if len(req.Options) > 0 {
+		existingOptions := data.Options
+
+		minLen := len(req.Options)
+		if len(existingOptions) < minLen {
+			minLen = len(existingOptions)
+		}
+
+		for i := 0; i < minLen; i++ {
+			optToUpdate := req.Options[i]
+			optToUpdate.Id = existingOptions[i].Id
+			optToUpdate.QuestionId = id
+
+			_, err := s.optRepo.Update(ctx, optToUpdate, existingOptions[i].Id)
+			if err != nil {
+				return nil, fmt.Errorf("failed to update option at index %d: %w", i, err)
+			}
+		}
+
+		if len(req.Options) > len(existingOptions) {
+			for i := len(existingOptions); i < len(req.Options); i++ {
+				newOpt := req.Options[i]
+				newOpt.QuestionId = id
+				err := s.optRepo.Create(ctx, newOpt)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create option at index %d: %w", i, err)
+				}
+			}
+		}
+
+		if len(existingOptions) > len(req.Options) {
+			for i := len(req.Options); i < len(existingOptions); i++ {
+				err := s.optRepo.Delete(ctx, existingOptions[i].Id)
+				if err != nil {
+					return nil, fmt.Errorf("failed to delete option id %d: %w", existingOptions[i].Id, err)
+				}
+			}
+		}
+	}
+
+	result, err := s.repo.GetById(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch updated data: %w", err)
+	}
+
+	return result, nil
 }
 
 func (s *questionService) GetMany(ctx context.Context, limit int, offset int) ([]model.Question, int64, error) {
