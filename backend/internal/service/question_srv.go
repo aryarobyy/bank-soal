@@ -77,18 +77,16 @@ func (s *questionService) Create(ctx context.Context, c *gin.Context, data *mode
 		return fmt.Errorf("invalid difficulty level")
 	}
 
-	if err := s.repo.Create(ctx, data); err != nil {
-		return fmt.Errorf("failed to create question: %w", err)
-	}
-
 	imgDir := "./storages/images/question"
 	imageURL, err := helper.UploadImage(c, data.Id, imgDir)
 	if err != nil {
 		return fmt.Errorf("failed to upload image: %w", err)
 	}
 
-	if imageURL != "" {
-		data.ImgUrl = imageURL
+	data.ImgUrl = imageURL
+
+	if err := s.repo.Create(ctx, data); err != nil {
+		return fmt.Errorf("failed to create question: %w", err)
 	}
 
 	return nil
