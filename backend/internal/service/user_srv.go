@@ -207,18 +207,9 @@ func (s *userService) GetByEmail(ctx context.Context, email string) (*model.User
 }
 
 func (s *userService) Update(ctx context.Context, c *gin.Context, data model.User, id int, requesterRole model.Role) (*model.User, error) {
-
 	oldUser, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
-	}
-
-	if oldUser.Role == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
-		return nil, fmt.Errorf("user not found")
-	}
-
-	if data.Role == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
-		return nil, fmt.Errorf("user not found")
 	}
 
 	effectiveRole := data.Role
@@ -226,76 +217,25 @@ func (s *userService) Update(ctx context.Context, c *gin.Context, data model.Use
 		effectiveRole = oldUser.Role
 	}
 
-	switch effectiveRole {
+	helper.NormalizeRoleTransition(oldUser, &data, effectiveRole)
 
-	case model.RoleUser:
-		if data.Nim == nil || *data.Nim == "" {
-			return nil, fmt.Errorf("user must provide Nim")
-		}
-
-		if strings.TrimSpace(data.AcademicYear) == "" {
-			return nil, fmt.Errorf("user must provide academicYear")
-		}
-
-		empty := ""
-		data.Nip = &empty
-		data.Nidn = &empty
-
-	case model.RoleLecturer:
-		if (data.Nip == nil || *data.Nip == "") && (data.Nidn == nil || *data.Nidn == "") {
-			return nil, fmt.Errorf("lecturer must provide either Nip or Nidn")
-		}
-
-		empty := ""
-		data.Nim = &empty
-		data.AcademicYear = ""
-
-	case model.RoleAdmin, model.RoleSuperAdmin:
-		empty := ""
-		data.Nim = &empty
-		data.Nip = &empty
-		data.Nidn = &empty
-		data.AcademicYear = ""
-
-	default:
-		return nil, fmt.Errorf("invalid role")
+	if err := helper.ValidateRoleRequirements(data, effectiveRole); err != nil {
+		return nil, err
 	}
 
-	imgDir := "./storages/images/user"
+	helper.MergeDefaults(oldUser, &data, effectiveRole)
 
-	file, _ := c.FormFile("image")
-	if file != nil {
-		if oldUser.ImgUrl != "" {
-			if err := helper.DeleteImage(oldUser.ImgUrl); err != nil {
-				return nil, fmt.Errorf("failed to delete old image: %w", err)
-			}
-		}
+	if err := helper.ValidateAuthorization(oldUser, data, requesterRole); err != nil {
+		return nil, err
+	}
 
-		newImageUrl, err := helper.UploadImage(c, id, imgDir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to upload image: %w", err)
-		}
-
-		data.ImgUrl = newImageUrl
-
-	} else {
-		data.ImgUrl = oldUser.ImgUrl
+	if err := helper.HandleImageUpload(c, oldUser, &data, id); err != nil {
+		return nil, err
 	}
 
 	updatedUser, err := s.repo.Update(ctx, data, id)
 	if err != nil {
-
-		if strings.Contains(err.Error(), "Unknown column") {
-			var fieldName string
-			parts := strings.Split(err.Error(), "'")
-			if len(parts) >= 2 {
-				fieldName = parts[1]
-			}
-			val := helper.GetFieldValue(data, fieldName)
-			return nil, fmt.Errorf("field '%s' with value '%v' is undefined", fieldName, val)
-		}
-
-		return nil, fmt.Errorf("update gagal: %v", err)
+		return nil, helper.FormatUpdateError(err, data)
 	}
 
 	return updatedUser, nil
