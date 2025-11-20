@@ -10,6 +10,7 @@ import (
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
 	"latih.in-be/utils/helper"
+	"latih.in-be/utils/response"
 )
 
 type UserController struct {
@@ -100,7 +101,9 @@ func (h *UserController) GetById(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, user, "user found")
+	userRes := response.UserResponse(*user)
+
+	helper.Success(c, userRes, "user found")
 }
 
 func (h *UserController) GetByEmail(c *gin.Context) {
@@ -127,7 +130,9 @@ func (h *UserController) GetByEmail(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, user, "user found")
+	userRes := response.UserResponse(*user)
+
+	helper.Success(c, userRes, "user found")
 }
 
 func (h *UserController) Update(c *gin.Context) {
@@ -197,7 +202,9 @@ func (h *UserController) Update(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, updatedUser, "user updated successfully")
+	userRes := response.UserResponse(*updatedUser)
+
+	helper.Success(c, userRes, "user updated successfully")
 }
 
 func (h *UserController) Delete(c *gin.Context) {
@@ -230,7 +237,6 @@ func (h *UserController) Delete(c *gin.Context) {
 		return
 	}
 	helper.Success(c, nil, "user deleted")
-
 }
 
 func (h *UserController) GetMany(c *gin.Context) {
@@ -247,7 +253,9 @@ func (h *UserController) GetMany(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": users, "total": total}, "users found")
+	usersRes := response.UsersResponse(users)
+
+	helper.Success(c, gin.H{"data": usersRes, "total": total}, "users found")
 }
 
 func (h *UserController) GetByNim(c *gin.Context) {
@@ -279,7 +287,9 @@ func (h *UserController) GetByNim(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, user, "user found")
+	userRes := response.UserResponse(*user)
+
+	helper.Success(c, userRes, "user found")
 }
 
 func (h *UserController) GetByNidn(c *gin.Context) {
@@ -311,7 +321,9 @@ func (h *UserController) GetByNidn(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, user, "user found")
+	userRes := response.UserResponse(*user)
+
+	helper.Success(c, userRes, "user found")
 }
 
 func (h *UserController) GetByUsn(c *gin.Context) {
@@ -343,7 +355,9 @@ func (h *UserController) GetByUsn(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, user, "user found")
+	userRes := response.UserResponse(*user)
+
+	helper.Success(c, userRes, "user found")
 }
 
 func (h *UserController) GetByName(c *gin.Context) {
@@ -366,7 +380,9 @@ func (h *UserController) GetByName(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": users, "total": total}, "users found")
+	usersRes := response.UsersResponse(users)
+
+	helper.Success(c, gin.H{"data": usersRes, "total": total}, "users found")
 }
 
 func (h *UserController) GetByRole(c *gin.Context) {
@@ -399,7 +415,9 @@ func (h *UserController) GetByRole(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": users, "total": total}, "users found")
+	usersRes := response.UsersResponse(users)
+
+	helper.Success(c, gin.H{"data": usersRes, "total": total}, "users found")
 }
 
 func (h *UserController) ChangePassword(c *gin.Context) {
@@ -492,7 +510,9 @@ func (h *UserController) ChangeRole(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, user, "user role updated successfully")
+	userRes := response.UserResponse(*user)
+
+	helper.Success(c, userRes, "user role updated successfully")
 }
 
 func (h *UserController) RefreshToken(c *gin.Context) {

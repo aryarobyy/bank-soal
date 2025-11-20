@@ -178,26 +178,27 @@ func FormatUpdateError(err error, data model.UpdateUser) error {
 }
 
 func ValidateRoleTransitionRequirements(oldUser *model.User, data model.UpdateUser, newRole model.Role) error {
-	if oldUser.Role == *data.Role {
-		return nil
+	if data.Role != nil {
+		if oldUser.Role == *data.Role {
+			return nil
+		}
+
+		switch newRole {
+		case model.RoleUser:
+			if data.Nim == nil || *data.Nim == "" {
+				return fmt.Errorf("nim is require for user")
+			}
+
+		case model.RoleLecturer:
+			if data.Nip == nil || *data.Nip == "" {
+				return fmt.Errorf("nip is require for lecturer")
+			}
+			if data.Nidn == nil || *data.Nidn == "" {
+				return fmt.Errorf("nidn is require for lecturer")
+			}
+
+		case model.RoleAdmin, model.RoleSuperAdmin:
+		}
 	}
-
-	switch newRole {
-	case model.RoleUser:
-		if data.Nim == nil || *data.Nim == "" {
-			return fmt.Errorf("nim is require for user")
-		}
-
-	case model.RoleLecturer:
-		if data.Nip == nil || *data.Nip == "" {
-			return fmt.Errorf("nip is require for lecturer")
-		}
-		if data.Nidn == nil || *data.Nidn == "" {
-			return fmt.Errorf("nidn is require for lecturer")
-		}
-
-	case model.RoleAdmin, model.RoleSuperAdmin:
-	}
-
 	return nil
 }
