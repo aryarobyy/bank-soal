@@ -105,3 +105,25 @@ func StrPtr(s string) *string {
 	}
 	return &s
 }
+
+func BindAndConvertToPtr(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
+func BindAndConvertToBoolPtr(value string) *bool {
+	if value == "" {
+		return nil
+	}
+	if value == "true" || value == "1" {
+		t := true
+		return &t
+	}
+	if value == "false" || value == "0" {
+		f := false
+		return &f
+	}
+	return nil
+}

@@ -152,53 +152,51 @@ func (h *UserController) Update(c *gin.Context) {
 		return
 	}
 
-	role := model.Role(roleStr)
+	currentRole := model.Role(roleStr)
 
+	name := c.PostForm("name")
 	email := c.PostForm("email")
+	nim := c.PostForm("nim")
+	nip := c.PostForm("nip")
+	nidn := c.PostForm("nidn")
+	username := c.PostForm("username")
+	roleForm := c.PostForm("role")
+	major := c.PostForm("major")
+	faculty := c.PostForm("faculty")
+	academicYear := c.PostForm("academic_year")
+	statusForm := c.PostForm("status")
+	imgDelete := c.PostForm("img_delete")
 
 	if email != "" && !helper.IsValidEmail(email) {
 		helper.Error(c, http.StatusBadRequest, "wrong email format")
 		return
 	}
 
-	nim := c.PostForm("nim")
-	nip := c.PostForm("nip")
-	nidn := c.PostForm("nidn")
-	username := c.PostForm("username")
+	updateData := model.UpdateUser{
+		Name: helper.BindAndConvertToPtr(name),
 
-	var nimPtr, nipPtr, nidnPtr, usernamePtr *string
-	if nim != "" {
-		nimPtr = &nim
-	}
-	if nip != "" {
-		nipPtr = &nip
-	}
-	if nidn != "" {
-		nidnPtr = &nidn
-	}
-	if username != "" {
-		usernamePtr = &username
-	}
+		Email:    helper.BindAndConvertToPtr(email),
+		Username: helper.BindAndConvertToPtr(username),
+		Nim:      helper.BindAndConvertToPtr(nim),
+		Nip:      helper.BindAndConvertToPtr(nip),
+		Nidn:     helper.BindAndConvertToPtr(nidn),
 
-	user := model.User{
-		Name:         c.PostForm("name"),
-		Email:        email,
-		Username:     usernamePtr,
-		Nim:          nimPtr,
-		Nip:          nipPtr,
-		Nidn:         nidnPtr,
-		Role:         model.Role(c.PostForm("role")),
-		Major:        c.PostForm("major"),
-		Faculty:      c.PostForm("faculty"),
-		Status:       model.Status(c.PostForm("status")),
-		AcademicYear: c.PostForm("academic_year"),
+		Major:        helper.BindAndConvertToPtr(major),
+		Faculty:      helper.BindAndConvertToPtr(faculty),
+		AcademicYear: helper.BindAndConvertToPtr(academicYear),
+
+		Role:   (*model.Role)(helper.BindAndConvertToPtr(roleForm)),
+		Status: (*model.Status)(helper.BindAndConvertToPtr(statusForm)),
+
+		ImgDelete: helper.BindAndConvertToBoolPtr(imgDelete),
 	}
 
-	updatedUser, err := h.service.Update(ctx, c, user, id, role)
+	updatedUser, err := h.service.Update(ctx, c, updateData, id, currentRole)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+
 	helper.Success(c, updatedUser, "user updated successfully")
 }
 

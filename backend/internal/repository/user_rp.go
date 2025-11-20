@@ -12,7 +12,7 @@ type UserRepository interface {
 	Register(ctx context.Context, user model.User) (*model.User, error)
 	GetById(ctx context.Context, id int) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
-	Update(ctx context.Context, user model.User, id int) (*model.User, error)
+	Update(ctx context.Context, user model.UpdateUser, id int) (*model.User, error)
 	Delete(ctx context.Context, id int) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
 	GetByNim(ctx context.Context, nim string) (*model.User, error)
@@ -68,10 +68,10 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*model.U
 	return &user, nil
 }
 
-func (r *userRepository) Update(ctx context.Context, user model.User, id int) (*model.User, error) {
+func (r *userRepository) Update(ctx context.Context, user model.UpdateUser, id int) (*model.User, error) {
 	updateData := map[string]interface{}{}
 
-	if user.Name != "" {
+	if user.Name != nil {
 		updateData["name"] = user.Name
 	}
 	if user.Nim != nil {
@@ -95,25 +95,25 @@ func (r *userRepository) Update(ctx context.Context, user model.User, id int) (*
 			updateData["nidn"] = nil
 		}
 	}
-	if user.Major != "" {
+	if user.Major != nil {
 		updateData["major"] = user.Major
 	}
-	if user.Email != "" {
+	if user.Email != nil {
 		updateData["email"] = user.Email
 	}
-	if user.Faculty != "" {
+	if user.Faculty != nil {
 		updateData["faculty"] = user.Faculty
 	}
-	if user.AcademicYear != "" {
+	if user.AcademicYear != nil {
 		updateData["academic_year"] = user.AcademicYear
 	}
-	if user.Status != "" {
+	if user.Status != nil {
 		updateData["status"] = user.Status
 	}
-	if user.ImgUrl != "" {
+	if user.ImgUrl != nil {
 		updateData["img_url"] = user.ImgUrl
 	}
-	if user.Role != "" {
+	if user.Role != nil {
 		updateData["role"] = user.Role
 	}
 

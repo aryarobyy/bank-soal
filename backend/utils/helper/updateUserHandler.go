@@ -8,9 +8,9 @@ import (
 	"latih.in-be/internal/model"
 )
 
-func ValidateAuthorization(oldUser *model.User, data model.User, requesterRole model.Role) error {
+func ValidateAuthorization(oldUser *model.User, data model.UpdateUser, requesterRole model.Role) error {
 	if requesterRole != model.RoleAdmin && requesterRole != model.RoleSuperAdmin {
-		if data.Role != "" && data.Role != oldUser.Role {
+		if data.Role != nil && *data.Role != oldUser.Role {
 			return fmt.Errorf("you are not allowed to change role")
 		}
 	}
@@ -19,32 +19,40 @@ func ValidateAuthorization(oldUser *model.User, data model.User, requesterRole m
 		return fmt.Errorf("user not found")
 	}
 
-	if data.Role == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
+	if data.Role != nil && *data.Role == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
 		return fmt.Errorf("you cant access this role")
 	}
 
 	return nil
 }
 
-func NormalizeRoleTransition(oldUser *model.User, data *model.User, newRole model.Role) {
+func NormalizeRoleTransition(oldUser *model.User, data *model.UpdateUser, newRole model.Role) {
 	if oldUser.Role == newRole {
 		return
 	}
 
-	switch oldUser.Role {
-	case model.RoleUser:
-		data.Nim = nil
-		data.AcademicYear = ""
+	switch {
+	case oldUser.Role == model.RoleUser && newRole == model.RoleLecturer:
+		emptyString := ""
+		data.Nim = &emptyString
 
-	case model.RoleLecturer:
-		data.Nip = nil
-		data.Nidn = nil
+	case oldUser.Role == model.RoleLecturer && newRole == model.RoleUser:
+		emptyString := ""
+		data.Nip = &emptyString
+		data.Nidn = &emptyString
 
-	case model.RoleAdmin, model.RoleSuperAdmin:
+	case oldUser.Role == model.RoleLecturer && (newRole == model.RoleAdmin || newRole == model.RoleSuperAdmin):
+		emptyString := ""
+		data.Nip = &emptyString
+		data.Nidn = &emptyString
+
+	case oldUser.Role == model.RoleUser && (newRole == model.RoleAdmin || newRole == model.RoleSuperAdmin):
+		emptyString := ""
+		data.Nim = &emptyString
 	}
 }
 
-func ValidateRoleRequirements(data model.User, role model.Role) error {
+func ValidateRoleRequirements(data model.UpdateUser, role model.Role) error {
 	switch role {
 	case model.RoleUser:
 		if data.Nip != nil && *data.Nip != "" {
@@ -58,45 +66,46 @@ func ValidateRoleRequirements(data model.User, role model.Role) error {
 		if data.Nim != nil && *data.Nim != "" {
 			return fmt.Errorf("lecturer role cannot have nim")
 		}
-		if data.AcademicYear != "" {
+		if data.AcademicYear != nil && *data.AcademicYear != "" {
 			return fmt.Errorf("lecturer role cannot have academic_year")
 		}
 
-	case model.RoleAdmin, model.RoleSuperAdmin:
-		if data.Nim != nil && *data.Nim != "" {
-			return fmt.Errorf("admin role cannot have nim")
-		}
-		if data.Nip != nil && *data.Nip != "" {
-			return fmt.Errorf("admin role cannot have nip")
-		}
-		if data.Nidn != nil && *data.Nidn != "" {
-			return fmt.Errorf("admin role cannot have nidn")
-		}
-		if data.AcademicYear != "" {
-			return fmt.Errorf("admin role cannot have academic_year")
-		}
+	case model.RoleAdmin, model.RoleSuperAdmin: //Kalo ada exception
+		// if data.Nim != nil && *data.Nim != "" {
+		// 	return fmt.Errorf("admin role cannot have nim")
+		// }
+		// if data.Nip != nil && *data.Nip != "" {
+		// 	return fmt.Errorf("admin role cannot have nip")
+		// }
+		// if data.Nidn != nil && *data.Nidn != "" {
+		// 	return fmt.Errorf("admin role cannot have nidn")
+		// }
+		// if data.AcademicYear != nil && *data.AcademicYear != "" {
+		// 	return fmt.Errorf("admin role cannot have academic_year")
+		// }
 	}
 
 	return nil
 }
 
-func MergeDefaults(oldUser *model.User, data *model.User, role model.Role) {
+func MergeDefaults(oldUser *model.User, data *model.UpdateUser, role model.Role) {
 	if data.Username == nil {
 		data.Username = oldUser.Username
 	}
 
-	data.Role = role
+	data.Role = &role
 
 	switch role {
 	case model.RoleUser:
 		if data.Nim == nil {
 			data.Nim = oldUser.Nim
 		}
-		if data.AcademicYear == "" {
-			data.AcademicYear = oldUser.AcademicYear
+		if data.AcademicYear == nil {
+			data.AcademicYear = &oldUser.AcademicYear
 		}
-		data.Nip = nil
-		data.Nidn = nil
+		emptyString := ""
+		data.Nip = &emptyString
+		data.Nidn = &emptyString
 
 	case model.RoleLecturer:
 		if data.Nip == nil {
@@ -105,21 +114,36 @@ func MergeDefaults(oldUser *model.User, data *model.User, role model.Role) {
 		if data.Nidn == nil {
 			data.Nidn = oldUser.Nidn
 		}
-		data.Nim = nil
-		data.AcademicYear = ""
+		emptyString := ""
+		data.Nim = &emptyString
+		emptyAcademicYear := ""
+		data.AcademicYear = &emptyAcademicYear
 
 	case model.RoleAdmin, model.RoleSuperAdmin:
-		data.Nim = nil
-		data.Nip = nil
-		data.Nidn = nil
-		data.AcademicYear = ""
+		emptyString := ""
+		data.Nim = &emptyString
+		data.Nip = &emptyString
+		data.Nidn = &emptyString
+		emptyAcademicYear := ""
+		data.AcademicYear = &emptyAcademicYear
 	}
 }
 
-func HandleImageUpload(c *gin.Context, oldUser *model.User, data *model.User, id int) error {
+func HandleImageUpload(c *gin.Context, oldUser *model.User, data *model.UpdateUser, id int) error {
+	if data.ImgDelete != nil && *data.ImgDelete {
+		if oldUser.ImgUrl != "" {
+			if err := DeleteImage(oldUser.ImgUrl); err != nil {
+				return fmt.Errorf("failed to delete image: %w", err)
+			}
+		}
+		emptyUrl := ""
+		data.ImgUrl = &emptyUrl
+		return nil
+	}
+
 	file, _ := c.FormFile("image")
 	if file == nil {
-		data.ImgUrl = oldUser.ImgUrl
+		data.ImgUrl = &oldUser.ImgUrl
 		return nil
 	}
 
@@ -135,11 +159,11 @@ func HandleImageUpload(c *gin.Context, oldUser *model.User, data *model.User, id
 		return fmt.Errorf("failed to upload image: %w", err)
 	}
 
-	data.ImgUrl = newImageUrl
+	data.ImgUrl = &newImageUrl
 	return nil
 }
 
-func FormatUpdateError(err error, data model.User) error {
+func FormatUpdateError(err error, data model.UpdateUser) error {
 	if strings.Contains(err.Error(), "Unknown column") {
 		var fieldName string
 		parts := strings.Split(err.Error(), "'")
@@ -151,4 +175,29 @@ func FormatUpdateError(err error, data model.User) error {
 	}
 
 	return fmt.Errorf("update gagal: %v", err)
+}
+
+func ValidateRoleTransitionRequirements(oldUser *model.User, data model.UpdateUser, newRole model.Role) error {
+	if oldUser.Role == *data.Role {
+		return nil
+	}
+
+	switch newRole {
+	case model.RoleUser:
+		if data.Nim == nil || *data.Nim == "" {
+			return fmt.Errorf("nim is require for user")
+		}
+
+	case model.RoleLecturer:
+		if data.Nip == nil || *data.Nip == "" {
+			return fmt.Errorf("nip is require for lecturer")
+		}
+		if data.Nidn == nil || *data.Nidn == "" {
+			return fmt.Errorf("nidn is require for lecturer")
+		}
+
+	case model.RoleAdmin, model.RoleSuperAdmin:
+	}
+
+	return nil
 }

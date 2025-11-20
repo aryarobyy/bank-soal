@@ -5,12 +5,12 @@ import "time"
 type User struct {
 	Id           int       `json:"id" gorm:"primaryKey;autoIncrement;not null"`
 	Name         string    `json:"name" validate:"required"`
-	Nim          *string   `json:"nim,omitempty" gorm:"unique"`
-	Nip          *string   `json:"nip,omitempty" gorm:"unique"`
-	Nidn         *string   `json:"nidn,omitempty" gorm:"unique"`
-	Username     *string   `json:"username,omitempty" gorm:"unique"`
+	Nim          *string   `json:"nim" gorm:"unique"`
+	Nip          *string   `json:"nip" gorm:"unique"`
+	Nidn         *string   `json:"nidn" gorm:"unique"`
+	Username     *string   `json:"username" gorm:"unique"`
 	ImgUrl       string    `json:"img_url,omitempty"`
-	Email        string    `json:"email,omitempty" gorm:"unique;default:null"`
+	Email        *string   `json:"email" gorm:"unique"`
 	Password     string    `json:"password" validate:"required,min=6"`
 	Role         Role      `json:"role" validate:"oneof=admin user super_admin lecturer"`
 	Major        string    `json:"major,omitempty"`
@@ -19,6 +19,23 @@ type User struct {
 	Status       Status    `json:"status" validate:"oneof=passed not_passed"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+type UpdateUser struct {
+	Name         *string `json:"name" validate:"omitempty"`
+	Nim          *string `json:"nim" gorm:"unique"`
+	Nip          *string `json:"nip" gorm:"unique"`
+	Nidn         *string `json:"nidn" gorm:"unique"`
+	Username     *string `json:"username,omitempty" gorm:"unique"`
+	ImgUrl       *string `json:"img_url,omitempty"`
+	Email        *string `json:"email" gorm:"unique;"`
+	Role         *Role   `json:"role,omitempty" validate:"omitempty,oneof=admin user super_admin lecturer"`
+	Major        *string `json:"major,omitempty"`
+	AcademicYear *string `json:"academic_year,omitempty" validate:"omitempty,len=4"`
+	Faculty      *string `json:"faculty,omitempty"`
+	Status       *Status `json:"status,omitempty" validate:"omitempty,oneof=passed not_passed"`
+
+	ImgDelete *bool `json:"img_delete,omitempty" gorm:"default:false"`
 }
 
 type LoginCredential struct {
@@ -60,4 +77,22 @@ type BulkUserCredential struct {
 type BulkUserOutput struct {
 	Nim      string `json:"nim"`
 	Password string `json:"password"`
+}
+
+type UserResponse struct {
+	Id           int       `json:"id"`
+	Name         *string   `json:"name,omitempty"`
+	Nim          *string   `json:"nim,omitempty"`
+	Nip          *string   `json:"nip,omitempty"`
+	Nidn         *string   `json:"nidn,omitempty"`
+	Username     *string   `json:"username,omitempty"`
+	ImgUrl       *string   `json:"img_url,omitempty"`
+	Email        *string   `json:"email,omitempty"`
+	Role         Role      `json:"role"`
+	Major        *string   `json:"major,omitempty"`
+	AcademicYear *string   `json:"academic_year,omitempty"`
+	Faculty      *string   `json:"faculty,omitempty"`
+	Status       Status    `json:"status"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
