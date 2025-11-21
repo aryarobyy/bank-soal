@@ -8,6 +8,7 @@ import (
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
 	"latih.in-be/utils/helper"
+	"latih.in-be/utils/response"
 )
 
 type ExamController struct {
@@ -58,7 +59,9 @@ func (h *ExamController) GetById(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	examRes := response.ExamResponse(*data)
+
+	helper.Success(c, examRes, "data found")
 }
 
 func (h *ExamController) GetMany(c *gin.Context) {
@@ -75,7 +78,9 @@ func (h *ExamController) GetMany(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
+	examsRes := response.ExamsResponse(data)
+
+	helper.Success(c, gin.H{"data": examsRes, "total": total}, "data found")
 }
 
 func (h *ExamController) Update(c *gin.Context) {
@@ -115,7 +120,9 @@ func (h *ExamController) Update(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, updatedData, "data updated")
+	examRes := response.ExamResponse(*updatedData)
+
+	helper.Success(c, examRes, "data updated")
 }
 
 func (h *ExamController) Delete(c *gin.Context) {

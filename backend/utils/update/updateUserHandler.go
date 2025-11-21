@@ -178,16 +178,19 @@ func FormatUpdateUserError(err error, data model.UpdateUser) error {
 	return fmt.Errorf("update gagal: %v", err)
 }
 
-func ValidateRoleTransitionRequirements(oldUser *model.User, data model.UpdateUser, newRole model.Role) error {
-	if data.Role != nil {
-		if oldUser.Role == *data.Role {
+func ValidateRoleTransitionRequirements(oldRole model.Role, data model.ChangeRoleCredential) error {
+	if data.Role != "" {
+		if oldRole == data.Role {
 			return nil
 		}
 
-		switch newRole {
+		switch data.Role {
 		case model.RoleUser:
 			if data.Nim == nil || *data.Nim == "" {
 				return fmt.Errorf("nim is require for user")
+			}
+			if data.AcademicYear == nil || *data.AcademicYear == "" {
+				return fmt.Errorf("academic year is require for user")
 			}
 
 		case model.RoleLecturer:
@@ -198,7 +201,13 @@ func ValidateRoleTransitionRequirements(oldUser *model.User, data model.UpdateUs
 				return fmt.Errorf("nidn is require for lecturer")
 			}
 
-		case model.RoleAdmin, model.RoleSuperAdmin:
+		case model.RoleAdmin:
+			if data.Username == nil || *data.Username == "" {
+				return fmt.Errorf("username is require for admin")
+			}
+
+		case model.RoleSuperAdmin:
+			return fmt.Errorf("you cant access this")
 		}
 	}
 	return nil

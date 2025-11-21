@@ -8,6 +8,7 @@ import (
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
 	"latih.in-be/utils/helper"
+	"latih.in-be/utils/response"
 )
 
 type SubjectController struct {
@@ -50,7 +51,9 @@ func (h *SubjectController) GetById(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	subjectRes := response.SubjectResponse(*data)
+
+	helper.Success(c, subjectRes, "data found")
 }
 
 func (h *SubjectController) GetByCode(c *gin.Context) {
@@ -64,7 +67,9 @@ func (h *SubjectController) GetByCode(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	subjectRes := response.SubjectResponse(*data)
+
+	helper.Success(c, subjectRes, "data found")
 }
 
 func (h *SubjectController) GetMany(c *gin.Context) {
@@ -82,7 +87,9 @@ func (h *SubjectController) GetMany(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
+	subjectsRes := response.SubjectsResponse(data)
+
+	helper.Success(c, gin.H{"data": subjectsRes, "total": total}, "data found")
 }
 
 func (h *SubjectController) Update(c *gin.Context) {
@@ -106,7 +113,10 @@ func (h *SubjectController) Update(c *gin.Context) {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	helper.Success(c, updatedData, "data updated")
+
+	subjectRes := response.SubjectResponse(*updatedData)
+
+	helper.Success(c, subjectRes, "data updated")
 }
 
 func (h *SubjectController) Delete(c *gin.Context) {
