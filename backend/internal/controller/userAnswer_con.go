@@ -8,6 +8,7 @@ import (
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
 	"latih.in-be/utils/helper"
+	"latih.in-be/utils/response"
 )
 
 type UserAnswerController struct {
@@ -51,7 +52,9 @@ func (h *UserAnswerController) GetById(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "user answer found")
+	userAnswerRes := response.UserAnswerResponse(*data)
+
+	helper.Success(c, userAnswerRes, "user answer found")
 }
 
 func (h *UserAnswerController) GetMany(c *gin.Context) {
@@ -69,7 +72,9 @@ func (h *UserAnswerController) GetMany(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "user answers found")
+	userAnswersRes := response.UserAnswersResponse(data)
+
+	helper.Success(c, gin.H{"data": userAnswersRes, "total": total}, "user answers found")
 }
 
 func (h *UserAnswerController) Update(c *gin.Context) {
@@ -93,7 +98,9 @@ func (h *UserAnswerController) Update(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, updated, "user answer updated")
+	userAnswerRes := response.UserAnswerResponse(*updated)
+
+	helper.Success(c, userAnswerRes, "user answer updated")
 }
 
 func (h *UserAnswerController) Delete(c *gin.Context) {
@@ -141,7 +148,9 @@ func (h *UserAnswerController) GetByExamSessionId(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "user answers found")
+	userAnswersRes := response.UserAnswersResponse(data)
+
+	helper.Success(c, gin.H{"data": userAnswersRes, "total": total}, "user answers found")
 }
 
 func (h *UserAnswerController) GetByQuestionId(c *gin.Context) {
@@ -171,7 +180,9 @@ func (h *UserAnswerController) GetByQuestionId(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "user answers found")
+	userAnswersRes := response.UserAnswersResponse(data)
+
+	helper.Success(c, gin.H{"data": userAnswersRes, "total": total}, "user answers found")
 }
 
 func (h *UserAnswerController) GetUserAnswer(c *gin.Context) {
@@ -208,5 +219,7 @@ func (h *UserAnswerController) GetUserAnswer(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "user answers found")
+	userAnswersRes := response.UserAnswersResponse(data)
+
+	helper.Success(c, gin.H{"data": userAnswersRes, "total": total}, "user answers found")
 }

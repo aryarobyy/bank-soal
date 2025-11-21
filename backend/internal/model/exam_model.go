@@ -17,3 +17,17 @@ type Exam struct {
 
 	Questions []Question `json:"questions" gorm:"many2many:exam_questions;"`
 }
+
+type ExamResponse struct {
+	Id          int        `json:"id"`
+	Title       string     `json:"title"`
+	Description string     `json:"description,omitempty"`
+	Difficulty  Difficulty `json:"difficulty"`
+	LongTime    int        `json:"long_time"` // menit
+	CreatorId   int        `json:"creator_id"`
+	StartedAt   *time.Time `json:"started_at"`
+	FinishedAt  *time.Time `json:"finished_at"`
+	Score       int        `json:"score"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+}

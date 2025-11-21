@@ -8,6 +8,7 @@ import (
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
 	"latih.in-be/utils/helper"
+	"latih.in-be/utils/response"
 )
 
 type ExamSessionController struct {
@@ -61,7 +62,9 @@ func (h *ExamSessionController) GetById(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "session found")
+	sessionRes := response.SessionResponse(*data)
+
+	helper.Success(c, sessionRes, "session found")
 }
 
 func (h *ExamSessionController) Update(c *gin.Context) {
@@ -86,7 +89,9 @@ func (h *ExamSessionController) Update(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "update session success")
+	sessionRes := response.SessionResponse(*data)
+
+	helper.Success(c, sessionRes, "update session success")
 }
 
 func (h *ExamSessionController) Delete(c *gin.Context) {
@@ -122,7 +127,9 @@ func (h *ExamSessionController) GetMany(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "data updated")
+	sessionsRes := response.SessionsResponse(data)
+
+	helper.Success(c, sessionsRes, "data updated")
 }
 
 func (h *ExamSessionController) UpdateCurrNo(c *gin.Context) {

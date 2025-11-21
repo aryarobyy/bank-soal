@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"latih.in-be/internal/service"
 	"latih.in-be/utils/helper"
+	"latih.in-be/utils/response"
 )
 
 type XlsPathController struct {
@@ -36,7 +37,9 @@ func (h *XlsPathController) GetById(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	xlsPathRes := response.XlsPathResponse(*data)
+
+	helper.Success(c, xlsPathRes, "data found")
 }
 
 func (h *XlsPathController) GetMany(c *gin.Context) {
@@ -54,7 +57,9 @@ func (h *XlsPathController) GetMany(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	xlsPathsRes := response.XlsPathsResponse(data)
+
+	helper.Success(c, xlsPathsRes, "data found")
 }
 
 func (h *XlsPathController) Delete(c *gin.Context) {
