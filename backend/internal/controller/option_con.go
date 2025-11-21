@@ -8,6 +8,7 @@ import (
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
 	"latih.in-be/utils/helper"
+	"latih.in-be/utils/response"
 )
 
 type OptionController struct {
@@ -50,7 +51,9 @@ func (h *OptionController) GetById(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	optionRes := response.OptionResponse(*data)
+
+	helper.Success(c, optionRes, "data found")
 }
 
 func (h *OptionController) GetMany(c *gin.Context) {
@@ -74,7 +77,9 @@ func (h *OptionController) GetMany(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	optionsRes := response.OptionsResponse(data)
+
+	helper.Success(c, optionsRes, "data found")
 }
 
 func (h *OptionController) Update(c *gin.Context) {
@@ -98,7 +103,10 @@ func (h *OptionController) Update(c *gin.Context) {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	helper.Success(c, updatedData, "data updated")
+
+	optionRes := response.OptionResponse(*updatedData)
+
+	helper.Success(c, optionRes, "data updated")
 }
 
 func (h *OptionController) Delete(c *gin.Context) {

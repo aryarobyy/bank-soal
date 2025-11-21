@@ -8,6 +8,7 @@ import (
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
 	"latih.in-be/utils/helper"
+	"latih.in-be/utils/response"
 )
 
 type ExamScoreController struct {
@@ -50,7 +51,9 @@ func (h *ExamScoreController) GetById(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	examScoreRes := response.ExamScoreResponse(*data)
+
+	helper.Success(c, examScoreRes, "data found")
 }
 
 func (h *ExamScoreController) GetMany(c *gin.Context) {
@@ -75,7 +78,9 @@ func (h *ExamScoreController) GetMany(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	examScoresRes := response.ExamScoresResponse(data)
+
+	helper.Success(c, examScoresRes, "data found")
 }
 
 func (h *ExamScoreController) Update(c *gin.Context) {
@@ -99,7 +104,10 @@ func (h *ExamScoreController) Update(c *gin.Context) {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	helper.Success(c, updatedData, "data updated")
+
+	examScoreRes := response.ExamScoreResponse(*updatedData)
+
+	helper.Success(c, examScoreRes, "data updated")
 }
 
 func (h *ExamScoreController) Delete(c *gin.Context) {

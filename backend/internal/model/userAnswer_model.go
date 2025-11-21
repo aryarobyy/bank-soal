@@ -15,3 +15,14 @@ type UserAnswer struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+type UserAnswerResponse struct {
+	Id            int       `json:"id"`
+	ExamSessionId int       `json:"exam_session_id"`
+	UserId        int       `json:"user_id"`
+	QuestionId    int       `json:"question_id"`
+	Answer        string    `json:"answer"`
+	IsCorrect     bool      `json:"is_correct"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
