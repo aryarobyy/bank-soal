@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 	"latih.in-be/internal/model"
@@ -12,7 +13,7 @@ type QuestionRepository interface {
 	GetById(ctx context.Context, id int) (*model.Question, error)
 	GetMany(ctx context.Context, limit int, offset int) ([]model.Question, int64, error)
 	GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, int64, error)
-	Update(ctx context.Context, q model.Question, id int) (*model.Question, error)
+	Update(ctx context.Context, q model.UpdateQuestion, id int) (*model.Question, error)
 	Delete(ctx context.Context, id int) error
 	CreateWithOptions(ctx context.Context, question model.Question) error
 	CreateBatch(ctx context.Context, q []model.Question) error
@@ -108,15 +109,53 @@ func (r *questionRepository) GetByExam(ctx context.Context, examId int, limit in
 	return q, total, nil
 }
 
-func (r *questionRepository) Update(ctx context.Context, q model.Question, id int) (*model.Question, error) {
+func (r *questionRepository) Update(ctx context.Context, q model.UpdateQuestion, id int) (*model.Question, error) {
+	updateData := map[string]interface{}{}
+
+	if q.SubjectId != nil {
+		updateData["subject_id"] = *q.SubjectId
+	}
+	if q.Answer != nil {
+		updateData["answer"] = *q.Answer
+	}
+	if q.CreatorId != nil {
+		updateData["creator_id"] = *q.CreatorId
+	}
+	if q.QuestionText != nil {
+		updateData["question_text"] = *q.QuestionText
+	}
+	if q.Difficulty != nil {
+		updateData["difficulty"] = *q.Difficulty
+	}
+	if q.Score != nil {
+		updateData["score"] = *q.Score
+	}
+	if q.ImgUrl != nil {
+		updateData["img_url"] = *q.ImgUrl
+	}
+
+	if len(updateData) == 0 {
+		return nil, fmt.Errorf("no fields to update")
+	}
+
 	if err := r.db.WithContext(ctx).
 		Model(&model.Question{}).
 		Where("id = ?", id).
-		Updates(q).
+		Updates(updateData).
 		Error; err != nil {
 		return nil, err
 	}
-	return &q, nil
+
+	var updatedQuestion model.Question
+	if err := r.db.WithContext(ctx).
+		Preload("Subject").
+		Preload("Options").
+		First(&updatedQuestion, id).
+		Error; err != nil {
+		return nil, err
+	}
+
+	return &updatedQuestion, nil
 }
 
 func (r *questionRepository) Delete(ctx context.Context, id int) error {

@@ -23,11 +23,7 @@ func (h *QuestionController) GetById(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	idStr := c.Query("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid data id")
-		return
-	}
+	id := helper.BindToInt(idStr)
 
 	data, err := h.service.GetById(ctx, id)
 	if err != nil {
@@ -59,11 +55,7 @@ func (h *QuestionController) Update(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid id")
-		return
-	}
+	id := helper.BindToInt(idStr)
 
 	userIdVal, exists := c.Get("user_id")
 	if !exists {
@@ -72,15 +64,24 @@ func (h *QuestionController) Update(c *gin.Context) {
 	}
 	userId := userIdVal.(int)
 
-	var data model.Question
-
-	data.SubjectId, _ = strconv.Atoi(c.PostForm("subject_id"))
-	data.CreatorId, _ = strconv.Atoi(c.PostForm("creator_id"))
-	data.QuestionText = c.PostForm("question_text")
-	data.Difficulty = model.Difficulty(c.PostForm("difficulty"))
-	data.Answer = c.PostForm("answer")
-	data.Score, _ = strconv.Atoi(c.PostForm("score"))
+	subjectId := c.PostForm("subject_id")
+	creatorId := c.PostForm("creator_id")
+	questionText := c.PostForm("question_text")
+	difficulty := c.PostForm("difficulty")
+	answer := c.PostForm("answer")
+	score := c.PostForm("score")
 	optionsJson := c.PostForm("options")
+	imgDelete := c.PostForm("img_delete")
+
+	data := model.UpdateQuestion{
+		SubjectId:    helper.BindToIntPtr(subjectId),
+		CreatorId:    helper.BindToIntPtr(creatorId),
+		Score:        helper.BindToIntPtr(score),
+		QuestionText: helper.BindAndConvertToPtr(questionText),
+		Difficulty:   (*model.Difficulty)(helper.BindAndConvertToPtr(difficulty)),
+		Answer:       helper.BindAndConvertToPtr(answer),
+		ImgDelete:    helper.BindAndConvertToBoolPtr(imgDelete),
+	}
 
 	if optionsJson != "" {
 		if err := json.Unmarshal([]byte(optionsJson), &data.Options); err != nil {
@@ -89,7 +90,7 @@ func (h *QuestionController) Update(c *gin.Context) {
 		}
 	}
 
-	updated, err := h.service.Update(ctx, c, &data, id, userId)
+	updated, err := h.service.Update(ctx, c, data, id, userId)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return

@@ -1,4 +1,4 @@
-package helper
+package update
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"latih.in-be/internal/model"
+	"latih.in-be/utils/helper"
 )
 
 func ValidateAuthorization(oldUser *model.User, data model.UpdateUser, requesterRole model.Role) error {
@@ -129,10 +130,10 @@ func MergeDefaults(oldUser *model.User, data *model.UpdateUser, role model.Role)
 	}
 }
 
-func HandleImageUpload(c *gin.Context, oldUser *model.User, data *model.UpdateUser, id int) error {
+func HandleUserImageUpload(c *gin.Context, oldUser *model.User, data *model.UpdateUser, id int) error {
 	if data.ImgDelete != nil && *data.ImgDelete {
 		if oldUser.ImgUrl != "" {
-			if err := DeleteImage(oldUser.ImgUrl); err != nil {
+			if err := helper.DeleteImage(oldUser.ImgUrl); err != nil {
 				return fmt.Errorf("failed to delete image: %w", err)
 			}
 		}
@@ -148,13 +149,13 @@ func HandleImageUpload(c *gin.Context, oldUser *model.User, data *model.UpdateUs
 	}
 
 	if oldUser.ImgUrl != "" {
-		if err := DeleteImage(oldUser.ImgUrl); err != nil {
+		if err := helper.DeleteImage(oldUser.ImgUrl); err != nil {
 			return fmt.Errorf("failed to delete old image: %w", err)
 		}
 	}
 
 	imgDir := "./storages/images/user"
-	newImageUrl, err := UploadImage(c, id, imgDir)
+	newImageUrl, err := helper.UploadImage(c, id, imgDir)
 	if err != nil {
 		return fmt.Errorf("failed to upload image: %w", err)
 	}
@@ -163,14 +164,14 @@ func HandleImageUpload(c *gin.Context, oldUser *model.User, data *model.UpdateUs
 	return nil
 }
 
-func FormatUpdateError(err error, data model.UpdateUser) error {
+func FormatUpdateUserError(err error, data model.UpdateUser) error {
 	if strings.Contains(err.Error(), "Unknown column") {
 		var fieldName string
 		parts := strings.Split(err.Error(), "'")
 		if len(parts) >= 2 {
 			fieldName = parts[1]
 		}
-		val := GetFieldValue(data, fieldName)
+		val := helper.GetFieldValue(data, fieldName)
 		return fmt.Errorf("field '%s' with value '%v' is undefined", fieldName, val)
 	}
 

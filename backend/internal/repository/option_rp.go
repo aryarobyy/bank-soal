@@ -53,6 +53,7 @@ func (r *optionRepository) GetMany(ctx context.Context, qId int, limit int, offs
 		Limit(limit).
 		Offset(offset).
 		Where("question_id = ?", qId).
+		Find(&o).
 		Error; err != nil {
 		return nil, err
 	}

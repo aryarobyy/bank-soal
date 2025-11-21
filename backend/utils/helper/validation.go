@@ -99,13 +99,6 @@ func ContainsNumber(s string) bool {
 	return false
 }
 
-func StrPtr(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
-}
-
 func BindAndConvertToPtr(value string) *string {
 	if value == "" {
 		return nil
@@ -125,5 +118,24 @@ func BindAndConvertToBoolPtr(value string) *bool {
 		f := false
 		return &f
 	}
+	return nil
+}
+
+func BindToInt(value string) int {
+	if value != "" {
+		if v, err := strconv.Atoi(value); err == nil {
+			return v
+		}
+	}
+	return 0
+}
+
+func BindToIntPtr(value string) *int {
+	if value != "" {
+		if v, err := strconv.Atoi(value); err == nil {
+			return &v
+		}
+	}
+
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/repository"
 	"latih.in-be/utils/helper"
+	"latih.in-be/utils/update"
 )
 
 type UserService interface {
@@ -102,15 +103,15 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 
 	registerCred := model.User{
 		Name:         data.Name,
-		Email:        helper.StrPtr(data.Email),
+		Email:        helper.BindAndConvertToPtr(data.Email),
 		Password:     string(hashedPassword),
 		Major:        data.Major,
 		Faculty:      data.Faculty,
 		AcademicYear: finalAcademicYear,
-		Nim:          helper.StrPtr(data.Nim),
-		Nip:          helper.StrPtr(data.Nip),
-		Nidn:         helper.StrPtr(data.Nidn),
-		Username:     helper.StrPtr(finalUsername),
+		Nim:          helper.BindAndConvertToPtr(data.Nim),
+		Nip:          helper.BindAndConvertToPtr(data.Nip),
+		Nidn:         helper.BindAndConvertToPtr(data.Nidn),
+		Username:     helper.BindAndConvertToPtr(finalUsername),
 		Role:         data.Role,
 	}
 
@@ -217,29 +218,29 @@ func (s *userService) Update(ctx context.Context, c *gin.Context, data model.Upd
 		effectiveRole = *data.Role
 	}
 
-	if err := helper.ValidateAuthorization(oldUser, data, requesterRole); err != nil {
+	if err := update.ValidateAuthorization(oldUser, data, requesterRole); err != nil {
 		return nil, err
 	}
 
-	helper.NormalizeRoleTransition(oldUser, &data, effectiveRole)
+	update.NormalizeRoleTransition(oldUser, &data, effectiveRole)
 
-	if err := helper.ValidateRoleRequirements(data, effectiveRole); err != nil {
+	if err := update.ValidateRoleRequirements(data, effectiveRole); err != nil {
 		return nil, err
 	}
 
-	if err := helper.ValidateRoleTransitionRequirements(oldUser, data, effectiveRole); err != nil {
+	if err := update.ValidateRoleTransitionRequirements(oldUser, data, effectiveRole); err != nil {
 		return nil, err
 	}
 
-	helper.MergeDefaults(oldUser, &data, effectiveRole)
+	update.MergeDefaults(oldUser, &data, effectiveRole)
 
-	if err := helper.HandleImageUpload(c, oldUser, &data, id); err != nil {
+	if err := update.HandleUserImageUpload(c, oldUser, &data, id); err != nil {
 		return nil, err
 	}
 
 	updatedUser, err := s.repo.Update(ctx, data, id)
 	if err != nil {
-		return nil, helper.FormatUpdateError(err, data)
+		return nil, update.FormatUpdateUserError(err, data)
 	}
 
 	return updatedUser, nil
