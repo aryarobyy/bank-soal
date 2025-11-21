@@ -92,17 +92,18 @@ import { API_BASE_URL } from '../../core/constant';
 const subjects = [
   { id: 1, title: 'Kalkulus', code: 'MFG-101' },
   { id: 2, title: 'Matematika Diskrit', code: 'TIF-1203' },
-  { id: 3, title: 'Teori Bahasa dan Automata', code: 'TIF-2204' },
-  { id: 4, title: 'Basis Data Lanjut', code: 'TIF-2206' },
-  { id: 5, title: 'Metode Numerik', code: 'TIF-3107' },
+  { id: 3, title: 3, title: 'Teori Bahasa dan Automata', code: 'TIF-2204' },
+  { id: 4, title: 4, title: 'Basis Data Lanjut', code: 'TIF-2206' },
+  { id: 5, title: 5, title: 'Metode Numerik', code: 'TIF-3107' },
 ];
 
 const createEmptySoal = () => ({
   subject_id: subjects.length > 0 ? subjects[0].id : null,
   level: 'easy',
   mark: 3,
-  imageUrl: null,   // URL untuk Preview (bisa dari backend atau file lokal)
-  imageFile: null,  // File Object mentah untuk diupload (Form Data)
+  imageUrl: null,   // URL untuk Preview
+  imageFile: null,  // File Object mentah untuk diupload
+  isDeleteImage: false, // <-- Flag untuk menghapus gambar lama di backend
   question: '',
   answers: [
     { text: '', isCorrect: false }, { text: '', isCorrect: false },
@@ -144,25 +145,21 @@ export default {
   },
   
   methods: {
-    // ## FUNGSI DIPERBARUI: Cek apakah path sudah URL lengkap ##
     constructImageUrl(serverPath) {
       if (!serverPath) return null;
       
-      // Jika backend mengirim URL lengkap (seperti di JSON Anda), gunakan langsung
       if (serverPath.startsWith('http')) {
         return serverPath;
       }
 
-      // Fallback jika backend mengirim path relatif (./storages...)
       const cleanPath = serverPath.startsWith('.') ? serverPath.substring(1) : serverPath;
       return `${API_BASE_URL}${cleanPath}`;
     },
 
-    // ## FUNGSI DIPERBARUI: Membaca 'img_url' ##
     async fetchQuestionData(id) {
       try {
         const response = await getQuestionById(id);
-        const questionData = response.data; // Ini adalah objek { id: 69, ... }
+        const questionData = response.data;
         if (!questionData) throw new Error("Data soal tidak ditemukan");
 
         this.currentSoal = {
@@ -171,9 +168,9 @@ export default {
           mark: questionData.score,
           question: questionData.question_text,
           answers: this.prepareAnswers(questionData.options),
-          // ## PERBAIKAN: Gunakan 'img_url' (sesuai JSON) ##
           imageUrl: this.constructImageUrl(questionData.img_url), 
           imageFile: null, 
+          isDeleteImage: false, // Reset flag saat load
         };
         
         if (this.currentSoal.imageUrl) {
@@ -261,8 +258,9 @@ export default {
       return rawMessage;
     },
     
+    // ## FUNGSI FORMAT PAYLOAD DENGAN LOGIC img_delete ##
     formatPayload(soal, creatorId, examId) {
-        return {
+        const payload = {
             exam_id: examId,
             creator_id: creatorId,
             subject_id: soal.subject_id,
@@ -276,8 +274,20 @@ export default {
                     option_text: a.text,
                     is_correct: a.isCorrect,
                 })),
-            image: soal.imageFile, // Mengirim file mentah
         };
+
+        // Kirim file mentah di bawah key 'image' (diperlukan untuk upload)
+        if (soal.imageFile) {
+            payload.image = soal.imageFile;
+        } 
+        
+        // Kirim flag img_delete: true HANYA di mode Edit jika user menekan 'Remove' 
+        // DAN TIDAK ada file baru yang di-upload.
+        if (this.isEditMode && soal.isDeleteImage && !soal.imageFile) {
+          payload.img_delete = true; 
+        }
+
+        return payload;
     },
     
     triggerImageInput() { this.$refs.imageInput.click(); },
@@ -289,6 +299,9 @@ export default {
         this.currentSoal.imageFile = file; 
         this.uploadedImageName = file.name;
         
+        // Penting: Reset isDeleteImage jika user memilih file baru
+        this.currentSoal.isDeleteImage = false; 
+
         const reader = new FileReader();
         reader.onload = (e) => { this.currentSoal.imageUrl = e.target.result; };
         reader.readAsDataURL(file);
@@ -301,6 +314,12 @@ export default {
       this.currentSoal.imageUrl = null;
       this.currentSoal.imageFile = null; 
       this.uploadedImageName = null;
+      
+      // ## PERBAIKAN: Set flag isDeleteImage saat di mode Edit ##
+      if (this.isEditMode) {
+        this.currentSoal.isDeleteImage = true;
+      }
+      
       if (this.$refs.imageInput) {
         this.$refs.imageInput.value = null; 
       }
@@ -312,18 +331,29 @@ export default {
       });
     },
     
+    // ## FUNGSI addSoalToList YANG MENYEBABKAN BUG BATCH SAVE IMAGE ##
     addSoalToList() {
       if (!this.currentSoal.subject_id) { alert('Pilih subjek!'); return; }
       if (!this.currentSoal.question.trim()) { alert('Soal kosong!'); return; }
       if (this.currentSoal.answers.every(a => !a.text.trim())) { alert('Jawaban kosong!'); return; }
       if (!this.currentSoal.answers.some(a => a.isCorrect)) { alert('Pilih jawaban benar!'); return; }
 
-      this.soalList.push(JSON.parse(JSON.stringify(this.currentSoal)));
+      // 1. Buat salinan JSON data (yang menghilangkan File object)
+      const newSoal = JSON.parse(JSON.stringify(this.currentSoal));
+      
+      // 2. KOREKSI KRITIS: Salin kembali referensi File object yang hilang
+      // Ini memastikan File object yang asli (binary data) masuk ke item list.
+      newSoal.imageFile = this.currentSoal.imageFile;
+
+      this.soalList.push(newSoal);
       
       const savedSubjectId = this.currentSoal.subject_id;
+      
+      // Clear form state
       this.currentSoal = createEmptySoal();
       this.currentSoal.subject_id = savedSubjectId; 
       
+      // Clear image input field di UI (input file)
       this.removeImage(); 
       alert('Soal ditambahkan ke daftar!');
     },
