@@ -9,6 +9,7 @@ import (
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/service"
 	"latih.in-be/utils/helper"
+	"latih.in-be/utils/response"
 )
 
 type QuestionController struct {
@@ -31,7 +32,9 @@ func (h *QuestionController) GetById(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	questionRes := response.QuestionResponse(*data)
+
+	helper.Success(c, questionRes, "data found")
 }
 
 func (h *QuestionController) GetMany(c *gin.Context) {
@@ -48,7 +51,9 @@ func (h *QuestionController) GetMany(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
+	questionsRes := response.QuestionsResponse(data)
+
+	helper.Success(c, gin.H{"data": questionsRes, "total": total}, "data found")
 }
 
 func (h *QuestionController) Update(c *gin.Context) {
@@ -96,7 +101,9 @@ func (h *QuestionController) Update(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, updated, "question updated")
+	questionRes := response.QuestionResponse(*updated)
+
+	helper.Success(c, questionRes, "question updated")
 }
 
 func (h *QuestionController) Delete(c *gin.Context) {
@@ -152,7 +159,9 @@ func (h *QuestionController) CreateWithOptions(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "question created successfully")
+	questionRes := response.QuestionResponse(data)
+
+	helper.Success(c, questionRes, "question created successfully")
 }
 
 func (h *QuestionController) CreateFromJson(c *gin.Context) {
@@ -198,7 +207,9 @@ func (h *QuestionController) GetByExam(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
+	questionsRes := response.QuestionsResponse(data)
+
+	helper.Success(c, gin.H{"data": questionsRes, "total": total}, "data found")
 }
 
 func (h *QuestionController) GetByCreator(c *gin.Context) {
@@ -223,7 +234,9 @@ func (h *QuestionController) GetByCreator(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
+	questionsRes := response.QuestionsResponse(data)
+
+	helper.Success(c, gin.H{"data": questionsRes, "total": total}, "data found")
 }
 
 func (h *QuestionController) GetByDiff(c *gin.Context) {
@@ -243,7 +256,9 @@ func (h *QuestionController) GetByDiff(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
+	questionsRes := response.QuestionsResponse(data)
+
+	helper.Success(c, gin.H{"data": questionsRes, "total": total}, "data found")
 }
 
 func (h *QuestionController) GetBySubject(c *gin.Context) {
@@ -270,5 +285,7 @@ func (h *QuestionController) GetBySubject(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, gin.H{"data": data, "total": total}, "data found")
+	questionsRes := response.QuestionsResponse(data)
+
+	helper.Success(c, gin.H{"data": questionsRes, "total": total}, "data found")
 }

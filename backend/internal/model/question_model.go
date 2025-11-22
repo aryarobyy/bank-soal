@@ -33,3 +33,18 @@ type UpdateQuestion struct {
 	Options   []Option `json:"options" gorm:"foreignKey:QuestionId;constraint:OnDelete:CASCADE;"`
 	ImgDelete *bool    `json:"img_delete,omitempty" gorm:"default:false"`
 }
+
+type QuestionResponse struct {
+	Id           int           `json:"id"`
+	SubjectId    int           `json:"subject_id"`
+	Subject      Subject       `json:"subject"`
+	CreatorId    int           `json:"creator_id"`
+	QuestionText string        `json:"question_text"`
+	Difficulty   Difficulty    `json:"difficulty"`
+	Answer       string        `json:"answer,omitempty"`
+	Score        int           `json:"score"`
+	ImgUrl       string        `json:"img_url,omitempty"`
+	CreatedAt    time.Time     `json:"created_at"`
+	UpdatedAt    time.Time     `json:"updated_at"`
+	Options      []Option      `json:"options"`
+}

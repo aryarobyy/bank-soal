@@ -62,7 +62,12 @@ type ChangePasswordCredential struct {
 }
 
 type ChangeRoleCredential struct {
-	Role Role `json:"role" binding:"required"`
+	Nim          *string `json:"nim,omitempty"`
+	Nip          *string `json:"nip,omitempty"`
+	Nidn         *string `json:"nidn,omitempty"`
+	Username     *string `json:"username,omitempty"`
+	AcademicYear *string `json:"academic_year,omitempty"`
+	Role         Role    `json:"role" binding:"required"`
 }
 
 type BulkUserCredential struct {
@@ -88,11 +93,11 @@ type UserResponse struct {
 	Username     *string   `json:"username,omitempty"`
 	ImgUrl       *string   `json:"img_url,omitempty"`
 	Email        *string   `json:"email,omitempty"`
-	Role         Role      `json:"role"`
 	Major        *string   `json:"major,omitempty"`
 	AcademicYear *string   `json:"academic_year,omitempty"`
 	Faculty      *string   `json:"faculty,omitempty"`
 	Status       Status    `json:"status"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
+	Role         Role      `json:"role"`
 }
