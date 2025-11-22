@@ -9,10 +9,39 @@ import (
 	"latih.in-be/utils/helper"
 )
 
-func ValidateAuthorization(oldUser *model.User, data model.UpdateUser, requesterRole model.Role) error {
+func ValidateAuthorization(effectiveRole model.Role, oldUser *model.User, data model.UpdateUser, requesterRole model.Role) error {
 	if requesterRole != model.RoleAdmin && requesterRole != model.RoleSuperAdmin {
-		if data.Role != nil && *data.Role != oldUser.Role {
+		if effectiveRole != "" && effectiveRole != oldUser.Role {
 			return fmt.Errorf("you are not allowed to change role")
+		}
+	}
+
+	if data.Username != nil && *data.Username != "" {
+		if requesterRole != model.RoleAdmin && requesterRole != model.RoleSuperAdmin {
+			return fmt.Errorf("username only for admin")
+		}
+	}
+
+	if data.Nim != nil && *data.Nim != "" {
+		if effectiveRole != model.RoleUser {
+			return fmt.Errorf("nim only for user role")
+		}
+	}
+
+	if data.Nip != nil && *data.Nip != "" {
+		if effectiveRole != model.RoleLecturer {
+			return fmt.Errorf("nip only for lecturer role")
+		}
+	}
+	if data.Nidn != nil && *data.Nidn != "" {
+		if effectiveRole != model.RoleLecturer {
+			return fmt.Errorf("nidn only for lecturer role")
+		}
+	}
+
+	if requesterRole == model.RoleAdmin {
+		if oldUser.Role == model.RoleAdmin || oldUser.Role == model.RoleSuperAdmin {
+			return fmt.Errorf("admin cannot edit other admins or super admins")
 		}
 	}
 
@@ -20,41 +49,41 @@ func ValidateAuthorization(oldUser *model.User, data model.UpdateUser, requester
 		return fmt.Errorf("user not found")
 	}
 
-	if data.Role != nil && *data.Role == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
+	if effectiveRole != "" && effectiveRole == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
 		return fmt.Errorf("you cant access this role")
 	}
 
 	return nil
 }
 
-func NormalizeRoleTransition(oldUser *model.User, data *model.UpdateUser, newRole model.Role) {
-	if oldUser.Role == newRole {
+func NormalizeRoleTransition(oldUser *model.User, data *model.UpdateUser, effectiveRole model.Role) {
+	if oldUser.Role == effectiveRole {
 		return
 	}
 
 	switch {
-	case oldUser.Role == model.RoleUser && newRole == model.RoleLecturer:
+	case oldUser.Role == model.RoleUser && effectiveRole == model.RoleLecturer:
 		emptyString := ""
 		data.Nim = &emptyString
 
-	case oldUser.Role == model.RoleLecturer && newRole == model.RoleUser:
+	case oldUser.Role == model.RoleLecturer && effectiveRole == model.RoleUser:
 		emptyString := ""
 		data.Nip = &emptyString
 		data.Nidn = &emptyString
 
-	case oldUser.Role == model.RoleLecturer && (newRole == model.RoleAdmin || newRole == model.RoleSuperAdmin):
+	case oldUser.Role == model.RoleLecturer && (effectiveRole == model.RoleAdmin || effectiveRole == model.RoleSuperAdmin):
 		emptyString := ""
 		data.Nip = &emptyString
 		data.Nidn = &emptyString
 
-	case oldUser.Role == model.RoleUser && (newRole == model.RoleAdmin || newRole == model.RoleSuperAdmin):
+	case oldUser.Role == model.RoleUser && (effectiveRole == model.RoleAdmin || effectiveRole == model.RoleSuperAdmin):
 		emptyString := ""
 		data.Nim = &emptyString
 	}
 }
 
-func ValidateRoleRequirements(data model.UpdateUser, role model.Role) error {
-	switch role {
+func ValidateRoleRequirements(data model.UpdateUser, effectiveRole model.Role) error {
+	switch effectiveRole {
 	case model.RoleUser:
 		if data.Nip != nil && *data.Nip != "" {
 			return fmt.Errorf("user role cannot have nip")
@@ -89,14 +118,14 @@ func ValidateRoleRequirements(data model.UpdateUser, role model.Role) error {
 	return nil
 }
 
-func MergeDefaults(oldUser *model.User, data *model.UpdateUser, role model.Role) {
+func MergeDefaults(oldUser *model.User, data *model.UpdateUser, effectiveRole model.Role) {
 	if data.Username == nil {
 		data.Username = oldUser.Username
 	}
 
-	data.Role = &role
+	data.Role = &effectiveRole
 
-	switch role {
+	switch effectiveRole {
 	case model.RoleUser:
 		if data.Nim == nil {
 			data.Nim = oldUser.Nim
@@ -178,13 +207,10 @@ func FormatUpdateUserError(err error, data model.UpdateUser) error {
 	return fmt.Errorf("update gagal: %v", err)
 }
 
-func ValidateRoleTransitionRequirements(oldUser *model.User, data model.UpdateUser, newRole model.Role) error {
+func ValidateRoleTransitionRequirements(oldUser *model.User, data model.UpdateUser, effectiveRole model.Role) error {
 	if data.Role != nil {
-		if oldUser.Role == *data.Role {
-			return nil
-		}
 
-		switch newRole {
+		switch effectiveRole {
 		case model.RoleUser:
 			if data.Nim == nil || *data.Nim == "" {
 				return fmt.Errorf("nim is require for user")

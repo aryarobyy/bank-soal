@@ -218,7 +218,7 @@ func (s *userService) Update(ctx context.Context, c *gin.Context, data model.Upd
 		effectiveRole = *data.Role
 	}
 
-	if err := update.ValidateAuthorization(oldUser, data, requesterRole); err != nil {
+	if err := update.ValidateAuthorization(effectiveRole, oldUser, data, requesterRole); err != nil {
 		return nil, err
 	}
 
