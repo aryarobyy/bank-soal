@@ -13,7 +13,7 @@ func UserAnswerRoutes(r *gin.Engine, userAnswer *controller.UserAnswerController
 		auth := routes.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			auth.POST("/", middleware.InputValidate([]string{
+			auth.POST("/", middleware.InputValidateJson([]string{
 				"exam_session_id", "user_id",
 				"question_id", "answer",
 			}), userAnswer.Create)

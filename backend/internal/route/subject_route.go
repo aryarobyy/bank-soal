@@ -13,7 +13,7 @@ func SubjectRoutes(r *gin.Engine, subject *controller.SubjectController) {
 		auth := routes.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			auth.POST("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), middleware.InputValidate([]string{"title", "code"}), subject.Create)
+			auth.POST("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), middleware.InputValidateJson([]string{"title", "code"}), subject.Create)
 			auth.GET("/", subject.GetMany)
 			auth.GET("/id", subject.GetById)
 			auth.GET("/code", subject.GetByCode)

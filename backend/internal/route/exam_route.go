@@ -17,7 +17,7 @@ func ExamRoutes(r *gin.Engine, exam *controller.ExamController) {
 		auth.Use(middleware.AuthMiddleware())
 		{
 			auth.POST("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer),
-				middleware.InputValidate([]string{"title", "creator_id", "long_time", "started_at", "finished_at"}),
+				middleware.InputValidateJson([]string{"title", "creator_id", "long_time", "started_at", "finished_at"}),
 				exam.Create)
 			auth.GET("/", exam.GetMany)
 			auth.GET("/id", exam.GetById)
