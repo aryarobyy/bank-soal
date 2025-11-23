@@ -16,7 +16,7 @@
     <div v-else-if="error" class="text-center py-10 bg-red-50 p-4 rounded-lg">
       <p class="text-red-600">{{ error }}</p>
     </div>
-    <div v-else class="bg-white shadow rounded-lg overflow-hidden">
+    <div v-else class="bg-white shadow rounded-lg overflow-hidden overflow-x-auto">
       <table class="min-w-full border-collapse">
         <thead class="bg-gray-100 text-gray-700 text-sm">
           <tr>
@@ -99,7 +99,7 @@
       v-if="showModal"
       class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
     >
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-11/12 md:w-full max-w-md">
         <h3 class="text-lg font-semibold mb-4">
           {{ editMode ? "Edit Akun" : "Tambah Dosen" }}
         </h3>
