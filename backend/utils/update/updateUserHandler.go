@@ -42,7 +42,7 @@ func ValidateAuthorization(effectiveRole model.Role, oldUser *model.User, data m
 	if requesterRole == model.RoleAdmin {
 		if oldUser.Role == model.RoleSuperAdmin {
 			return fmt.Errorf("admin cannot edit super admins")
-		} else if currentId != oldUser.Id {
+		} else if oldUser.Role == model.RoleAdmin && currentId != oldUser.Id {
 			return fmt.Errorf("admin cannot edit another admin")
 		}
 	}
