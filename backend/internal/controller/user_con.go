@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -151,6 +152,19 @@ func (h *UserController) Update(c *gin.Context) {
 		return
 	}
 
+	currId, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "id not found in context")
+		return
+	}
+	fmt.Println("SKSKSK", currId)
+
+	currIdInt, ok := currId.(int)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid user_id type")
+		return
+	}
+
 	roleStr, ok := currRole.(string)
 	if !ok {
 		helper.Error(c, http.StatusBadRequest, "invalid role type")
@@ -196,7 +210,7 @@ func (h *UserController) Update(c *gin.Context) {
 		ImgDelete: helper.BindAndConvertToBoolPtr(imgDelete),
 	}
 
-	updatedUser, err := h.service.Update(ctx, c, updateData, id, currentRole)
+	updatedUser, err := h.service.Update(ctx, c, updateData, id, currentRole, currIdInt)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -244,7 +258,7 @@ func (h *UserController) GetMany(c *gin.Context) {
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	users, total, err := h.service.GetMany(ctx, limit, offset)
@@ -365,7 +379,7 @@ func (h *UserController) GetByName(c *gin.Context) {
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -390,7 +404,7 @@ func (h *UserController) GetByRole(c *gin.Context) {
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 

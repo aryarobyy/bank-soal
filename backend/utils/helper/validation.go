@@ -52,7 +52,7 @@ func IsValidEmail(e string) bool {
 	return re.MatchString(e)
 }
 
-func GetPaginationQuery(c *gin.Context, defaultLimit, defaultOffset int) (int, int, error) {
+func GetPaginationQuery(c *gin.Context, defaultLimit int, defaultOffset int) (int, int, error) {
 	limitStr := c.Query("limit")
 	offsetStr := c.Query("offset")
 
@@ -69,6 +69,10 @@ func GetPaginationQuery(c *gin.Context, defaultLimit, defaultOffset int) (int, i
 		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
 			offset = o
 		}
+	}
+
+	if limit > 200 {
+		return 0, 0, fmt.Errorf("wowww banyak banget bro")
 	}
 
 	return limit, offset, nil
