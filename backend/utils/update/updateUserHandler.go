@@ -9,7 +9,7 @@ import (
 	"latih.in-be/utils/helper"
 )
 
-func ValidateAuthorization(effectiveRole model.Role, oldUser *model.User, data model.UpdateUser, requesterRole model.Role) error {
+func ValidateAuthorization(effectiveRole model.Role, oldUser *model.User, data model.UpdateUser, requesterRole model.Role, currentId int) error {
 	if requesterRole != model.RoleAdmin && requesterRole != model.RoleSuperAdmin {
 		if effectiveRole != "" && effectiveRole != oldUser.Role {
 			return fmt.Errorf("you are not allowed to change role")
@@ -40,8 +40,10 @@ func ValidateAuthorization(effectiveRole model.Role, oldUser *model.User, data m
 	}
 
 	if requesterRole == model.RoleAdmin {
-		if oldUser.Role == model.RoleAdmin || oldUser.Role == model.RoleSuperAdmin {
-			return fmt.Errorf("admin cannot edit other admins or super admins")
+		if oldUser.Role == model.RoleSuperAdmin {
+			return fmt.Errorf("admin cannot edit super admins")
+		} else if currentId != oldUser.Id {
+			return fmt.Errorf("admin cannot edit another admin")
 		}
 	}
 

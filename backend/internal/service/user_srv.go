@@ -19,7 +19,7 @@ type UserService interface {
 	Login(ctx context.Context, cred model.LoginCredential) (*model.User, string, string, error)
 	GetById(ctx context.Context, id int) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
-	Update(ctx context.Context, c *gin.Context, data model.UpdateUser, id int, requesterRole model.Role) (*model.User, error)
+	Update(ctx context.Context, c *gin.Context, data model.UpdateUser, id int, requesterRole model.Role, currentId int) (*model.User, error)
 	Delete(ctx context.Context, id int, requesterRole model.Role) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
 	GetByNim(ctx context.Context, nim string, requesterRole model.Role) (*model.User, error)
@@ -143,19 +143,30 @@ func (s *userService) Login(ctx context.Context, cred model.LoginCredential) (*m
 	switch loginType {
 	case "nidn":
 		data, err = s.repo.GetByNidn(ctx, loginId)
+		if err != nil {
+			return nil, "", "", fmt.Errorf("user not found")
+		}
 		if data.Role != model.RoleLecturer {
-			return nil, "", "", fmt.Errorf("you cant login use nidn")
+			return nil, "", "", fmt.Errorf("you cant login use nidn %s", err)
 		}
 	case "nim":
 		data, err = s.repo.GetByNim(ctx, loginId)
+		if err != nil {
+			return nil, "", "", fmt.Errorf("user not found")
+		}
 		if data.Role != model.RoleUser {
-			return nil, "", "", fmt.Errorf("you cant login use nim")
+			return nil, "", "", fmt.Errorf("you cant login use nim %s", err)
+		}
+	case "username":
+		data, err = s.repo.GetByUsn(ctx, loginId)
+		if err != nil {
+			return nil, "", "", fmt.Errorf("user not found")
+		}
+		if data.Role != model.RoleAdmin && data.Role != model.RoleSuperAdmin {
+			return nil, "", "", fmt.Errorf("you cant login use username %s", err)
 		}
 	default:
-		data, err = s.repo.GetByUsn(ctx, loginId)
-		if data.Role != model.RoleAdmin && data.Role != model.RoleSuperAdmin {
-			return nil, "", "", fmt.Errorf("user not fount")
-		}
+		return nil, "", "", fmt.Errorf("user not found")
 	}
 
 	if err != nil || data == nil {
@@ -207,7 +218,7 @@ func (s *userService) GetByEmail(ctx context.Context, email string) (*model.User
 	return data, nil
 }
 
-func (s *userService) Update(ctx context.Context, c *gin.Context, data model.UpdateUser, id int, requesterRole model.Role) (*model.User, error) {
+func (s *userService) Update(ctx context.Context, c *gin.Context, data model.UpdateUser, id int, requesterRole model.Role, currentId int) (*model.User, error) {
 	oldUser, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
@@ -218,7 +229,7 @@ func (s *userService) Update(ctx context.Context, c *gin.Context, data model.Upd
 		effectiveRole = *data.Role
 	}
 
-	if err := update.ValidateAuthorization(effectiveRole, oldUser, data, requesterRole); err != nil {
+	if err := update.ValidateAuthorization(effectiveRole, oldUser, data, requesterRole, currentId); err != nil {
 		return nil, err
 	}
 
