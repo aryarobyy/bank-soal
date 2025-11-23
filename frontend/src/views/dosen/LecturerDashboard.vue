@@ -32,20 +32,18 @@
           </div>
         </div>
       </div>
-
-      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-// ## PERBAIKAN 1: Impor 'watch' dan 'useGetCurrentUser' ##
-import { ref, onMounted, watch } from 'vue'; 
+import { ref, watch } from 'vue'; 
 import { BookOpen, FileText } from 'lucide-vue-next';
 import { getAllExam } from '../../provider/exam.provider';
 import { getmanyQuestions } from '../../provider/question.provider';
-import { useGetCurrentUser } from '../../hooks/useGetCurrentUser'; // <-- Impor user
+import { useGetCurrentUser } from '../../hooks/useGetCurrentUser'; 
 
-const { user } = useGetCurrentUser(); // <-- Dapatkan user
+const { user } = useGetCurrentUser(); 
 
 const stats = ref({
   totalExam: 0,
@@ -62,21 +60,22 @@ const fetchDashboardData = async () => {
   
   try {
     const [examResult, questionResult] = await Promise.allSettled([
-      // ## PERBAIKAN 2: Kirim 'user.value.id' untuk filter ##
-      getAllExam(99999, 0, user.value.id), 
+      // ## PERBAIKAN 1: Gunakan limit 1 saja karena kita cuma butuh field 'total' ##
+      // Parameter ke-3 adalah creator_id (user.value.id) untuk filter dosen ybs
+      getAllExam(1, 0, user.value.id), 
       
-      // (Total Soal juga seharusnya difilter, tapi kita biarkan dulu)
       getmanyQuestions(1, 0) 
     ]);
 
-    // Cek hasil Panggilan Ujian
+    // ## PERBAIKAN 2: Ambil field .total dari response provider ##
     if (examResult.status === 'fulfilled') {
-      const examList = examResult.value || [];
-      stats.value.totalExam = examList.length;
+      // Karena provider me-return { data: [...], total: ... }
+      // Kita ambil .total-nya langsung.
+      stats.value.totalExam = examResult.value?.total || 0;
     } else {
       console.error("Gagal mengambil data ujian:", examResult.reason);
       if (!error.value) error.value = "Gagal memuat data ujian.";
-      stats.value.totalExam = 'N/A';
+      stats.value.totalExam = 0;
     }
 
     // Cek hasil Panggilan Soal
@@ -85,7 +84,7 @@ const fetchDashboardData = async () => {
     } else {
       console.error("Gagal mengambil data soal:", questionResult.reason);
       if (!error.value) error.value = "Gagal memuat data soal.";
-      stats.value.totalSoal = 'N/A';
+      stats.value.totalSoal = 0;
     }
 
   } catch (err) {
@@ -96,9 +95,7 @@ const fetchDashboardData = async () => {
   }
 };
 
-// ## PERBAIKAN 3: Ganti 'onMounted' dengan 'watch' ##
-// Ini untuk memastikan 'fetchDashboardData' HANYA berjalan
-// setelah 'user.value' (data login) berhasil didapatkan.
+// Watcher untuk memuat data saat user sudah login
 watch(user, (currentUser) => {
   if (currentUser) {
     fetchDashboardData();
