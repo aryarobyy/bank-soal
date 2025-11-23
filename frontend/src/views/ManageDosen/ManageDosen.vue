@@ -117,7 +117,13 @@
           <template v-if="!editMode">
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Password</label>
-              <input v-model="form.password" type="password" required class="w-full p-2 border rounded-md"/>
+              <input 
+                v-model="form.password" 
+                type="password" 
+                autocomplete="new-password"
+                required 
+                class="w-full p-2 border rounded-md"
+              />
             </div>
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">NIP</label>
@@ -181,6 +187,7 @@
               <input
                 v-model="form.password"
                 type="password"
+                autocomplete="new-password"
                 class="w-full p-2 border rounded-md"
                 placeholder="Kosongkan jika tidak ingin diubah"
               />
