@@ -66,13 +66,14 @@
       </div>
     </div>
 
-    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
 import { Users, Shield, UserCheck, FileText, BookOpen } from "lucide-vue-next";
-import { getUsers } from "../../provider/user.provider";
+// ## PERBAIKAN 1: Tambahkan 'getUsersByRole' ##
+import { getUsers, getUsersByRole } from "../../provider/user.provider";
 import { getAllExam } from "../../provider/exam.provider";
 import { getmanyQuestions } from "../../provider/question.provider";
 
@@ -89,43 +90,31 @@ const stats = ref({
 
 const fetchDashboardData = async () => {
   try {
-    const [userResult, examResult, questionResult] = await Promise.allSettled([
-      // ## PERBAIKAN: Ubah getUsers() menjadi getUsers(99999, 0) ##
-      getUsers(99999, 0),
-      getAllExam(99999, 0), 
-      getmanyQuestions(1, 0),
+    // ## PERBAIKAN 2: Gunakan limit 1 dan panggil API spesifik ##
+    const [userTotalRes, adminRes, dosenRes, examRes, soalRes] = await Promise.all([
+      getUsers(1, 0),                    // Ambil Total User
+      getUsersByRole('admin', 1, 0),     // Ambil Total Admin
+      getUsersByRole('lecturer', 1, 0),  // Ambil Total Dosen
+      getAllExam(1, 0),                  // Ambil Total Ujian (sudah diperbaiki providernya)
+      getmanyQuestions(1, 0),            // Ambil Total Soal
     ]);
 
-    // Cek hasil Panggilan User
-    if (userResult.status === 'fulfilled') {
-      // 'userResult.value' sekarang adalah { data: [SEMUA PENGGUNA], total: ... }
-      const userList = userResult.value.data || [];
-      
-      // Sekarang 'userList' berisi SEMUA pengguna, jadi perhitungan ini sudah benar
-      stats.value.totalUsers = userList.length;
-      stats.value.totalAdmins = userList.filter((u) => u.role === "admin").length;
-      stats.value.totalDosen = userList.filter((u) => u.role === "lecturer").length;
-    } else {
-      console.error("Gagal mengambil data user:", userResult.reason);
-      errorStats.value = "Gagal memuat data pengguna.";
-    }
+    // ## PERBAIKAN 3: Ambil nilai .total langsung dari response ##
+    
+    // Total Users
+    stats.value.totalUsers = userTotalRes?.total || 0;
+    
+    // Total Admins
+    stats.value.totalAdmins = adminRes?.total || 0;
+    
+    // Total Dosen
+    stats.value.totalDosen = dosenRes?.total || 0;
 
-    // Cek hasil Panggilan Ujian (Ini sudah benar)
-    if (examResult.status === 'fulfilled') {
-      stats.value.totalExam = (examResult.value || []).length;
-    } else {
-       console.error("Gagal mengambil data ujian:", examResult.reason);
-       stats.value.totalExam = "N/A";
-       if (!errorStats.value) errorStats.value = "Gagal memuat data ujian.";
-    }
+    // Total Ujian (Menggunakan .total dari object {data, total})
+    stats.value.totalExam = examRes?.total || 0;
 
-    // Cek hasil Panggilan Soal (Ini sudah benar)
-    if (questionResult.status === 'fulfilled') {
-      stats.value.totalSoal = questionResult.value.total || 0;
-    } else {
-       console.error("Gagal mengambil data soal:", questionResult.reason);
-       if (!errorStats.value) errorStats.value = "Gagal memuat data soal.";
-    }
+    // Total Soal
+    stats.value.totalSoal = soalRes?.total || 0;
 
   } catch (err) {
     console.error("Gagal memuat data dasbor:", err);
