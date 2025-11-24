@@ -5,20 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
-	"path/filepath"
-	"strings"
 
+	"github.com/bwmarrin/snowflake"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/repository"
 	"latih.in-be/utils/helper"
+	"latih.in-be/utils/update"
 )
 
 type QuestionService interface {
 	Create(ctx context.Context, c *gin.Context, data *model.Question) error
 	GetById(ctx context.Context, id int) (*model.Question, error)
-	Update(ctx context.Context, c *gin.Context, req *model.Question, id int, userId int) (*model.Question, error)
+	Update(ctx context.Context, c *gin.Context, req model.UpdateQuestion, id int, userId int) (*model.Question, error)
 	Delete(ctx context.Context, id int, userId int) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.Question, int64, error)
 	CreateWithOptions(ctx context.Context, data model.Question) error
@@ -33,6 +33,28 @@ type questionService struct {
 	repo     repository.QuestionRepository
 	userRepo repository.UserRepository
 	optRepo  repository.OptionRepository
+}
+
+// optionRepoAdapter adapts repository.OptionRepository so its Update method
+// matches the signature expected by update.OptionValidation (returns interface{}).
+type optionRepoAdapter struct {
+	r repository.OptionRepository
+}
+
+func (a optionRepoAdapter) Create(ctx context.Context, opt model.Option) error {
+	return a.r.Create(ctx, opt)
+}
+
+func (a optionRepoAdapter) Delete(ctx context.Context, id int) error {
+	return a.r.Delete(ctx, id)
+}
+
+func (a optionRepoAdapter) Update(ctx context.Context, opt model.Option, id int) (interface{}, error) {
+	res, err := a.r.Update(ctx, opt, id)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func NewQuestionService(repo repository.QuestionRepository, userRepo repository.UserRepository, optRepo repository.OptionRepository) QuestionService {
@@ -77,18 +99,22 @@ func (s *questionService) Create(ctx context.Context, c *gin.Context, data *mode
 		return fmt.Errorf("invalid difficulty level")
 	}
 
-	if err := s.repo.Create(ctx, data); err != nil {
-		return fmt.Errorf("failed to create question: %w", err)
+	node, err := snowflake.NewNode(1)
+	if err != nil {
+		return fmt.Errorf("%w", err)
 	}
 
+	id := node.Generate()
 	imgDir := "./storages/images/question"
-	imageURL, err := helper.UploadImage(c, data.Id, imgDir)
+	imageURL, err := helper.UploadImage(c, int(id.Int64()), imgDir)
 	if err != nil {
 		return fmt.Errorf("failed to upload image: %w", err)
 	}
 
-	if imageURL != "" {
-		data.ImgUrl = imageURL
+	data.ImgUrl = imageURL
+
+	if err := s.repo.Create(ctx, data); err != nil {
+		return fmt.Errorf("failed to create question: %w", err)
 	}
 
 	return nil
@@ -105,133 +131,61 @@ func (s *questionService) GetById(ctx context.Context, id int) (*model.Question,
 	return data, nil
 }
 
-func (s *questionService) Update(ctx context.Context, c *gin.Context, req *model.Question, id int, userId int) (*model.Question, error) {
-	data, err := s.repo.GetById(ctx, id)
+func (s *questionService) Update(ctx context.Context, c *gin.Context, req model.UpdateQuestion, id int, userId int) (*model.Question, error) {
+	oldQuest, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, fmt.Errorf("question with id %d not found", id)
 		}
-		return nil, fmt.Errorf("data is unavailable: %w", err)
+		return nil, fmt.Errorf("data with id %d not found: %w", id, err)
 	}
 
 	user, err := s.userRepo.GetById(ctx, userId)
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("user with id %d not found", userId)
+		}
 		return nil, fmt.Errorf("user is unavailable: %w", err)
 	}
 
-	if user.Id != data.CreatorId && user.Role != model.RoleAdmin {
+	if user.Id != oldQuest.CreatorId && user.Role != model.RoleAdmin {
 		return nil, fmt.Errorf("you are not the creator or admin")
 	}
 
-	if req.Difficulty != "" {
-		switch req.Difficulty {
-		case model.DifficultyEasy:
-			if req.Score != 0 && (req.Score < 3 || req.Score > 8) {
-				return nil, fmt.Errorf("score for easy difficulty must be between 3 and 8")
-			}
-		case model.DifficultyMedium:
-			if req.Score != 0 && (req.Score < 10 || req.Score > 15) {
-				return nil, fmt.Errorf("score for medium difficulty must be between 10 and 15")
-			}
-		case model.DifficultyHard:
-			if req.Score != 0 && (req.Score < 18 || req.Score > 23) {
-				return nil, fmt.Errorf("score for hard difficulty must be between 18 and 23")
-			}
-		default:
-			return nil, fmt.Errorf("invalid difficulty level")
-		}
+	if err = update.DifficultyValidation(req); err != nil {
+		return nil, fmt.Errorf("%w", err)
 	}
 
-	fileHeader, err := c.FormFile("image")
-	hasNewImage := err == nil
-
-	if hasNewImage {
-		ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
-		if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
-			return nil, fmt.Errorf("invalid image format. Only JPG and PNG are allowed")
-		}
-
-		if data.ImgUrl != "" {
-			_ = helper.DeleteImage(data.ImgUrl)
-		}
-
-		imgDir := "./storages/images/question"
-		imageURL, err := helper.UploadImage(c, data.Id, imgDir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to upload image: %w", err)
-		}
-
-		if imageURL != "" {
-			data.ImgUrl = imageURL
-		}
-
-		req.ImgUrl = imageURL
-	} else {
-		req.ImgUrl = data.ImgUrl
+	if err := update.HandleQuestionImageUpload(c, oldQuest, &req); err != nil {
+		return nil, fmt.Errorf("%w", err)
 	}
 
-	req.Id = data.Id
-	req.CreatorId = data.CreatorId
+	if req.CreatorId != nil && user.Role != model.RoleAdmin {
+		return nil, fmt.Errorf("only admins can change the creator of a question")
+	}
 
-	updatedData, err := s.repo.Update(ctx, *req, id)
+	adapter := optionRepoAdapter{r: s.optRepo}
+	if err := update.OptionValidation(ctx, req, oldQuest, id, adapter); err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	hasChanges := false
+	if req.SubjectId != nil || req.CreatorId != nil || req.QuestionText != nil ||
+		req.Difficulty != nil || req.Answer != nil || req.Score != nil ||
+		req.ImgUrl != nil || len(req.Options) > 0 {
+		hasChanges = true
+	}
+
+	if !hasChanges {
+		return nil, fmt.Errorf("no fields to update")
+	}
+
+	updatedData, err := s.repo.Update(ctx, req, id)
 	if err != nil {
-		if strings.Contains(err.Error(), "Unknown column") {
-			parts := strings.Split(err.Error(), "'")
-			if len(parts) >= 2 {
-				fieldName := parts[1]
-				val := helper.GetFieldValue(*req, fieldName)
-				return nil, fmt.Errorf("field '%s' with value '%v' is undefined", fieldName, val)
-			}
-		}
-		return updatedData, fmt.Errorf("update gagal: %v", err)
+		return nil, update.FormatUpdateQuestError(err, req)
 	}
 
-	if len(req.Options) > 0 {
-		existingOptions := data.Options
-
-		minLen := len(req.Options)
-		if len(existingOptions) < minLen {
-			minLen = len(existingOptions)
-		}
-
-		for i := 0; i < minLen; i++ {
-			optToUpdate := req.Options[i]
-			optToUpdate.Id = existingOptions[i].Id
-			optToUpdate.QuestionId = id
-
-			_, err := s.optRepo.Update(ctx, optToUpdate, existingOptions[i].Id)
-			if err != nil {
-				return nil, fmt.Errorf("failed to update option at index %d: %w", i, err)
-			}
-		}
-
-		if len(req.Options) > len(existingOptions) {
-			for i := len(existingOptions); i < len(req.Options); i++ {
-				newOpt := req.Options[i]
-				newOpt.QuestionId = id
-				err := s.optRepo.Create(ctx, newOpt)
-				if err != nil {
-					return nil, fmt.Errorf("failed to create option at index %d: %w", i, err)
-				}
-			}
-		}
-
-		if len(existingOptions) > len(req.Options) {
-			for i := len(req.Options); i < len(existingOptions); i++ {
-				err := s.optRepo.Delete(ctx, existingOptions[i].Id)
-				if err != nil {
-					return nil, fmt.Errorf("failed to delete option id %d: %w", existingOptions[i].Id, err)
-				}
-			}
-		}
-	}
-
-	result, err := s.repo.GetById(ctx, id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch updated data: %w", err)
-	}
-
-	return result, nil
+	return updatedData, nil
 }
 
 func (s *questionService) GetMany(ctx context.Context, limit int, offset int) ([]model.Question, int64, error) {

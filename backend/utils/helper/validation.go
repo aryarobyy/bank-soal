@@ -99,9 +99,43 @@ func ContainsNumber(s string) bool {
 	return false
 }
 
-func StrPtr(s string) *string {
-	if s == "" {
+func BindAndConvertToPtr(value string) *string {
+	if value == "" {
 		return nil
 	}
-	return &s
+	return &value
+}
+
+func BindAndConvertToBoolPtr(value string) *bool {
+	if value == "" {
+		return nil
+	}
+	if value == "true" || value == "1" {
+		t := true
+		return &t
+	}
+	if value == "false" || value == "0" {
+		f := false
+		return &f
+	}
+	return nil
+}
+
+func BindToInt(value string) int {
+	if value != "" {
+		if v, err := strconv.Atoi(value); err == nil {
+			return v
+		}
+	}
+	return 0
+}
+
+func BindToIntPtr(value string) *int {
+	if value != "" {
+		if v, err := strconv.Atoi(value); err == nil {
+			return &v
+		}
+	}
+
+	return nil
 }

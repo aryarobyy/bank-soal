@@ -89,6 +89,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import { getExamById } from "../../provider/exam.provider";
+import { createExamSession } from "@/provider/examsession.provider";
 
 const toastRef = ref(null);
 const router = useRouter();
@@ -133,7 +134,24 @@ onMounted(async () => {
 });
 
 // Mulai ujian → halaman /exam/start?id=xx
-const startExam = () => {
-  router.push(`/exam/start?id=${exam.value.id}`);
+const startExam = async () => {
+  try {
+    // 1️⃣ Buat session baru
+    const session = await createExamSession(exam.value.id);
+
+    // 2️⃣ Ambil sessionId dari BE
+    const sessionId = session?.data?.id || session?.id;
+
+    if (!sessionId) {
+      alert("Gagal membuat sesi ujian!");
+      return;
+    }
+
+    // 3️⃣ Kirim exam_id + session_id
+    router.push(`/exam/start?id=${exam.value.id}&session_id=${sessionId}`);
+  } catch (err) {
+    console.error(err);
+    alert("Gagal memulai ujian.");
+  }
 };
 </script>

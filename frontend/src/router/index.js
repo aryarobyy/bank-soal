@@ -1,3 +1,4 @@
+// src/router/index.js
 import { createRouter, createWebHistory } from "vue-router";
 
 // Layouts
@@ -35,7 +36,6 @@ import UploadJsonSoal from "../views/question/UploadJsonSoal.vue";
 import ManageExam from "../views/exam/ManageExam.vue";
 import CreateExamView from "../views/exam/CreateExamView.vue";
 import ExamReports from "../views/exam/ExamReports.vue";
-// ## 1. Impor 2 Halaman Baru Anda ##
 import ExamDetail from "../views/exam/ExamDetail.vue";
 import ExamEdit from "../views/exam/ExamEdit.vue";
 
@@ -43,7 +43,7 @@ import ExamEdit from "../views/exam/ExamEdit.vue";
 import SuperAdminDashboard from "../views/SuperAdmin/SuperAdminDashboard.vue";
 import ManageAdmin from "../views/ManageAdmin/ManageAdmin.vue";
 
-// Definisikan semua rute soal di satu tempat
+// --- Grup route Soal ---
 const soalRoutes = [
   { path: "", name: "SoalHome", component: LecturerSoal },
   { path: "list", name: "SoalList", component: LecturerSoalList },
@@ -57,7 +57,7 @@ const soalRoutes = [
   { path: "upload-json", name: "SoalUploadJson", component: UploadJsonSoal },
 ];
 
-// ## 2. Buat Grup Rute Ujian (BARU) ##
+// --- Grup route Exam (dipakai dosen & admin) ---
 const examRoutes = [
   { path: "", name: "ManageExam", component: ManageExam },
   { path: "create", name: "CreateExam", component: CreateExamView },
@@ -66,8 +66,7 @@ const examRoutes = [
 ];
 
 const routes = [
-  // --- Rute Autentikasi & Pengguna Umum ---
-  // (Tidak ada perubahan di sini)
+  // AUTH
   { path: "/login", name: "login", component: LoginView },
   { path: "/register", name: "register", component: RegisterView },
   {
@@ -75,13 +74,15 @@ const routes = [
     name: "ForgotPassword",
     component: ForgotPassword,
   },
+
+  // 👇 ROUTE HALAMAN MENGERJAKAN UJIAN (TANPA LAYOUT / SIDEBAR / NAVBAR)
   {
-    path: "/forgot-password",
-    name: "ForgotPassword",
-    component: ForgotPassword,
+    path: "/exam/start",
+    name: "ExamDo",
+    component: () => import("../views/exam/ExamDo.vue"),
   },
 
-  // USER ROUTES
+  // USER ROUTES (pakai UserLayout + navbar user)
   {
     path: "/",
     component: UserLayout,
@@ -97,12 +98,17 @@ const routes = [
     ],
   },
 
-  // DOSEN ROUTES
+  // DOSEN ROUTES (pakai sidebar dosen)
   {
     path: "/dosen",
     component: DosenLayout,
     redirect: "/dosen/dashboard",
     children: [
+      {
+        path: "dashboard",
+        name: "LecturerDashboard",
+        component: LecturerDashboard,
+      },
       {
         path: "soal",
         component: RouterWrapper,
@@ -111,9 +117,8 @@ const routes = [
           name: `Dosen${route.name}`,
         })),
       },
-      // ## 3. Tambahkan Rute Ujian ke Dosen (BARU) ##
       {
-        path: "exam", // akan menjadi /dosen/exam
+        path: "exam",
         component: RouterWrapper,
         children: examRoutes.map((route) => ({
           ...route,
@@ -123,7 +128,7 @@ const routes = [
     ],
   },
 
-  // ADMIN ROUTES
+  // ADMIN ROUTES (pakai sidebar admin)
   {
     path: "/admin",
     component: AdminLayout,
@@ -135,9 +140,13 @@ const routes = [
         name: "AdminManageMahasiswa",
         component: ManageMahasiswa,
       },
-      // ## 4. Ganti Rute Ujian Admin dengan Grup Rute (DIPERBARUI) ##
       {
-        path: "ujian", // akan menjadi /admin/ujian
+        path: "dosen",
+        name: "AdminManageDosen",
+        component: ManageDosen,
+      },
+      {
+        path: "ujian",
         component: RouterWrapper,
         children: examRoutes.map((route) => ({
           ...route,
@@ -163,8 +172,7 @@ const routes = [
     ],
   },
 
-  // --- Rute Super Admin ---
-  // (Tidak ada perubahan di sini)
+  // SUPERADMIN
   {
     path: "/superadmin",
     component: SuperAdminLayout,

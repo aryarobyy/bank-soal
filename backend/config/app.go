@@ -34,11 +34,6 @@ type Controllers struct {
 func NewApp(db *gorm.DB) *App {
 	router := gin.Default()
 
-	// 🚫 Matikan auto redirect untuk mencegah CORS preflight error
-	//router.RedirectTrailingSlash = false
-	//router.RedirectFixedPath = false
-
-	// ✅ Setup CORS
 	corsConfig := cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -49,7 +44,6 @@ func NewApp(db *gorm.DB) *App {
 	}
 	router.Use(cors.New(corsConfig))
 
-	// ✅ Repositories
 	userRepo := repository.NewUserRepository(db)
 	examRepo := repository.NewExamRepository(db)
 	questionRepo := repository.NewQuestionRepository(db)
@@ -61,7 +55,6 @@ func NewApp(db *gorm.DB) *App {
 	xlsPathRepo := repository.NewXlsPathRepository(db)
 	userAnswerRepo := repository.NewUserAnswerRepository(db)
 
-	// ✅ Services
 	userService := service.NewUserService(userRepo)
 	examService := service.NewExamService(examRepo, userRepo, questionRepo)
 	questionService := service.NewQuestionService(questionRepo, userRepo, optionRepo)
@@ -73,7 +66,6 @@ func NewApp(db *gorm.DB) *App {
 	xlsPathService := service.NewXlsPathService(xlsPathRepo)
 	userAnswerService := service.NewUserAnswerService(userAnswerRepo, optionRepo)
 
-	// ✅ Controllers
 	controllers := &Controllers{
 		User:         controller.NewUserController(userService, xlsPathService),
 		Exam:         controller.NewExamController(examService),
@@ -87,14 +79,16 @@ func NewApp(db *gorm.DB) *App {
 		UserAnswer:   controller.NewUserAnswerController(userAnswerService),
 	}
 
-	// ✅ Rate limiter (setelah CORS)
 	store := middleware.InMemoryStore(&middleware.InMemoryOptions{
-		Rate:  10 * time.Second, // 10 detik
+		Rate:  10 * time.Second, // 10s
 		Limit: 5,                // maks 5 request
+		// Skip: func(c *gin.Context) bool { //skip rate limit
+		// 	return c.FullPath() == "/"
+		// },
 	})
+
 	router.Use(middleware.RateLimiter(store, nil))
 
-	// ✅ Setup routes
 	setupRoutes(router, controllers)
 
 	return &App{

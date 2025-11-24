@@ -11,3 +11,13 @@ type Option struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
+
+type OptionResponse struct {
+	Id          int       `json:"id"`
+	QuestionId  int       `json:"question_id"`
+	OptionLabel string    `json:"option_label"`
+	OptionText  string    `json:"option_text"`
+	IsCorrect   bool      `json:"is_correct"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}

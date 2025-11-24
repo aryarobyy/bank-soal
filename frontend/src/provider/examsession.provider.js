@@ -37,8 +37,8 @@ export const updateCurrentNo = async (sessionId, currentNo) => {
 };
 
 // 🏁 Finish exam session → /finish (NO ID)
-export const finishExamSession = async () => {
-  const res = await ApiHandler.put(`/${EXAM_SESSION}/finish`);
+export const finishExamSession = async (sessionId) => {
+  const res = await ApiHandler.put(`/exam-session/finish?id=${sessionId}`);
   return res.data;
 };
 

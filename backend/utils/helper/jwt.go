@@ -63,7 +63,7 @@ func GenerateAccessToken(user *model.User) (string, error) {
 		UserId: user.Id,
 		Role:   string(user.Role),
 		Name:   user.Name,
-		Email:  user.Email,
+		Email:  *user.Email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(expireAt),

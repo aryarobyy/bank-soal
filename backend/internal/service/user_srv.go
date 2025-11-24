@@ -11,6 +11,7 @@ import (
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/repository"
 	"latih.in-be/utils/helper"
+	"latih.in-be/utils/update"
 )
 
 type UserService interface {
@@ -18,7 +19,7 @@ type UserService interface {
 	Login(ctx context.Context, cred model.LoginCredential) (*model.User, string, string, error)
 	GetById(ctx context.Context, id int) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
-	Update(ctx context.Context, c *gin.Context, data model.User, id int, requesterRole model.Role) (*model.User, error)
+	Update(ctx context.Context, c *gin.Context, data model.UpdateUser, id int, requesterRole model.Role) (*model.User, error)
 	Delete(ctx context.Context, id int, requesterRole model.Role) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
 	GetByNim(ctx context.Context, nim string, requesterRole model.Role) (*model.User, error)
@@ -102,15 +103,15 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 
 	registerCred := model.User{
 		Name:         data.Name,
-		Email:        data.Email,
+		Email:        helper.BindAndConvertToPtr(data.Email),
 		Password:     string(hashedPassword),
 		Major:        data.Major,
 		Faculty:      data.Faculty,
 		AcademicYear: finalAcademicYear,
-		Nim:          helper.StrPtr(data.Nim),
-		Nip:          helper.StrPtr(data.Nip),
-		Nidn:         helper.StrPtr(data.Nidn),
-		Username:     helper.StrPtr(finalUsername),
+		Nim:          helper.BindAndConvertToPtr(data.Nim),
+		Nip:          helper.BindAndConvertToPtr(data.Nip),
+		Nidn:         helper.BindAndConvertToPtr(data.Nidn),
+		Username:     helper.BindAndConvertToPtr(finalUsername),
 		Role:         data.Role,
 	}
 
@@ -206,96 +207,40 @@ func (s *userService) GetByEmail(ctx context.Context, email string) (*model.User
 	return data, nil
 }
 
-func (s *userService) Update(ctx context.Context, c *gin.Context, data model.User, id int, requesterRole model.Role) (*model.User, error) {
-
+func (s *userService) Update(ctx context.Context, c *gin.Context, data model.UpdateUser, id int, requesterRole model.Role) (*model.User, error) {
 	oldUser, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
-	if oldUser.Role == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
-		return nil, fmt.Errorf("user not found")
+	effectiveRole := oldUser.Role
+	if data.Role != nil {
+		effectiveRole = *data.Role
 	}
 
-	if data.Role == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
-		return nil, fmt.Errorf("user not found")
+	if err := update.ValidateAuthorization(oldUser, data, requesterRole); err != nil {
+		return nil, err
 	}
 
-	effectiveRole := data.Role
-	if effectiveRole == "" {
-		effectiveRole = oldUser.Role
+	update.NormalizeRoleTransition(oldUser, &data, effectiveRole)
+
+	if err := update.ValidateRoleRequirements(data, effectiveRole); err != nil {
+		return nil, err
 	}
 
-	switch effectiveRole {
-
-	case model.RoleUser:
-		if data.Nim == nil || *data.Nim == "" {
-			return nil, fmt.Errorf("user must provide Nim")
-		}
-
-		if strings.TrimSpace(data.AcademicYear) == "" {
-			return nil, fmt.Errorf("user must provide academicYear")
-		}
-
-		empty := ""
-		data.Nip = &empty
-		data.Nidn = &empty
-
-	case model.RoleLecturer:
-		if (data.Nip == nil || *data.Nip == "") && (data.Nidn == nil || *data.Nidn == "") {
-			return nil, fmt.Errorf("lecturer must provide either Nip or Nidn")
-		}
-
-		empty := ""
-		data.Nim = &empty
-		data.AcademicYear = ""
-
-	case model.RoleAdmin, model.RoleSuperAdmin:
-		empty := ""
-		data.Nim = &empty
-		data.Nip = &empty
-		data.Nidn = &empty
-		data.AcademicYear = ""
-
-	default:
-		return nil, fmt.Errorf("invalid role")
+	if err := update.ValidateRoleTransitionRequirements(oldUser, data, effectiveRole); err != nil {
+		return nil, err
 	}
 
-	imgDir := "./storages/images/user"
+	update.MergeDefaults(oldUser, &data, effectiveRole)
 
-	file, _ := c.FormFile("image")
-	if file != nil {
-		if oldUser.ImgUrl != "" {
-			if err := helper.DeleteImage(oldUser.ImgUrl); err != nil {
-				return nil, fmt.Errorf("failed to delete old image: %w", err)
-			}
-		}
-
-		newImageUrl, err := helper.UploadImage(c, id, imgDir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to upload image: %w", err)
-		}
-
-		data.ImgUrl = newImageUrl
-
-	} else {
-		data.ImgUrl = oldUser.ImgUrl
+	if err := update.HandleUserImageUpload(c, oldUser, &data, id); err != nil {
+		return nil, err
 	}
 
 	updatedUser, err := s.repo.Update(ctx, data, id)
 	if err != nil {
-
-		if strings.Contains(err.Error(), "Unknown column") {
-			var fieldName string
-			parts := strings.Split(err.Error(), "'")
-			if len(parts) >= 2 {
-				fieldName = parts[1]
-			}
-			val := helper.GetFieldValue(data, fieldName)
-			return nil, fmt.Errorf("field '%s' with value '%v' is undefined", fieldName, val)
-		}
-
-		return nil, fmt.Errorf("update gagal: %v", err)
+		return nil, update.FormatUpdateUserError(err, data)
 	}
 
 	return updatedUser, nil
