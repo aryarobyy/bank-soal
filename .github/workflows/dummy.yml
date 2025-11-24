@@ -1,0 +1,11 @@
+name: dummy-check
+
+on:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dummy check
+        run: echo "OK"

@@ -19,10 +19,10 @@ export const getAllExam = async (limit = 10, offset = 0, creatorId = null) => {
 
     // Asumsi provider ini mengembalikan array, bukan objek { data, total }
     // Berdasarkan perbaikan kita sebelumnya
-    return res.data.data.data;
+    return res.data.data;
   } catch (error) {
     console.error("Gagal mengambil data ujian:", error);
-    return [];
+    return { data: [], total: 0 };
   }
 };
 

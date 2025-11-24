@@ -109,7 +109,7 @@ func (r *examRepository) GetMany(ctx context.Context, limit int, offset int) ([]
 	)
 
 	if err := r.db.WithContext(ctx).
-		Model(&model.Question{}).
+		Model(&model.Exam{}).
 		Count(&total).
 		Error; err != nil {
 		return nil, 0, err

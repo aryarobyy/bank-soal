@@ -11,15 +11,22 @@
     
     <div class="p-8 border border-gray-200 rounded-lg">
       <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        
         <div>
           <label for="subject" class="block text-sm font-medium text-gray-700 mb-1">Subjek Mata Kuliah*</label>
-          <select id="subject" v-model="currentSoal.subject_id" class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select 
+            id="subject" 
+            v-model="currentSoal.subject_id" 
+            class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
             <option :value="null" disabled>-- Pilih Subjek --</option>
             <option v-for="subject in subjects" :key="subject.id" :value="subject.id">
-              {{ subject.title }}
+              {{ subject.title }} ({{ subject.code }})
             </option>
           </select>
+          <p v-if="subjects.length === 0" class="text-xs text-gray-400 mt-1">Memuat mata kuliah...</p>
         </div>
+
         <div>
           <label for="level" class="block text-sm font-medium text-gray-700 mb-1">Level Kesulitan*</label>
           <select id="level" v-model="currentSoal.level" class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -84,25 +91,17 @@
 
 <script>
 import { createQuestionWithOptions, getQuestionById, updateQuestion } from '../../provider/question.provider';
+import { getPaginatedSubjects } from '../../provider/subject.provider';
 import { useGetCurrentUser } from '../../hooks/useGetCurrentUser';
-// Pastikan path constant ini benar
 import { API_BASE_URL } from '../../core/constant'; 
 
-// Data subjek ini HANYA CONTOH (hardcoded)
-const subjects = [
-  { id: 1, title: 'Kalkulus', code: 'MFG-101' },
-  { id: 2, title: 'Matematika Diskrit', code: 'TIF-1203' },
-  { id: 3, title: 'Teori Bahasa dan Automata', code: 'TIF-2204' },
-  { id: 4, title: 'Basis Data Lanjut', code: 'TIF-2206' },
-  { id: 5, title: 'Metode Numerik', code: 'TIF-3107' },
-];
-
 const createEmptySoal = () => ({
-  subject_id: subjects.length > 0 ? subjects[0].id : null,
+  subject_id: null,
   level: 'easy',
   mark: 3,
-  imageUrl: null,   // URL untuk Preview (bisa dari backend atau file lokal)
-  imageFile: null,  // File Object mentah untuk diupload (Form Data)
+  imageUrl: null,   
+  imageFile: null,  
+  isDeleteImage: false, 
   question: '',
   answers: [
     { text: '', isCorrect: false }, { text: '', isCorrect: false },
@@ -124,7 +123,7 @@ export default {
       questionId: null,
       returnSubjectId: null, 
       returnPage: null, 
-      subjects: subjects, 
+      subjects: [], 
       isDraggingImage: false,
       uploadedImageName: null,
       currentSoal: createEmptySoal(),
@@ -144,25 +143,48 @@ export default {
   },
   
   methods: {
-    // ## FUNGSI DIPERBARUI: Cek apakah path sudah URL lengkap ##
+   
+    async fetchSubjects() {
+      try {
+        
+        const response = await getPaginatedSubjects(100, 0);
+        
+
+        console.log("Data Subject dari API:", response);
+
+        if (response && response.data && Array.isArray(response.data.data)) {
+            this.subjects = response.data.data;
+        } 
+     
+        else if (response && Array.isArray(response.data)) {
+            this.subjects = response.data;
+        } 
+        else {
+            this.subjects = [];
+            console.warn("Format data subject tidak dikenali:", response);
+        }
+       
+        if (!this.isEditMode && this.subjects.length > 0 && !this.currentSoal.subject_id) {
+           this.currentSoal.subject_id = this.subjects[0].id;
+        }
+      } catch (error) {
+        console.error("Gagal memuat subject:", error);
+        this.subjects = []; 
+      }
+    },
+    // -----------------------------------
+
     constructImageUrl(serverPath) {
       if (!serverPath) return null;
-      
-      // Jika backend mengirim URL lengkap (seperti di JSON Anda), gunakan langsung
-      if (serverPath.startsWith('http')) {
-        return serverPath;
-      }
-
-      // Fallback jika backend mengirim path relatif (./storages...)
+      if (serverPath.startsWith('http')) return serverPath;
       const cleanPath = serverPath.startsWith('.') ? serverPath.substring(1) : serverPath;
       return `${API_BASE_URL}${cleanPath}`;
     },
 
-    // ## FUNGSI DIPERBARUI: Membaca 'img_url' ##
     async fetchQuestionData(id) {
       try {
         const response = await getQuestionById(id);
-        const questionData = response.data; // Ini adalah objek { id: 69, ... }
+        const questionData = response.data;
         if (!questionData) throw new Error("Data soal tidak ditemukan");
 
         this.currentSoal = {
@@ -171,9 +193,9 @@ export default {
           mark: questionData.score,
           question: questionData.question_text,
           answers: this.prepareAnswers(questionData.options),
-          // ## PERBAIKAN: Gunakan 'img_url' (sesuai JSON) ##
           imageUrl: this.constructImageUrl(questionData.img_url), 
           imageFile: null, 
+          isDeleteImage: false, 
         };
         
         if (this.currentSoal.imageUrl) {
@@ -205,7 +227,6 @@ export default {
 
       try {
         if (this.isEditMode) {
-          // --- ALUR EDIT ---
           if (!this.currentSoal.question.trim() || !this.currentSoal.subject_id || !this.currentSoal.answers.some(a => a.isCorrect)) {
             alert('Harap lengkapi semua field yang wajib diisi.');
             return;
@@ -221,8 +242,8 @@ export default {
           this.$router.push({ name: this.listRouteName, query: query });
 
         } else {
-          // --- ALUR BUAT BARU ---
           const questionsToSave = this.soalList.length > 0 ? [...this.soalList] : [];
+          
           if(this.currentSoal.question.trim()){
               if (this.currentSoal.answers.every(a => !a.text.trim())) {
                 alert('Isi jawaban terlebih dahulu.'); return; 
@@ -230,8 +251,12 @@ export default {
               if (!this.currentSoal.answers.some(a => a.isCorrect)) {
                 alert('Pilih satu jawaban benar.'); return; 
               }
+              if (!this.currentSoal.subject_id) {
+                 alert('Pilih subjek terlebih dahulu.'); return;
+              }
               questionsToSave.push(this.currentSoal);
           }
+
           if (questionsToSave.length === 0) {
             alert('Tidak ada soal untuk disimpan.'); return;
           }
@@ -262,7 +287,7 @@ export default {
     },
     
     formatPayload(soal, creatorId, examId) {
-        return {
+        const payload = {
             exam_id: examId,
             creator_id: creatorId,
             subject_id: soal.subject_id,
@@ -276,8 +301,17 @@ export default {
                     option_text: a.text,
                     is_correct: a.isCorrect,
                 })),
-            image: soal.imageFile, // Mengirim file mentah
         };
+
+        if (soal.imageFile) {
+            payload.image = soal.imageFile;
+        } 
+        
+        if (this.isEditMode && soal.isDeleteImage && !soal.imageFile) {
+          payload.img_delete = true; 
+        }
+
+        return payload;
     },
     
     triggerImageInput() { this.$refs.imageInput.click(); },
@@ -288,7 +322,8 @@ export default {
       if (file && file.type.startsWith('image/')) {
         this.currentSoal.imageFile = file; 
         this.uploadedImageName = file.name;
-        
+        this.currentSoal.isDeleteImage = false; 
+
         const reader = new FileReader();
         reader.onload = (e) => { this.currentSoal.imageUrl = e.target.result; };
         reader.readAsDataURL(file);
@@ -301,6 +336,11 @@ export default {
       this.currentSoal.imageUrl = null;
       this.currentSoal.imageFile = null; 
       this.uploadedImageName = null;
+      
+      if (this.isEditMode) {
+        this.currentSoal.isDeleteImage = true;
+      }
+      
       if (this.$refs.imageInput) {
         this.$refs.imageInput.value = null; 
       }
@@ -318,12 +358,14 @@ export default {
       if (this.currentSoal.answers.every(a => !a.text.trim())) { alert('Jawaban kosong!'); return; }
       if (!this.currentSoal.answers.some(a => a.isCorrect)) { alert('Pilih jawaban benar!'); return; }
 
-      this.soalList.push(JSON.parse(JSON.stringify(this.currentSoal)));
-      
+      const newSoal = JSON.parse(JSON.stringify(this.currentSoal));
+      newSoal.imageFile = this.currentSoal.imageFile;
+
+      this.soalList.push(newSoal);
       const savedSubjectId = this.currentSoal.subject_id;
+      
       this.currentSoal = createEmptySoal();
       this.currentSoal.subject_id = savedSubjectId; 
-      
       this.removeImage(); 
       alert('Soal ditambahkan ke daftar!');
     },
@@ -348,6 +390,8 @@ export default {
   },
   
   created() {
+    this.fetchSubjects();
+
     const id = this.$route.params.id;
     const returnId = this.$route.query.return_subject_id; 
     const returnPg = this.$route.query.return_page; 

@@ -62,7 +62,7 @@ func (h *UserAnswerController) GetMany(c *gin.Context) {
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -133,7 +133,7 @@ func (h *UserAnswerController) GetByExamSessionId(c *gin.Context) {
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -165,7 +165,7 @@ func (h *UserAnswerController) GetByQuestionId(c *gin.Context) {
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -204,7 +204,7 @@ func (h *UserAnswerController) GetUserAnswer(c *gin.Context) {
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 

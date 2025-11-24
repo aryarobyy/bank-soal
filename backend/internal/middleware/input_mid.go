@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func InputValidate(requiredFields []string) gin.HandlerFunc {
+func InputValidateJson(requiredFields []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		bodyBytes, err := io.ReadAll(c.Request.Body)
 		if err != nil {
@@ -79,6 +79,51 @@ func InputValidate(requiredFields []string) gin.HandlerFunc {
 		}
 
 		c.Set("body", body)
+		c.Next()
+	}
+}
+
+func InputValidateForm(requiredFields []string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		if err := c.Request.ParseMultipartForm(32 << 20); err != nil { // 32MB limit
+			if err := c.Request.ParseForm(); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code":    400,
+					"status":  "error",
+					"message": "Failed to parse form: " + err.Error(),
+				})
+				c.Abort()
+				return
+			}
+		}
+
+		form := c.Request.Form
+
+		if len(form) == 0 && len(requiredFields) > 0 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"status":  "error",
+				"message": "Form data cannot be empty",
+			})
+			c.Abort()
+			return
+		}
+
+		for _, field := range requiredFields {
+			values, ok := form[field]
+			if !ok || len(values) == 0 || values[0] == "" {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code":    400,
+					"status":  "error",
+					"message": field + " is required",
+				})
+				c.Abort()
+				return
+			}
+		}
+
+		c.Set("form", form)
 		c.Next()
 	}
 }

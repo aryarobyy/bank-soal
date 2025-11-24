@@ -13,7 +13,7 @@ func ExamScoreRoutes(r *gin.Engine, examScore *controller.ExamScoreController) {
 		auth := routes.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			auth.POST("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), middleware.InputValidate([]string{"exam_id", "user_id", "status"}), examScore.Create)
+			auth.POST("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), middleware.InputValidateJson([]string{"exam_id", "user_id", "status"}), examScore.Create)
 			auth.GET("/", examScore.GetMany)
 			auth.GET("/id", examScore.GetById)
 			auth.PUT("/:id", examScore.Update)

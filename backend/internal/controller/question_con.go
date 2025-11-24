@@ -42,7 +42,7 @@ func (h *QuestionController) GetMany(c *gin.Context) {
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	data, total, err := h.service.GetMany(ctx, limit, offset)
@@ -197,7 +197,7 @@ func (h *QuestionController) GetByExam(c *gin.Context) {
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -224,7 +224,7 @@ func (h *QuestionController) GetByCreator(c *gin.Context) {
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -246,7 +246,7 @@ func (h *QuestionController) GetByDiff(c *gin.Context) {
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -275,7 +275,7 @@ func (h *QuestionController) GetBySubject(c *gin.Context) {
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid limit")
+		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 

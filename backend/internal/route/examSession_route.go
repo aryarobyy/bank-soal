@@ -13,11 +13,11 @@ func ExamSessionRoutes(r *gin.Engine, examSession *controller.ExamSessionControl
 		auth := routes.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			auth.POST("/", middleware.InputValidate([]string{"exam_id"}), examSession.Create)
+			auth.POST("/", middleware.InputValidateJson([]string{"exam_id"}), examSession.Create)
 			auth.GET("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), examSession.GetMany)
 			auth.GET("/id", examSession.GetById)
 			auth.PUT("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), examSession.Update)
-			auth.PUT("/:id/no", middleware.InputValidate([]string{"current_no"}), examSession.UpdateCurrNo)
+			auth.PUT("/:id/no", middleware.InputValidateJson([]string{"current_no"}), examSession.UpdateCurrNo)
 			auth.PUT("/finish", examSession.FinishExam)
 			auth.DELETE("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), examSession.Delete)
 		}

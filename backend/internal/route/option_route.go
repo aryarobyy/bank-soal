@@ -13,7 +13,7 @@ func OptionRoutes(r *gin.Engine, option *controller.OptionController) {
 		auth := routes.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			auth.POST("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), middleware.InputValidate([]string{
+			auth.POST("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), middleware.InputValidateJson([]string{
 				"question_id", "option_label",
 				"option_text", "is_correct",
 			}), option.Create)

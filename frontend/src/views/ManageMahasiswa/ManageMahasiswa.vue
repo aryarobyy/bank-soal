@@ -1,21 +1,22 @@
 <template>
-  <div class="p-6 bg-gray-50 min-h-screen">
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold text-gray-800">Manajemen Akun Mahasiswa</h2>
+  <div class="p-4 md:p-6 bg-gray-50 min-h-screen">
+    
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+      <h2 class="text-xl md:text-2xl font-bold text-gray-800">Manajemen Akun Mahasiswa</h2>
       
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2 w-full md:w-auto">
         <button
           @click="openAddModal"
-          class="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition shadow"
+          class="flex-1 md:flex-none justify-center items-center gap-2 px-4 py-2 bg-indigo-500 text-white text-sm md:text-base rounded-lg hover:bg-indigo-600 transition shadow"
         >
-          <i class="fas fa-plus-circle"></i> Tambah Mahasiswa
+          <i class="fas fa-plus-circle"></i> Tambah
         </button>
         
         <button
           @click="openGenerateModal"
-          class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow"
+          class="flex-1 md:flex-none justify-center items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm md:text-base rounded-lg hover:bg-green-700 transition shadow"
         >
-          <i class="fas fa-users"></i> Generate Massal
+          <i class="fas fa-users"></i> Generate
         </button>
       </div>
     </div>
@@ -27,18 +28,18 @@
       <p class="text-red-600">{{ error }}</p>
     </div>
 
-    <div v-else class="bg-white shadow rounded-lg overflow-hidden">
+    <div v-else class="bg-white shadow rounded-lg overflow-hidden overflow-x-auto">
       <table class="min-w-full border-collapse">
         <thead class="bg-gray-100 text-gray-700 text-sm">
           <tr>
-            <th class="px-4 py-3 text-left">No</th>
-            <th class="px-4 py-3 text-left">Nama</th>
-            <th class="px-4 py-3 text-left">Email</th>
-            <th class="px-4 py-3 text-left">NIM</th>
-            <th class="px-4 py-3 text-left">Tahun Ajaran</th>
-            <th class="px-4 py-3 text-left">Role</th>
-            <th class="px-4 py-3 text-left">Tanggal Dibuat</th>
-            <th class="px-4 py-3 text-left">Aksi</th>
+            <th class="px-4 py-3 text-left whitespace-nowrap">No</th>
+            <th class="px-4 py-3 text-left whitespace-nowrap">Nama</th>
+            <th class="px-4 py-3 text-left whitespace-nowrap">Email</th>
+            <th class="px-4 py-3 text-left whitespace-nowrap">NIM</th>
+            <th class="px-4 py-3 text-left whitespace-nowrap">Tahun Ajaran</th>
+            <th class="px-4 py-3 text-left whitespace-nowrap">Role</th>
+            <th class="px-4 py-3 text-left whitespace-nowrap">Tanggal Dibuat</th>
+            <th class="px-4 py-3 text-left whitespace-nowrap">Aksi</th>
           </tr>
         </thead>
         <tbody class="text-gray-800 text-sm">
@@ -47,12 +48,12 @@
             :key="mhs.id || mhs.ID || mhs._id"
             class="border-t hover:bg-gray-50 transition"
           >
-            <td class="px-4 py-3">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-            <td class="px-4 py-3 font-medium">{{ mhs.name }}</td>
-            <td class="px-4 py-3">{{ mhs.email }}</td>
-            <td class="px-4 py-3">{{ mhs.nim }}</td>
-            <td class="px-4 py-3">{{ mhs.academic_year }}</td>
-            <td class="px-4 py-3">
+            <td class="px-4 py-3 whitespace-nowrap">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+            <td class="px-4 py-3 whitespace-nowrap font-medium">{{ mhs.name }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ mhs.email }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ mhs.nim }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">{{ mhs.academic_year }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
               <span
                 :class="roleClass(mhs.role)"
                 class="px-2 py-1 text-xs font-semibold rounded-full capitalize"
@@ -60,10 +61,10 @@
                 {{ mhs.role }}
               </span>
             </td>
-            <td class="px-4 py-3">
+            <td class="px-4 py-3 whitespace-nowrap">
               {{ new Date(mhs.created_at).toLocaleDateString("id-ID") }}
             </td>
-            <td class="px-4 py-3">
+            <td class="px-4 py-3 whitespace-nowrap">
               <button
                 @click="openEditModal(mhs)"
                 class="px-3 py-1 bg-yellow-400 text-white rounded-md hover:bg-yellow-500 mr-2 transition"
@@ -87,8 +88,8 @@
       </table>
     </div>
 
-    <div v-if="!loading && totalPages > 1" class="flex justify-between items-center mt-6">
-      <span class="text-sm text-gray-700">
+    <div v-if="!loading && totalPages > 1" class="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
+      <span class="text-sm text-gray-700 text-center md:text-left">
         Halaman <span class="font-semibold">{{ currentPage }}</span> dari <span class="font-semibold">{{ totalPages }}</span> (Total <span class="font-semibold">{{ totalItems }}</span> mahasiswa)
       </span>
       <div class="flex gap-1">
@@ -111,9 +112,9 @@
 
     <div
       v-if="showModal"
-      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 transition-opacity"
+      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 transition-opacity p-4"
     >
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full md:max-w-md max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-semibold mb-4 border-b pb-2">
           {{ editMode ? "Edit Akun Pengguna" : "Tambah Akun Mahasiswa" }}
         </h3>
@@ -220,6 +221,7 @@
               <input
                 v-model="form.password"
                 type="password"
+                autocomplete="new-password"
                 class="w-full p-2 border rounded-md"
                 placeholder="Kosongkan jika tidak ingin diubah"
               />
@@ -247,9 +249,9 @@
     
     <div
       v-if="showGenerateModal"
-      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 transition-opacity"
+      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 transition-opacity p-4"
     >
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full md:max-w-md">
         <h3 class="text-lg font-semibold mb-4 border-b pb-2">
           Generate Akun Massal
         </h3>
@@ -339,7 +341,8 @@
 </template>
 
 <script setup>
-// BARU: Impor 'computed' dan 'watch'
+// Bagian Script tidak perlu diubah, karena responsifitas diurus oleh CSS (Tailwind) di template.
+// Tapi pastikan import dan logic tetap sama.
 import { ref, onMounted, computed, watch } from "vue";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import {
@@ -376,29 +379,20 @@ const generateForm = ref({
   academic_year: "",
 });
 
-// --- BARU: State untuk Paginasi ---
+// State Paginasi
 const currentPage = ref(1);
-const itemsPerPage = ref(10); // Atur jumlah item per halaman
+const itemsPerPage = ref(10);
 const totalItems = ref(0);
 
-// BARU: Computed property untuk total halaman
 const totalPages = computed(() => {
   return Math.ceil(totalItems.value / itemsPerPage.value);
 });
-// --- AKHIR: State Paginasi ---
 
-// DIPERBARUI: fetchMahasiswa
 const fetchMahasiswa = async () => {
   try {
     loading.value = true;
-    
-    // Hitung offset
     const offset = (currentPage.value - 1) * itemsPerPage.value;
-    
-    // Panggil provider dengan paginasi
     const response = await getUsersByRole("user", itemsPerPage.value, offset); 
-    
-    // Simpan data dan total
     mahasiswaList.value = response.data || [];
     totalItems.value = response.total || 0;
     error.value = null;
@@ -414,17 +408,15 @@ const fetchMahasiswa = async () => {
 };
 
 onMounted(() => {
-  fetchMahasiswa(); // Panggilan pertama
+  fetchMahasiswa(); 
 });
 
-// BARU: Watcher untuk memuat ulang data saat halaman berganti
 watch(currentPage, (newPage, oldPage) => {
   if (newPage !== oldPage) {
     fetchMahasiswa();
   }
 });
 
-// BARU: Fungsi navigasi paginasi
 const prevPage = () => {
   if (currentPage.value > 1) {
     currentPage.value--;
@@ -436,8 +428,6 @@ const nextPage = () => {
     currentPage.value++;
   }
 };
-// --- AKHIR: Fungsi Paginasi ---
-
 
 const openAddModal = () => {
   editMode.value = false;
@@ -482,8 +472,8 @@ const handleGenerate = async () => {
     console.log("Pengguna yang di-generate:", response.data.users);
     
     closeGenerateModal();
-    currentPage.value = 1; // Kembali ke halaman 1
-    fetchMahasiswa(); // Muat ulang tabel
+    currentPage.value = 1; 
+    fetchMahasiswa(); 
 
   } catch (error) {
     console.error('Gagal generate user:', error);
@@ -504,7 +494,6 @@ const simpanMahasiswa = async () => {
   }
 
   if (editMode.value) {
-    // --- MODE EDIT ---
     if (!userId) {
       alert("Error: ID pengguna tidak ditemukan. Tidak dapat mengedit.");
       return;
@@ -553,7 +542,7 @@ const simpanMahasiswa = async () => {
       }
       
       closeModal();
-      fetchMahasiswa(); // Muat ulang halaman saat ini
+      fetchMahasiswa(); 
 
     } catch (err) {
       console.error("Gagal menyimpan data (Update):", err);
@@ -563,7 +552,6 @@ const simpanMahasiswa = async () => {
     }
 
   } else {
-    // --- MODE TAMBAH ---
     try {
       const dataToCreate = {
         name: form.value.name,
@@ -591,15 +579,13 @@ const simpanMahasiswa = async () => {
       await register(dataToCreate);
       alert("Akun baru berhasil ditambahkan!");
       closeModal();
-      // Pindah ke halaman terakhir setelah menambah
+      
       try {
-        // Ambil total item baru
         const response = await getUsersByRole("user", 1, 0);
         totalItems.value = response.total || 0;
-        // Hitung halaman terakhir
         currentPage.value = totalPages.value; 
       } catch (e) {
-        fetchMahasiswa(); // Fallback jika gagal
+        fetchMahasiswa(); 
       }
 
     } catch (err)
@@ -642,7 +628,6 @@ const hapusMahasiswa = async (mhs) => {
       await deleteUser(userId);
       alert("Mahasiswa berhasil dihapus.");
       
-      // Logika untuk halaman jika item terakhir dihapus
       if (mahasiswaList.value.length === 1 && currentPage.value > 1) {
         currentPage.value--;
       } else {

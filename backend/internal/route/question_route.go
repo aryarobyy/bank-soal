@@ -13,7 +13,11 @@ func QuestionRoutes(r *gin.Engine, question *controller.QuestionController) {
 		auth := routes.Group("")
 		auth.Use(middleware.AuthMiddleware())
 		{
-			auth.POST("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), question.CreateWithOptions)
+			auth.POST("/",
+				middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer),
+				middleware.InputValidateForm([]string{"score", "creator_id", "question_text", "difficulty"}),
+				question.CreateWithOptions,
+			)
 			auth.GET("/", question.GetMany)
 			auth.GET("/id", question.GetById)
 			auth.PUT("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), question.Update)
