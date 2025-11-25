@@ -43,7 +43,6 @@
           @click="handleSubmit"
         />
       </form>
-
     </div>
 
     <Toast ref="toastRef" />
@@ -52,76 +51,72 @@
 
 <script setup>
 import { ref } from "vue";
-// <-- PERUBAHAN: Impor 'User' menggantikan 'Mail'
 import { User, Lock, GraduationCap } from "lucide-vue-next";
-import Input from '../../components/ui/Input.vue'
+import Input from "../../components/ui/Input.vue";
 import Button from "../../components/ui/Button.vue";
 import { login } from "../../provider/user.provider";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import Toast from "../../components/utils/Toast.vue";
-import { useRouter } from 'vue-router'
+import { useRouter } from "vue-router";
 import { useUser } from "../../hooks/useGetCurrentUser";
 
+// 🔥 GANTI KEY DARI "id" → "user_id"
 const { setValue: setToken } = useLocalStorage("token");
-const { setValue: setId } = useLocalStorage("id");
+const { setValue: setUserId } = useLocalStorage("user_id"); // FIXED
 const { setUser: setGlobalUser } = useUser();
 
 const toastRef = ref(null);
-// <-- PERUBAHAN: 'email' diubah menjadi 'login_id'
+
 const formData = ref({
   login_id: "",
   password: "",
 });
 const errors = ref({});
 const isSubmitting = ref(false);
-const router = useRouter()
+const router = useRouter();
 
-// <-- PERUBAHAN: Field email diganti dengan login_id
 const fields = [
-  { 
-    id: 1, 
-    name: "login_id", 
-    
-    title: "Login ID", 
-    type: "text", 
-    placeholder: "NIM / NIDN / Username", 
-    icon: User, // <-- Ikon diubah
+  {
+    id: 1,
+    name: "login_id",
+    title: "Login ID",
+    type: "text",
+    placeholder: "NIM / NIDN / Username",
+    icon: User,
   },
-  { 
-    id: 2, 
-    name: "password", 
-    
-    title: "Password", 
-    type: "password", 
-    placeholder: "Minimal 6 karakter", 
-    icon: Lock, 
+  {
+    id: 2,
+    name: "password",
+    title: "Password",
+    type: "password",
+    placeholder: "Minimal 6 karakter",
+    icon: Lock,
   },
 ];
 
 const handleSubmit = async () => {
   try {
     isSubmitting.value = true;
-    // Panggilan 'login' tidak perlu diubah,
-    // karena 'formData.value' sekarang sudah berisi { login_id: "...", password: "..." }
+
     const data = await login(formData.value);
-    
     const userData = data.data.data;
 
     if (data.data.token && userData) {
+      // 🔥 SIMPAN TOKEN + USER ID DENGAN KEY YANG BENAR
       setToken(data.data.token);
-      setId(userData.id);
+      setUserId(userData.id); // FIXED → sekarang ExamDo bisa baca user_id
       setGlobalUser(userData);
     }
 
     const userRole = userData.role;
-    let redirectPath = '/'; 
-    
-    if (userRole === 'lecturer') {
-      redirectPath = '/dosen/dashboard';
-    } else if (userRole === 'admin') {
-      redirectPath = '/admin/dashboard';
-    } else if (userRole === 'super_admin') {
-      redirectPath = '/superadmin/dashboard';
+    let redirectPath = "/";
+
+    if (userRole === "lecturer") {
+      redirectPath = "/dosen/dashboard";
+    } else if (userRole === "admin") {
+      redirectPath = "/admin/dashboard";
+    } else if (userRole === "super_admin") {
+      redirectPath = "/superadmin/dashboard";
     }
 
     toastRef.value.showToast(
@@ -131,14 +126,14 @@ const handleSubmit = async () => {
     );
 
     isSubmitting.value = false;
-    router.push(redirectPath);
 
+    router.push(redirectPath);
   } catch (error) {
     console.log("Something error", error.response?.data);
     toastRef.value.showToast(
       "error",
       "Login Gagal",
-      "Login ID atau password salah." // <-- Pesan error diperbarui
+      "Login ID atau password salah."
     );
     isSubmitting.value = false;
   }

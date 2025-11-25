@@ -8,21 +8,21 @@ import ApiHandler from "./api.handler";
 export const getPaginatedSubjects = async (limit, offset, searchQuery) => {
   // Buat query parameters
   const params = new URLSearchParams();
-  params.append('limit', limit);
-  params.append('offset', offset);
+  params.append("limit", limit);
+  params.append("offset", offset);
 
   // Tambahkan search query jika ada
   if (searchQuery) {
-    params.append('search', searchQuery); 
+    params.append("search", searchQuery);
   }
-  
+
   // "sortBy" DIHAPUS SESUAI PERMINTAAN ANDA
 
   // ## PERBAIKAN ERROR 301 ADA DI SINI: Tambahkan '/' ##
   const res = await ApiHandler.get(`/${SUBJECT}/?${params.toString()}`);
-  
+
   // Sesuai info backend "response.data.total"
-  return res.data; 
+  return res.data;
 };
 
 // (Provider lain yang Anda tunjukkan di Postman)
