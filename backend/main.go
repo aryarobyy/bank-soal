@@ -1,12 +1,16 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"latih.in-be/config"
 	"latih.in-be/internal/seeder"
@@ -14,7 +18,25 @@ import (
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using default values")
+		log.Println("ENV LOAD ERROR:", err)
+	}
+
+	caCertPath := "cert/ca.pem"
+	caCert, err := ioutil.ReadFile(caCertPath)
+	if err != nil {
+		log.Fatalf("Failed to read CA file: %v", err)
+	}
+
+	rootCertPool := x509.NewCertPool()
+	if ok := rootCertPool.AppendCertsFromPEM(caCert); !ok {
+		log.Fatal("Failed to append CA certificate")
+	}
+
+	err = mysql.RegisterTLSConfig("custom", &tls.Config{
+		RootCAs: rootCertPool,
+	})
+	if err != nil {
+		log.Fatalf("Failed to register TLS config: %v", err)
 	}
 
 	db := config.InitDB()

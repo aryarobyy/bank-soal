@@ -33,19 +33,24 @@ func InitDB() *gorm.DB {
 }
 
 func connectionDatabase() (*gorm.DB, error) {
-
 	dbUsername := os.Getenv("DB_USERNAME")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
 
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local", dbUsername, dbPassword, dbHost, dbPort, dbName)
+	connectionString := fmt.Sprintf(
+		"%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local&tls=custom",
+		dbUsername,
+		dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
+	)
 
 	databaseConnection, err := gorm.Open(mysql.Open(connectionString), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
-
 	if err != nil {
 		return nil, err
 	}

@@ -81,7 +81,7 @@ func NewApp(db *gorm.DB) *App {
 
 	store := middleware.InMemoryStore(&middleware.InMemoryOptions{
 		Rate:  10 * time.Second, // 10s
-		Limit: 5,                // maks 5 request
+		Limit: 8,                // maks 5 request
 		// Skip: func(c *gin.Context) bool { //skip rate limit
 		// 	return c.FullPath() == "/"
 		// },
