@@ -4,16 +4,17 @@ import "time"
 
 type Exam struct {
 	Id          int        `json:"id" gorm:"primaryKey;autoIncrement;not null"`
-	Title       string     `json:"title" validate:"required"`
+	Title       string     `json:"title" validate:"required" gorm:"index"`
 	Description string     `json:"description,omitempty"`
 	Difficulty  Difficulty `json:"difficulty" gorm:"type:enum('easy','medium','hard');not null" validate:"oneof=easy medium hard"`
 	LongTime    int        `json:"long_time" validate:"required,min=1"` // menit
-	CreatorId   int        `json:"creator_id" validate:"required"`
+	CreatorId   int        `json:"creator_id" validate:"required" gorm:"index"`
 	StartedAt   *time.Time `json:"started_at" validate:"required"`
 	FinishedAt  *time.Time `json:"finished_at" validate:"required, gtfield=StartedAt"`
 	Score       int        `json:"score" validate:"required"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+
+	CreatedAt time.Time `json:"created_at" gorm:"index"`
+	UpdatedAt time.Time `json:"updated_at"`
 
 	Questions []Question `json:"questions" gorm:"many2many:exam_questions;"`
 }
@@ -28,6 +29,7 @@ type ExamResponse struct {
 	StartedAt   *time.Time `json:"started_at"`
 	FinishedAt  *time.Time `json:"finished_at"`
 	Score       int        `json:"score"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

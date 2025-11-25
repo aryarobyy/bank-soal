@@ -10,11 +10,11 @@ type Question struct {
 	Subject      Subject    `gorm:"foreignKey:SubjectId"`
 	CreatorId    int        `json:"creator_id" gorm:"not null;index"`
 	QuestionText string     `json:"question_text" validate:"required"`
-	Difficulty   Difficulty `json:"difficulty" gorm:"type:enum('easy','medium','hard');not null" validate:"oneof=easy medium hard"`
+	Difficulty   Difficulty `json:"difficulty" gorm:"type:enum('easy','medium','hard');not null;index" validate:"oneof=easy medium hard"`
 	Answer       string     `json:"answer,omitempty"`
 	Score        int        `json:"score" gorm:"not null;default:0"`
 	ImgUrl       string     `json:"img_url,omitempty"`
-	CreatedAt    time.Time  `json:"created_at"`
+	CreatedAt    time.Time  `json:"created_at" gorm:"index"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 
 	Options []Option `json:"options" gorm:"foreignKey:QuestionId;constraint:OnDelete:CASCADE;" validate:"required"`
@@ -35,16 +35,16 @@ type UpdateQuestion struct {
 }
 
 type QuestionResponse struct {
-	Id           int           `json:"id"`
-	SubjectId    int           `json:"subject_id"`
-	Subject      Subject       `json:"subject"`
-	CreatorId    int           `json:"creator_id"`
-	QuestionText string        `json:"question_text"`
-	Difficulty   Difficulty    `json:"difficulty"`
-	Answer       string        `json:"answer,omitempty"`
-	Score        int           `json:"score"`
-	ImgUrl       string        `json:"img_url,omitempty"`
-	CreatedAt    time.Time     `json:"created_at"`
-	UpdatedAt    time.Time     `json:"updated_at"`
-	Options      []Option      `json:"options"`
+	Id           int        `json:"id"`
+	SubjectId    int        `json:"subject_id"`
+	Subject      Subject    `json:"subject"`
+	CreatorId    int        `json:"creator_id"`
+	QuestionText string     `json:"question_text"`
+	Difficulty   Difficulty `json:"difficulty"`
+	Answer       string     `json:"answer,omitempty"`
+	Score        int        `json:"score"`
+	ImgUrl       string     `json:"img_url,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	Options      []Option   `json:"options"`
 }
