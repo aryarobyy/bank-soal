@@ -3,8 +3,8 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -21,20 +21,43 @@ func main() {
 		log.Println("ENV LOAD ERROR:", err)
 	}
 
-	caCertPath := "cert/ca.pem"
-	caCert, err := ioutil.ReadFile(caCertPath)
-	if err != nil {
-		log.Fatalf("Failed to read CA file: %v", err)
+	caCertBase64 := os.Getenv("DB_CA_CERT_BASE64")
+
+	var caCert []byte
+
+	if caCertBase64 != "" {
+		// Mode 1: Pakai ENV base64
+		decoded, err := base64.StdEncoding.DecodeString(caCertBase64)
+		if err != nil {
+			log.Fatalf("Failed to decode DB_CA_CERT_BASE64: %v", err)
+		}
+		caCert = decoded
+		log.Println("Loaded CA cert from ENV (base64)")
+	} else {
+		// Mode 2: Pakai file lokal
+		localPath := "./cert/ca.pem"
+
+		fileBytes, err := os.ReadFile(localPath)
+		if err != nil {
+			log.Fatalf("DB_CA_CERT_BASE64 is empty and failed to read local CA file: %v", err)
+		}
+
+		caCert = fileBytes
+		log.Println("Loaded CA cert from local file:", localPath)
 	}
 
 	rootCertPool := x509.NewCertPool()
-	if ok := rootCertPool.AppendCertsFromPEM(caCert); !ok {
+	if !rootCertPool.AppendCertsFromPEM(caCert) {
 		log.Fatal("Failed to append CA certificate")
 	}
 
-	err = mysql.RegisterTLSConfig("custom", &tls.Config{
+	err := mysql.RegisterTLSConfig("custom", &tls.Config{
 		RootCAs: rootCertPool,
 	})
+	if err != nil {
+		log.Fatalf("Failed to register TLS config: %v", err)
+	}
+
 	if err != nil {
 		log.Fatalf("Failed to register TLS config: %v", err)
 	}
@@ -50,6 +73,11 @@ func main() {
 		fmt.Println("Failed seed subjects:", err)
 	} else {
 		fmt.Println("Subject seeding success")
+	}
+	if err := seeder.SeedUser(db); err != nil {
+		fmt.Println("Failed seed user:", err)
+	} else {
+		fmt.Println("User seeding success")
 	}
 
 	port := os.Getenv("PORT")
