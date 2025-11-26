@@ -51,6 +51,7 @@ func (r *examScoreRepository) GetMany(ctx context.Context, examId int, limit int
 		Limit(limit).
 		Offset(offset).
 		Where("exam_id = ?", examId).
+		Find(&e).
 		Error; err != nil {
 		return nil, err
 	}

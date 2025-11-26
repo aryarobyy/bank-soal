@@ -160,6 +160,7 @@ func (r *questionRepository) Update(ctx context.Context, q model.UpdateQuestion,
 
 func (r *questionRepository) Delete(ctx context.Context, id int) error {
 	if err := r.db.WithContext(ctx).
+		Joins("JOIN exam_questions eq ON eq.question_id = questions.id AND options o ON o.question_id = question.id").
 		Where("id = ?", id).
 		Delete(&model.Question{}).
 		Delete(id).
