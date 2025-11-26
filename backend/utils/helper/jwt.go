@@ -58,12 +58,20 @@ func GenerateAccessToken(user *model.User) (string, error) {
 		return "", err
 	}
 
+	var userEmail string
+
+	if user.Email != nil {
+		userEmail = *user.Email
+	} else {
+		userEmail = ""
+	}
+
 	expireAt := time.Now().Add(duration)
 	claims := ClaimsModel{
 		UserId: user.Id,
 		Role:   string(user.Role),
 		Name:   user.Name,
-		Email:  *user.Email,
+		Email:  userEmail,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(expireAt),

@@ -11,6 +11,7 @@ type ExamSession struct {
 	Status     SessionStatus `json:"status" gorm:"default:'in_progress'"`
 	CurrentNo  int           `json:"current_no" gorm:"default:1"`
 	Score      int           `json:"score"`
+	IsPassed   bool          `json:"is_passed" gorm:"default:false"`
 
 	CreatedAt time.Time `json:"created_at" gorm:"index"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -25,6 +26,7 @@ type UpdateExamSession struct {
 	FinishedAt *time.Time    `json:"finished_at"`
 	Status     SessionStatus `json:"status" gorm:"default:'in_progress'"`
 	CurrentNo  int           `json:"current_no" gorm:"not null"`
+	IsPassed   *bool         `json:"is_passed"`
 	Score      int           `json:"score"`
 }
 
@@ -54,6 +56,7 @@ type SessionResponse struct {
 	Status     SessionStatus `json:"status" gorm:"default:'in_progress'"`
 	CurrentNo  int           `json:"current_no" gorm:"not null"`
 	Score      *float64      `json:"score"`
+	IsPassed   bool          `json:"is_passed" gorm:"default:false"`
 
 	UserAnswers []UserAnswer `gorm:"foreignKey:ExamSessionId"`
 }

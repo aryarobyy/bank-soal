@@ -133,6 +133,9 @@ func (s *examSessionService) FinishExam(ctx context.Context, userId int, id int)
 	session.FinishedAt = &now
 	session.Score = int(percentageScore)
 	session.Status = model.SessionFinished
+	if percentageScore >= 75.0 {
+		session.IsPassed = true
+	}
 
 	data := model.FinishExam{
 		FinishedAt: *session.FinishedAt,
