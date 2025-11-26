@@ -40,7 +40,7 @@ func connectionDatabase() (*gorm.DB, error) {
 	dbPort := os.Getenv("DB_PORT")
 
 	connectionString := fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local&tls=custom",
+		"%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local",
 		dbUsername,
 		dbPassword,
 		dbHost,
