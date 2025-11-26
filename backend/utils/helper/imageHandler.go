@@ -1,5 +1,3 @@
-// helper/image.go
-
 package helper
 
 import (

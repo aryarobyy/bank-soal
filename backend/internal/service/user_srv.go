@@ -54,9 +54,14 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 		return fmt.Errorf("validation failed: %w", err)
 	}
 
-	existingData, _ := s.repo.GetByEmail(ctx, data.Email)
-	if existingData != nil {
+	existingEmail, _ := s.repo.GetByEmail(ctx, data.Email)
+	if existingEmail != nil {
 		return fmt.Errorf("email %s already used", data.Email)
+	}
+
+	existingUsn, _ := s.repo.GetByUsn(ctx, data.Username)
+	if existingUsn != nil {
+		return fmt.Errorf("username %s already used", data.Username)
 	}
 
 	rules := map[string]int{

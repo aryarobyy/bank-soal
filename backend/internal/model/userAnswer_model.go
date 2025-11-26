@@ -4,15 +4,15 @@ import "time"
 
 type UserAnswer struct {
 	Id            int    `json:"id" gorm:"primaryKey;autoIncrement;not null"`
-	ExamSessionId int    `json:"exam_session_id" gorm:"not null"`
-	UserId        int    `json:"user_id" gorm:"not null"`
-	QuestionId    int    `json:"question_id" gorm:"not null"`
+	ExamSessionId int    `json:"exam_session_id" gorm:"not null; index"`
+	UserId        int    `json:"user_id" gorm:"not null; index"`
+	QuestionId    int    `json:"question_id" gorm:"not null; index"`
 	Answer        string `json:"answer" gorm:"not null"`
 	IsCorrect     bool   `json:"is_correct" gorm:"not null;default:false"`
 
 	ExamSession ExamSession `gorm:"foreignKey:ExamSessionId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"created_at" gorm:"index"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 

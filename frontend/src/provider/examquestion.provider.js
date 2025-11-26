@@ -1,4 +1,3 @@
-// src/provider/examquestion.provider.js
 import ApiHandler from "./api.handler";
 
 export const getExamQuestions = async (examId) => {
@@ -33,7 +32,8 @@ export const addExamQuestions = async (examId, questionIds) => {
     const res = await ApiHandler.post(`/exam-question/?exam_id=${examId}`, {
       question_ids: questionIds,
     });
-    return res.data;
+
+    return res.data.data; // SATUKAN FORMAT RESPONSE
   } catch (error) {
     console.error("❌ Gagal menambahkan soal ke ujian:", error);
     throw error;
@@ -41,8 +41,7 @@ export const addExamQuestions = async (examId, questionIds) => {
 };
 
 /**
- * 3. Hapus soal dari ujian (SESUAI DOKUMENTASI BARU)
- * Mengirim exam_id dan array question_ids di BODY
+ * Hapus soal dari ujian
  */
 // src/provider/examquestion.provider.js
 
@@ -57,9 +56,17 @@ export const deleteExamQuestions = async (examId, questionIdsArray) => {
         question_ids: questionIdsArray,
       },
     });
-    return res.data;
+
+    return res.data.data; // Format sama
   } catch (error) {
     console.error("❌ Gagal menghapus soal ujian:", error);
     throw error;
   }
+};
+
+export default {
+  getExamQuestions,
+  getExamQuestionsByExamId,
+  addExamQuestions,
+  deleteExamQuestions,
 };

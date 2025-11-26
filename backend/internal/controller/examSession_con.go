@@ -161,8 +161,7 @@ func (h *ExamSessionController) FinishExam(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	var req model.FinishExam
-
-	data, err := h.service.FinishExam(ctx, req.UserId, req.ExamId)
+	data, err := h.service.FinishExam(ctx, req.UserId, req.Id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
