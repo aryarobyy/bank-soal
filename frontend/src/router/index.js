@@ -69,6 +69,12 @@ const routes = [
   { path: '/login', name: 'login', component: LoginView },
   { path: '/register', name: 'register', component: RegisterView },
   { path: '/forgot-password', name: 'ForgotPassword', component: ForgotPassword },
+  
+    {
+    path: "/exam/start",
+    name: "ExamDo",
+    component: () => import("../views/exam/ExamDo.vue"),
+  },
   {
     path: '/',
     component: UserLayout,
@@ -77,6 +83,7 @@ const routes = [
       { path: 'ujian', name: 'ExamPage', component: ExamView },
       { path: 'profile/:id', name: 'Profile', component: Profile },
       { path: 'update-profile', name: 'UpdateProfile', component: UpdateProfile }
+      
     ]
   },
 
