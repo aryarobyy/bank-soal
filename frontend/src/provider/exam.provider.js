@@ -6,25 +6,29 @@ export const getAllExam = async (limit = 10, offset = 0, creatorId = null) => {
   try {
     // 1. Buat URLSearchParams
     const params = new URLSearchParams();
-    params.append("limit", limit);
-    params.append("offset", offset);
-
+    params.append('limit', limit);
+    params.append('offset', offset);
+    
     // 2. Tambahkan creator_id HANYA jika ada
     if (creatorId) {
-      params.append("creator_id", creatorId);
+      params.append('creator_id', creatorId);
     }
 
     // 3. Panggil API dengan query
-    const res = await ApiHandler.get(`/${EXAM}/?${params.toString()}`);
-
+    const res = await ApiHandler.get(
+      `/${EXAM}/?${params.toString()}`
+    );
+    
     // Asumsi provider ini mengembalikan array, bukan objek { data, total }
     // Berdasarkan perbaikan kita sebelumnya
-    return res.data.data;
+    return res.data.data; 
+    
   } catch (error) {
     console.error("Gagal mengambil data ujian:", error);
-    return { data: [], total: 0 };
+    return { data: [], total: 0 }; 
   }
 };
+
 
 // ✅ Get exam by ID (mendukung format lama dan baru)
 export const getExamById = async (id) => {

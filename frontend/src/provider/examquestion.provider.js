@@ -1,9 +1,5 @@
 import ApiHandler from "./api.handler";
 
-/**
- * GET /question/exam?exam_id=XX
- * Mengambil semua soal yang ada di satu ujian.
- */
 export const getExamQuestions = async (examId) => {
   try {
     const res = await ApiHandler.get(`/question/exam?exam_id=${examId}`);
@@ -23,14 +19,17 @@ export const getExamQuestions = async (examId) => {
 export const getExamQuestionsByExamId = async (examId) => {
   return await getExamQuestions(examId);
 };
-
 /**
- * Tambah soal ke ujian
+ * 2. Tambah soal ke ujian (SESUAI DOKUMENTASI BARU)
+ * Mengirim exam_id di dalam BODY
  */
 export const addExamQuestions = async (examId, questionIds) => {
   try {
-    const res = await ApiHandler.post(`/exam-question/`, {
-      exam_id: examId,
+    // PERHATIKAN: Tambahkan '/' sebelum '?'
+    // Dari: /exam-question?exam_id=...
+    // Jadi: /exam-question/?exam_id=...
+    
+    const res = await ApiHandler.post(`/exam-question/?exam_id=${examId}`, {
       question_ids: questionIds,
     });
 
@@ -44,11 +43,16 @@ export const addExamQuestions = async (examId, questionIds) => {
 /**
  * Hapus soal dari ujian
  */
+// src/provider/examquestion.provider.js
+
 export const deleteExamQuestions = async (examId, questionIdsArray) => {
   try {
-    const res = await ApiHandler.delete(`/exam-question/`, {
+    // PERBAIKAN:
+    // 1. Pindahkan examId ke URL (?exam_id=...)
+    // 2. Body hanya berisi question_ids
+    
+    const res = await ApiHandler.delete(`/exam-question/?exam_id=${examId}`, {
       data: {
-        exam_id: examId,
         question_ids: questionIdsArray,
       },
     });

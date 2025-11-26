@@ -66,9 +66,17 @@ const examRoutes = [
 ];
 
 const routes = [
-  // AUTH
-  { path: "/login", name: "login", component: LoginView },
-  { path: "/register", name: "register", component: RegisterView },
+  // --- Rute Autentikasi & Pengguna Umum ---
+  // (Tidak ada perubahan di sini)
+  { path: '/login', name: 'login', component: LoginView },
+  { path: '/register', name: 'register', component: RegisterView },
+  { path: '/forgot-password', name: 'ForgotPassword', component: ForgotPassword },
+  
+    {
+    path: "/exam/start",
+    name: "ExamDo",
+    component: () => import("../views/exam/ExamDo.vue"),
+  },
   {
     path: "/forgot-password",
     name: "ForgotPassword",
@@ -87,15 +95,12 @@ const routes = [
     path: "/",
     component: UserLayout,
     children: [
-      { path: "", name: "HomePage", component: HomePage },
-      { path: "ujian", name: "ExamPage", component: ExamView },
-      { path: "profile/:id", name: "Profile", component: Profile },
-      {
-        path: "update-profile",
-        name: "UpdateProfile",
-        component: UpdateProfile,
-      },
-    ],
+      { path: '', name: 'HomePage', component: HomePage },
+      { path: 'ujian', name: 'ExamPage', component: ExamView },
+      { path: 'profile/:id', name: 'Profile', component: Profile },
+      { path: 'update-profile', name: 'UpdateProfile', component: UpdateProfile }
+      
+    ]
   },
 
   // DOSEN ROUTES (pakai sidebar dosen)

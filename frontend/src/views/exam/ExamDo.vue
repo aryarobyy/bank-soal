@@ -1,20 +1,16 @@
-<!-- src/views/exam/ExamDo.vue -->
 <template>
   <div class="min-h-screen bg-[#e9edfc] flex items-center justify-center px-4">
     <div
       class="w-full max-w-5xl bg-white rounded-3xl shadow-lg p-6 sm:p-8 border border-gray-200"
     >
-      <!-- Loading -->
       <div v-if="loading" class="text-center text-gray-500 py-10">
         Memuat ujian...
       </div>
 
-      <!-- Error -->
       <div v-else-if="error" class="text-center text-red-500 py-10">
         {{ error }}
       </div>
 
-      <!-- Tidak ada soal -->
       <div
         v-else-if="!questions.length"
         class="text-center text-gray-600 py-10"
@@ -22,9 +18,7 @@
         Soal tidak tersedia.
       </div>
 
-      <!-- Konten -->
       <div v-else>
-        <!-- Header -->
         <div class="mb-6 flex justify-between items-center">
           <h1 class="text-xl sm:text-2xl font-bold text-gray-800">
             {{ exam?.title || "Ujian" }}
@@ -40,13 +34,11 @@
           </div>
         </div>
 
-        <!-- Kartu Soal -->
         <div class="bg-[#f5f7ff] rounded-2xl p-6 sm:p-8 mb-8">
           <p class="text-sm sm:text-base font-semibold text-gray-800 mb-4">
             Question: {{ currentQuestion?.question_text || "-" }}
           </p>
 
-          <!-- Opsi Jawaban -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
               v-for="opt in currentQuestion?.options || []"
@@ -60,13 +52,13 @@
                   : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400',
               ]"
             >
-              {{ opt.text || opt.option_text || opt.label || "NO_TEXT" }}
+              <span class="font-bold mr-2">{{ opt.option_label || opt.label }}.</span>
+              {{ opt.option_text || opt.text || "NO_TEXT" }}
             </button>
           </div>
         </div>
 
-        <!-- Navigasi Nomor Soal -->
-        <div class="flex justify-center gap-2 mb-6">
+        <div class="flex flex-wrap justify-center gap-2 mb-6">
           <button
             v-for="n in questions.length"
             :key="n"
@@ -76,14 +68,15 @@
               'w-8 h-8 sm:w-9 sm:h-9 text-xs sm:text-sm rounded-full border transition',
               currentNo === n
                 ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400',
+                : answers[n-1] 
+                  ? 'bg-green-100 text-green-700 border-green-300' // Hijau jika sudah dijawab
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400',
             ]"
           >
             {{ n }}
           </button>
         </div>
 
-        <!-- Navigasi Sebelumnya & Selanjutnya -->
         <div class="flex justify-between items-center">
           <button
             class="px-4 py-2 rounded-md text-sm bg-gray-200 text-gray-700 disabled:opacity-50"
@@ -115,15 +108,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { getExamById } from "@/provider/exam.provider";
-import { getExamQuestions } from "@/provider/examquestion.provider";
-import { submitUserAnswer } from "@/provider/useranswer.provider"; // ✅ WAJIB ADA
+import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
+// Providers
+import { getExamById } from "../../provider/exam.provider";
+import { getExamQuestions } from "../../provider/examquestion.provider";
+import { submitUserAnswer } from "../../provider/useranswer.provider";
+import { finishExamSession, updateCurrentNo } from "../../provider/examsession.provider";
 
-// Router
+// Router & User
 const route = useRoute();
 const router = useRouter();
+const { user } = useGetCurrentUser();
 
 // State
 const loading = ref(true);
@@ -138,7 +135,7 @@ const currentQuestion = computed(() => {
   return questions.value[currentNo.value - 1] || null;
 });
 
-// Simpan jawaban
+// Simpan jawaban lokal (state)
 const selectAnswer = (optionId) => {
   answers.value[currentNo.value - 1] = optionId;
 };
@@ -155,14 +152,20 @@ const startTimer = (minutes) => {
       timeLeft.value--;
     } else {
       clearInterval(timer);
-      finishExam();
+      alert("Waktu Habis! Ujian akan diselesaikan otomatis.");
+      finishExam(); // Auto finish saat waktu habis
     }
   }, 1000);
 };
 
 const formattedTime = computed(() => {
-  const m = Math.floor(timeLeft.value / 60);
+  const h = Math.floor(timeLeft.value / 3600);
+  const m = Math.floor((timeLeft.value % 3600) / 60);
   const s = timeLeft.value % 60;
+  
+  if (h > 0) {
+      return `${h}:${m < 10 ? "0" + m : m}:${s < 10 ? "0" + s : s}`;
+  }
   return `${m}:${s < 10 ? "0" + s : s}`;
 });
 // =================================================
@@ -178,18 +181,21 @@ onMounted(async () => {
   }
 
   try {
+    // 1. Get Exam Info
     const examRes = await getExamById(examId);
     exam.value = examRes?.data || examRes;
 
+    // 2. Get Questions
     const qRes = await getExamQuestions(examId);
     questions.value = Array.isArray(qRes) ? qRes : qRes.data || [];
 
-    // Setup jawaban kosong
+    // 3. Setup array jawaban kosong
     answers.value = Array(questions.value.length).fill(null);
 
-    // 🔥 TIMER MENGGUNAKAN duration dari DB atau default 120 menit
-    const duration = exam.value?.duration || 120;
+    // 4. Jalankan Timer
+    const duration = exam.value?.long_time || 120; 
     startTimer(duration);
+    
   } catch (e) {
     console.error(e);
     error.value = "Terjadi kesalahan saat memuat ujian.";
@@ -198,7 +204,8 @@ onMounted(async () => {
   }
 });
 
-// Navigasi
+// ===================== NAVIGASI & AUTO SAVE POSISI =====================
+
 const goToQuestion = (n) => {
   currentNo.value = n;
 };
@@ -209,52 +216,101 @@ const prevQuestion = () => {
   if (currentNo.value > 1) currentNo.value--;
 };
 
+// Watcher: Simpan posisi nomor soal ke backend setiap pindah soal
+watch(currentNo, async (newNo) => {
+  const sessionId = Number(route.query.session_id);
+  if (sessionId) {
+    try {
+      await updateCurrentNo(sessionId, newNo);
+    } catch (e) {
+      console.error("Gagal menyimpan posisi soal", e);
+    }
+  }
+});
+
 // ===================== FINISH EXAM =====================
 const finishExam = async () => {
+  // 1. Cek Timer & Konfirmasi
+  if (timeLeft.value > 0 && !confirm("Apakah Anda yakin ingin menyelesaikan ujian?")) {
+    return;
+  }
+
   try {
+    // 2. Ambil Data & Validasi
+    // Gunakan Number() untuk memaksa konversi ke angka
     const sessionId = Number(route.query.session_id);
-    const userId = Number(localStorage.getItem("user_id"));
+    const examId = Number(route.query.id); 
+    
+    // Ambil User ID (Prioritas: dari State > LocalStorage)
+    let userId = user.value?.id;
+    if (!userId) {
+        userId = Number(localStorage.getItem("id"));
+    }
 
-    console.log("SESSION ID:", sessionId);
-    console.log("USER ID:", userId);
+    // --- DEBUGGING (Cek di Console Browser) ---
+    console.log("DEBUG FINISH EXAM:", {
+        sessionId,
+        examId,
+        userId
+    });
 
+    // 3. Validasi Ketat
     if (!sessionId || isNaN(sessionId)) {
-      alert("Session ID tidak valid.");
+      alert("Error: Session ID hilang. Silakan refresh halaman atau login ulang.");
       return;
     }
     if (!userId || isNaN(userId)) {
-      alert("User ID tidak valid.");
+      alert("Error: User ID tidak valid. Silakan login ulang.");
+      return;
+    }
+    if (!examId || isNaN(examId)) {
+      alert("Error: Exam ID tidak valid.");
       return;
     }
 
+    // 4. Kirim Jawaban (Looping)
+    // (Bagian ini biarkan seperti kode sebelumnya...)
     for (let i = 0; i < questions.value.length; i++) {
       const q = questions.value[i];
       const selectedId = answers.value[i];
 
-      const selectedOption = q.options.find((opt) => opt.id === selectedId);
-
-      if (!selectedOption) {
-        console.warn("Tidak ada opsi yang dipilih.");
-        continue;
+      if (selectedId) {
+        const selectedOption = q.options.find((opt) => opt.id === selectedId);
+        if (selectedOption) {
+          await submitUserAnswer({
+            exam_session_id: sessionId,
+            user_id: userId,
+            question_id: q.id,
+            answer: selectedOption.option_label || selectedOption.label, 
+          });
+        }
       }
-
-      await submitUserAnswer({
-        exam_session_id: sessionId,
-        user_id: userId,
-        question_id: q.id,
-
-        // 🔥 BACKEND butuh ini
-        answer: selectedOption.option_label || selectedOption.label,
-
-        is_correct: false,
-      });
     }
 
-    alert("Jawaban berhasil dikirim & ujian selesai!");
-    router.push("/ujian");
+    // 5. FINISH SESSION (Payload yang Benar)
+    const payload = {
+      user_id: userId,  // Pastikan ini Number
+      exam_id: examId   // Pastikan ini Number
+    };
+
+    console.log("Mengirim Payload ke Backend:", payload);
+
+    await finishExamSession(payload);
+
+    alert("Ujian selesai! Nilai Anda telah disimpan.");
+    router.push("/ujian"); 
+
   } catch (err) {
-    console.error("FinishExam Error:", err);
-    alert("Gagal mengirim jawaban.");
+    console.error("FinishExam Error Full:", err);
+    
+    // Tampilkan pesan error yang lebih jelas
+    const backendMsg = err.response?.data?.message;
+    if (backendMsg === "failed to find session: record not found") {
+        alert("Gagal: Sesi ujian tidak ditemukan di server. Kemungkinan sesi sudah selesai atau belum dimulai dengan benar.");
+    } else {
+        alert(`Gagal menyelesaikan ujian: ${backendMsg || "Terjadi kesalahan server."}`);
+    }
   }
 };
+
 </script>

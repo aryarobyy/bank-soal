@@ -10,7 +10,7 @@
       </router-link>
     </div>
 
-    <div class="grid grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       <select v-model="sortBy" class="border rounded-lg p-2">
         <option>Last Modified</option>
         <option>A-Z</option>
@@ -34,10 +34,10 @@
       </div>
     </div>
 
-    <div class="bg-gray-50 rounded-lg p-4 border">
+    <div class="bg-gray-50 rounded-lg p-4 border overflow-x-auto">
       <h3 class="font-semibold mb-3">Daftar Ujian</h3>
 
-      <table class="w-full">
+      <table class="w-full min-w-[600px]">
         <thead>
           <tr class="text-left border-b text-sm font-bold">
             <th class="p-2">Nama Ujian</th>
@@ -52,14 +52,21 @@
             :key="exam.id"
             class="border-b hover:bg-gray-100 transition"
           >
-            <td class="p-2">{{ exam.title }}</td>
-            <td class="p-2">{{ statusText(exam.status) }}</td>
+            <td class="p-2">
+              <div class="font-medium">{{ exam.title }}</div>
+              <div class="text-xs text-gray-500 line-clamp-1">{{ exam.description }}</div>
+            </td>
+            <td class="p-2">
+              <span :class="statusBadgeClass(exam.status)">
+                {{ statusText(exam.status) }}
+              </span>
+            </td>
             <td class="p-2 flex items-center justify-center gap-3">
               <router-link
                 :to="{ name: isAdminRoute ? 'AdminExamDetail' : 'DosenExamDetail', params: { id: exam.id } }"
                 class="text-blue-600 hover:underline text-sm"
               >
-                👁️ View Details
+                👁️ View
               </router-link>
 
               <button
@@ -72,28 +79,33 @@
           </tr>
 
           <tr v-if="paginatedExams.length === 0">
-            <td colspan="3" class="text-center p-4 text-gray-500">
-              Tidak ada ujian
+            <td colspan="3" class="text-center p-8 text-gray-500">
+              <div class="flex flex-col items-center">
+                <i class="fas fa-inbox text-4xl mb-2 text-gray-300"></i>
+                <p>Tidak ada ujian ditemukan</p>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
 
-      <div class="flex justify-center items-center mt-6 gap-3">
+      <div v-if="totalPages > 1" class="flex justify-center items-center mt-6 gap-3">
         <button
           @click="prevPage"
           :disabled="page === 1"
-          class="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          class="px-3 py-1 bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Prev
         </button>
 
-        <span>Halaman {{ page }} dari {{ totalPages }}</span>
+        <span class="text-sm text-gray-600">
+          Halaman <span class="font-bold">{{ page }}</span> dari {{ totalPages }}
+        </span>
 
         <button
           @click="nextPage"
           :disabled="page === totalPages"
-          class="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          class="px-3 py-1 bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
         </button>
@@ -105,8 +117,9 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
-import { getAllExam, deleteExam } from "/src/provider/exam.provider";
-import { useGetCurrentUser } from "/src/hooks/useGetCurrentUser";
+// Pastikan path import ini sesuai dengan struktur folder Anda
+import { getAllExam, deleteExam } from "../../provider/exam.provider";
+import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 
 const route = useRoute();
 const isAdminRoute = computed(() => route.path.startsWith('/admin'));
@@ -117,85 +130,117 @@ const sortBy = ref("Last Modified");
 const statusFilter = ref("");
 const page = ref(1);
 const limit = 10;
-const totalItems = ref(0); // Tambahkan totalItems
+const totalItems = ref(0);
 
 const { user } = useGetCurrentUser();
 
-// ## FUNGSI DIPERBARUI ##
+// --- LOGIC LOAD DATA (DIPERBAIKI) ---
 const loadExams = async () => {
-  if (!user.value) return; // Jangan lakukan apa-apa jika user belum dimuat
+  if (!user.value) return;
 
   try {
     const offset = (page.value - 1) * limit;
-    
-    // Tentukan apakah kita perlu memfilter berdasarkan creator
     const creatorId = isAdminRoute.value ? null : user.value.id;
     
-    // Panggil provider baru dengan creatorId
-    // 'result' sekarang adalah { data: [...], total: ... }
-    // ATAU provider Anda mengembalikan array (mari kita asumsikan array)
+    // Panggil Provider
     const result = await getAllExam(limit, offset, creatorId);
 
-    // Provider Anda mengembalikan array, bukan objek { data, total }
-    exams.value = Array.isArray(result) ? result : [];
-    
-    // (Paginasi sederhana berbasis data yang diambil, BUKAN total)
-    totalItems.value = exams.value.length; 
+    // FIX: Cek apakah result memiliki properti .data (Objek) atau result itu sendiri adalah Array
+    if (result && Array.isArray(result.data)) {
+        // Format Baru: { data: [...], total: ... }
+        exams.value = result.data;
+        totalItems.value = result.total || 0;
+    } else if (Array.isArray(result)) {
+        // Format Lama (Fallback): [...]
+        exams.value = result;
+        totalItems.value = result.length;
+    } else {
+        // Data kosong atau format salah
+        exams.value = [];
+        totalItems.value = 0;
+    }
 
   } catch (err) {
     console.error("Gagal memuat data ujian:", err);
     exams.value = [];
+    totalItems.value = 0;
   }
 };
-// ## AKHIR PERUBAHAN ##
 
 onMounted(loadExams);
 
-// PERBAIKAN: Tonton juga 'user' untuk memastikan data dimuat setelah user ada
+// Watcher: Reload saat page berubah atau user baru login
 watch([page, user], loadExams, { immediate: true });
 
+// --- FILTERING DI SISI CLIENT (Hanya untuk data halaman ini) ---
 const filteredExams = computed(() => {
   let data = [...exams.value];
-  if (search.value)
+
+  // 1. Search
+  if (search.value) {
     data = data.filter((e) =>
       e.title.toLowerCase().includes(search.value.toLowerCase())
     );
-  if (statusFilter.value)
+  }
+
+  // 2. Filter Status
+  if (statusFilter.value) {
     data = data.filter((e) => e.status === statusFilter.value);
-  if (sortBy.value === "A-Z")
+  }
+
+  // 3. Sorting
+  if (sortBy.value === "A-Z") {
     data.sort((a, b) => a.title.localeCompare(b.title));
-  else if (sortBy.value === "Z-A")
+  } else if (sortBy.value === "Z-A") {
     data.sort((a, b) => b.title.localeCompare(a.title));
+  }
+  // 'Last Modified' biasanya default dari server (created_at desc), jadi tidak perlu sort manual di sini
+
   return data;
 });
 
-// Paginasi ini masih berbasis data yang di-filter, bukan total dari DB
+// --- LOGIC PAGINATION (DIPERBAIKI) ---
+
+// Total halaman dihitung dari totalItems server, bukan filteredExams
 const totalPages = computed(() => {
-  const total = filteredExams.value.length;
-  if (total === 0) return 1;
-  return Math.ceil(total / limit);
+  if (totalItems.value === 0) return 1;
+  return Math.ceil(totalItems.value / limit);
 });
 
-
+// FIX: Jangan slice lagi! Data dari server sudah terpotong (paginated)
+// Kita langsung tampilkan hasil filter dari data yang ada.
 const paginatedExams = computed(() => {
-  const start = (page.value - 1) * limit;
-  const end = start + limit;
-  return filteredExams.value.slice(start, end);
+  return filteredExams.value; 
 });
 
 const nextPage = () => {
-  if (page.value < totalPages.value) page.value++;
+  if (page.value < totalPages.value) {
+    page.value++;
+    // Watcher 'page' akan otomatis memanggil loadExams()
+  }
 };
 
 const prevPage = () => {
-  if (page.value > 1) page.value--;
+  if (page.value > 1) {
+    page.value--;
+    // Watcher 'page' akan otomatis memanggil loadExams()
+  }
 };
 
+// --- UTILS ---
 const statusText = (status) => {
   if (status === "not_started") return "Not Started";
   if (status === "running") return "Ongoing";
   if (status === "finished") return "Finished";
-  return "-";
+  return status || "-";
+};
+
+const statusBadgeClass = (status) => {
+  const base = "px-2 py-1 rounded text-xs font-semibold";
+  if (status === "not_started") return `${base} bg-gray-100 text-gray-600`;
+  if (status === "running") return `${base} bg-blue-100 text-blue-600`;
+  if (status === "finished") return `${base} bg-green-100 text-green-600`;
+  return `${base} bg-gray-100 text-gray-600`;
 };
 
 const removeExam = async (id) => {
@@ -203,7 +248,12 @@ const removeExam = async (id) => {
   try {
     await deleteExam(id);
     alert("✅ Ujian berhasil dihapus!");
-    loadExams();
+    // Jika halaman saat ini kosong setelah hapus, mundur 1 halaman
+    if (exams.value.length === 1 && page.value > 1) {
+      page.value--;
+    } else {
+      loadExams();
+    }
   } catch (error) {
     console.error("Gagal menghapus ujian:", error);
     alert("❌ Gagal menghapus ujian. Coba lagi nanti.");

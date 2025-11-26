@@ -89,7 +89,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import { getExamById } from "../../provider/exam.provider";
-import { createExamSession } from "@/provider/examsession.provider";
+import { createExamSession } from "../../provider/examsession.provider";
 
 const toastRef = ref(null);
 const router = useRouter();
