@@ -37,6 +37,7 @@ type UpdateStatus struct {
 }
 
 type FinishExam struct {
+	Id         int           `json:"id" gorm:"not null"`
 	UserId     int           `json:"user_id" gorm:"not null"`
 	ExamId     int           `json:"exam_id" gorm:"not null"`
 	FinishedAt time.Time     `json:"finished_at"`

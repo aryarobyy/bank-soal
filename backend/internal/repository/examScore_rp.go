@@ -46,11 +46,11 @@ func (r *examScoreRepository) GetById(ctx context.Context, id int) (*model.ExamS
 
 func (r *examScoreRepository) GetMany(ctx context.Context, examId int, limit int, offset int) ([]model.ExamScore, error) {
 	var e []model.ExamScore
-
+	r.db = r.db.Debug()
 	if err := r.db.WithContext(ctx).
-		Where("exam_id = ?", examId).
 		Limit(limit).
 		Offset(offset).
+		Where("exam_id = ?", examId).
 		Error; err != nil {
 		return nil, err
 	}

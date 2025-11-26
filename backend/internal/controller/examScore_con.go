@@ -77,6 +77,10 @@ func (h *ExamScoreController) GetMany(c *gin.Context) {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
+	if len(data) == 0 {
+		helper.Error(c, http.StatusNotFound, "no Data found")
+		return
+	}
 
 	examScoresRes := response.ExamScoresResponse(data)
 
