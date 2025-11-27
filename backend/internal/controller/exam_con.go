@@ -22,7 +22,7 @@ func NewExamController(s service.ExamService) *ExamController {
 func (h *ExamController) Create(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	var data model.Exam
+	var data model.CreateExam
 	if err := c.ShouldBindJSON(&data); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
@@ -148,4 +148,64 @@ func (h *ExamController) Delete(c *gin.Context) {
 		return
 	}
 	helper.Success(c, nil, "data deleted")
+}
+
+func (h *ExamController) AddQuestions(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	idStr := c.Param("id")
+	examId := helper.BindToInt(idStr)
+
+	var req model.QuestionsPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := h.service.AddQuestions(ctx, examId, req.QuestionIds); err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	helper.Success(c, nil, "questions added")
+}
+
+func (h *ExamController) ReplaceQuestions(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	idStr := c.Param("id")
+	examId := helper.BindToInt(idStr)
+
+	var req model.QuestionsPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := h.service.ReplaceQuestions(ctx, examId, req.QuestionIds); err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	helper.Success(c, nil, "questions replaced")
+}
+
+func (h *ExamController) RemoveQuestions(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	idStr := c.Param("id")
+	examId := helper.BindToInt(idStr)
+
+	var req model.QuestionsPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := h.service.RemoveQuestions(ctx, examId, req.QuestionIds); err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	helper.Success(c, nil, "questions removed")
 }

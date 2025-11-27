@@ -8,7 +8,7 @@ type Option struct {
 	OptionLabel string   `json:"option_label" validate:"required"`
 	OptionText  string   `json:"option_text" validate:"required"`
 	IsCorrect   bool     `json:"is_correct"`
-	Question    Question `gorm:"foreignKey:QuestionId;references:Id"`
+	Question    Question `gorm:"constraint:OnDelete:CASCADE;foreignKey:QuestionId;references:Id"`
 
 	CreatedAt time.Time `json:"created_at" gorm:"index"`
 	UpdatedAt time.Time `json:"updated_at"`

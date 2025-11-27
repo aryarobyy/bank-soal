@@ -229,11 +229,11 @@ import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getExamById, deleteExam } from "/src/provider/exam.provider";
 import {
-  addExamQuestions,
-  deleteExamQuestions,
-} from "/src/provider/examquestion.provider";
+  addQuestions
+} from "/src/provider/exam.provider"
 import { getPaginatedSubjects } from "/src/provider/subject.provider";
 import { getQuestionsBySubject, getQuestionsByExam } from "/src/provider/question.provider";
+import { removeQuestions } from "../../provider/exam.provider";
 
 const route = useRoute();
 const router = useRouter();
@@ -303,7 +303,7 @@ const removeExam = async (id) => {
 const handleDeleteQuestion = async (question) => {
   if (!confirm(`Yakin ingin menghapus soal (ID: ${question.id}) dari ujian ini?`)) return;
   try {
-    await deleteExamQuestions(exam.value.id, [question.id]);
+    await removeQuestions(exam.value.id, {"question_ids":question.id});
     alert("Soal berhasil dihapus dari ujian!");
     loadExamQuestions();
   } catch (err) {
@@ -398,7 +398,7 @@ const handleAddSoal = async () => {
 
   saveLoading.value = true;
   try {
-    await addExamQuestions(exam.value.id, selectedQuestions.value);
+    await addQuestions(exam.value.id, { "question_ids":selectedQuestions.value});
     alert("Soal berhasil ditambahkan!");
     closeAddSoalModal();
     loadExamQuestions();

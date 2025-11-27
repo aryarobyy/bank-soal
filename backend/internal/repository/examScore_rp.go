@@ -14,6 +14,8 @@ type ExamScoreRepository interface {
 	GetMany(ctx context.Context, examId int, limit int, offset int) ([]model.ExamScore, error)
 	Update(ctx context.Context, e model.ExamScore, id int) (*model.ExamScore, error)
 	Delete(ctx context.Context, id int) error
+	GetByUser(ctx context.Context, userId int, limit int, offset int) ([]model.ExamScore, int64, error)
+	GetSpesificScore(ctx context.Context, userId int, examId int) (*model.ExamScore, error)
 }
 
 type examScoreRepository struct {
@@ -93,11 +95,46 @@ func (r *examScoreRepository) Update(ctx context.Context, e model.ExamScore, id 
 
 func (r *examScoreRepository) Delete(ctx context.Context, id int) error {
 	if err := r.db.WithContext(ctx).
-		Model(model.Exam{}).
+		Model(model.ExamScore{}).
 		Where("id = ?", id).
 		Delete(id).
 		Error; err != nil {
 		return err
 	}
 	return nil
+}
+
+func (r *examScoreRepository) GetByUser(ctx context.Context, userId int, limit int, offset int) ([]model.ExamScore, int64, error) {
+	var (
+		scores []model.ExamScore
+		total  int64
+	)
+
+	baseQuery := r.db.WithContext(ctx).
+		Preload("User").
+		Where("user_id = ?", userId)
+
+	if err := baseQuery.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := baseQuery.
+		Limit(limit).
+		Offset(offset).
+		Find(&scores).Error; err != nil {
+		return nil, 0, err
+	}
+	return scores, total, nil
+}
+
+func (r *examScoreRepository) GetSpesificScore(ctx context.Context, userId int, examId int) (*model.ExamScore, error) {
+	exam := model.ExamScore{}
+
+	if err := r.db.WithContext(ctx).
+		Preload("User").
+		Where("user_id = ? AND exam_id = ? ", userId, examId).
+		First(&exam).Error; err != nil {
+		return nil, err
+	}
+	return &exam, nil
 }

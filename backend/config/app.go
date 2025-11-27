@@ -19,16 +19,15 @@ type App struct {
 }
 
 type Controllers struct {
-	User         *controller.UserController
-	Exam         *controller.ExamController
-	Question     *controller.QuestionController
-	Option       *controller.OptionController
-	ExamScore    *controller.ExamScoreController
-	ExamSession  *controller.ExamSessionController
-	ExamQuestion *controller.ExamQuestionController
-	Subject      *controller.SubjectController
-	XlsPath      *controller.XlsPathController
-	UserAnswer   *controller.UserAnswerController
+	User        *controller.UserController
+	Exam        *controller.ExamController
+	Question    *controller.QuestionController
+	Option      *controller.OptionController
+	ExamScore   *controller.ExamScoreController
+	ExamSession *controller.ExamSessionController
+	Subject     *controller.SubjectController
+	XlsPath     *controller.XlsPathController
+	UserAnswer  *controller.UserAnswerController
 }
 
 func NewApp(db *gorm.DB) *App {
@@ -50,7 +49,6 @@ func NewApp(db *gorm.DB) *App {
 	optionRepo := repository.NewOptionRepository(db)
 	examScoreRepo := repository.NewExamScoreRepository(db)
 	examSessionRepo := repository.NewExamSessionRepository(db)
-	examQuestionRepo := repository.NewExamQuestionRepository(db)
 	subjectRepo := repository.NewSubjectRepository(db)
 	xlsPathRepo := repository.NewXlsPathRepository(db)
 	userAnswerRepo := repository.NewUserAnswerRepository(db)
@@ -60,23 +58,21 @@ func NewApp(db *gorm.DB) *App {
 	questionService := service.NewQuestionService(questionRepo, userRepo, optionRepo)
 	optionService := service.NewOptionService(optionRepo)
 	examScoreService := service.NewExamScoreService(examScoreRepo)
-	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo, userAnswerRepo, questionRepo, examQuestionRepo)
-	examQuestionService := service.NewExamQuestionService(examQuestionRepo, questionRepo, examRepo)
+	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo, userAnswerRepo, questionRepo)
 	subjectService := service.NewSubjectService(subjectRepo)
 	xlsPathService := service.NewXlsPathService(xlsPathRepo)
 	userAnswerService := service.NewUserAnswerService(userAnswerRepo, optionRepo)
 
 	controllers := &Controllers{
-		User:         controller.NewUserController(userService, xlsPathService),
-		Exam:         controller.NewExamController(examService),
-		Question:     controller.NewQuestionController(questionService),
-		Option:       controller.NewOptionController(optionService),
-		ExamScore:    controller.NewExamScoreController(examScoreService),
-		ExamSession:  controller.NewExamSessionController(examSessionService),
-		ExamQuestion: controller.NewExamQuestionController(examQuestionService),
-		Subject:      controller.NewSubjectController(subjectService),
-		XlsPath:      controller.NewXlsPathController(xlsPathService),
-		UserAnswer:   controller.NewUserAnswerController(userAnswerService),
+		User:        controller.NewUserController(userService, xlsPathService),
+		Exam:        controller.NewExamController(examService),
+		Question:    controller.NewQuestionController(questionService),
+		Option:      controller.NewOptionController(optionService),
+		ExamScore:   controller.NewExamScoreController(examScoreService),
+		ExamSession: controller.NewExamSessionController(examSessionService),
+		Subject:     controller.NewSubjectController(subjectService),
+		XlsPath:     controller.NewXlsPathController(xlsPathService),
+		UserAnswer:  controller.NewUserAnswerController(userAnswerService),
 	}
 
 	store := middleware.InMemoryStore(&middleware.InMemoryOptions{
@@ -107,7 +103,6 @@ func setupRoutes(r *gin.Engine, ctrl *Controllers) {
 	route.OptionRoutes(r, ctrl.Option)
 	route.ExamScoreRoutes(r, ctrl.ExamScore)
 	route.ExamSessionRoutes(r, ctrl.ExamSession)
-	route.ExamQuestionRoutes(r, ctrl.ExamQuestion)
 	route.SubjectRoutes(r, ctrl.Subject)
 	route.XlsPathRoutes(r, ctrl.XlsPath)
 	route.UserAnswerRoutes(r, ctrl.UserAnswer)

@@ -80,3 +80,19 @@ export const deleteExam = async (id) => {
     throw error;
   }
 };
+
+export const addQuestions = async (id, data) => {
+  console.log(data)
+  const res = await ApiHandler.put(`/${EXAM}/q/add/${id}`, data)
+  return res.data.data
+}
+
+export const replaceQuestions = async (id, data) => {
+  const res = await ApiHandler.put(`/${EXAM}/q/replace/${id}`, data)
+  return res.data.data
+}
+
+export const removeQuestions = async (id, data) => {
+  const res = await ApiHandler.delete(`/${EXAM}/q/${id}`, data)
+  return res.data.data
+}
