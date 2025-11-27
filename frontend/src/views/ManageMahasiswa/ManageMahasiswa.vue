@@ -112,7 +112,7 @@
 
     <div
       v-if="showModal"
-      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 transition-opacity p-4"
+      class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50 transition-opacity p-4"
     >
       <div class="bg-white rounded-lg shadow-lg p-6 w-full md:max-w-md max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-semibold mb-4 border-b pb-2">
@@ -249,7 +249,7 @@
     
     <div
       v-if="showGenerateModal"
-      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 transition-opacity p-4"
+      class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50 transition-opacity p-4"
     >
       <div class="bg-white rounded-lg shadow-lg p-6 w-full md:max-w-md">
         <h3 class="text-lg font-semibold mb-4 border-b pb-2">
