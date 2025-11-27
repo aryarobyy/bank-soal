@@ -9,16 +9,20 @@ type ExamScore struct {
 	TotalScore int    `json:"total_score"`
 	Status     Status `json:"status" gorm:"default:'not_passed'" validate:"oneof=passed not_passed"`
 
+	User      *User     `json:"user" gorm:"foreignKey:UserId;constraint:OnDelete:CASCADE;"`
 	CreatedAt time.Time `json:"created_at" gorm:"index"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ExamScoreResponse struct {
-	Id         int       `json:"id"`
-	ExamId     int       `json:"exam_id"`
-	UserId     int       `json:"user_id"`
-	TotalScore int       `json:"total_score"`
-	Status     Status    `json:"status"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	Id         int    `json:"id"`
+	ExamId     int    `json:"exam_id"`
+	UserId     int    `json:"user_id"`
+	TotalScore int    `json:"total_score"`
+	Status     Status `json:"status"`
+
+	User *User `json:"user" gorm:"foreignKey:UserId;constraint:OnDelete:CASCADE;"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

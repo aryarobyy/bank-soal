@@ -19,6 +19,18 @@ type Exam struct {
 	Questions []Question `json:"questions" gorm:"many2many:exam_questions;"`
 }
 
+type CreateExam struct {
+	Title       string     `json:"title" validate:"required"`
+	Description string     `json:"description"`
+	Difficulty  string     `json:"difficulty" validate:"required,oneof=easy medium hard"`
+	LongTime    int        `json:"long_time" validate:"required,min=1"`
+	CreatorId   int        `json:"creator_id" validate:"required"`
+	StartedAt   *time.Time `json:"started_at"`
+	FinishedAt  *time.Time `json:"finished_at"`
+	Score       int        `json:"score"`
+	QuestionIds []int      `json:"question_ids" validate:"required"`
+}
+
 type ExamResponse struct {
 	Id          int        `json:"id"`
 	Title       string     `json:"title"`
@@ -32,4 +44,8 @@ type ExamResponse struct {
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type QuestionsPayload struct {
+	QuestionIds []int `json:"question_ids"`
 }

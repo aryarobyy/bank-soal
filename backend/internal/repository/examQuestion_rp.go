@@ -23,13 +23,6 @@ func NewExamQuestionRepository(db *gorm.DB) ExamQuestionRepository {
 }
 
 func (r *examQuestionRepository) AddQuestionToExam(ctx context.Context, examId int, questionIds []int) error {
-	var exam model.Exam
-	if err := r.db.WithContext(ctx).
-		First(&exam, examId).
-		Error; err != nil {
-		return err
-	}
-
 	var questions []model.Question
 	if err := r.db.WithContext(ctx).
 		Where("id IN ?", questionIds).
@@ -39,19 +32,12 @@ func (r *examQuestionRepository) AddQuestionToExam(ctx context.Context, examId i
 	}
 
 	return r.db.WithContext(ctx).
-		Model(&exam).
-		Association("Questions").
+		Model(model.Exam{}).
+		Association("Question").
 		Append(&questions)
 }
 
 func (r *examQuestionRepository) UpdateQuestionsInExam(ctx context.Context, examId int, questionIds []int) error {
-	var exam model.Exam
-	if err := r.db.WithContext(ctx).
-		First(&exam, examId).
-		Error; err != nil {
-		return err
-	}
-
 	var questions []model.Question
 	if err := r.db.WithContext(ctx).
 		Where("id IN ?", questionIds).
@@ -61,19 +47,12 @@ func (r *examQuestionRepository) UpdateQuestionsInExam(ctx context.Context, exam
 	}
 
 	return r.db.WithContext(ctx).
-		Model(&exam).
-		Association("Questions").
+		Model(model.Exam{}).
+		Association("Question").
 		Replace(&questions)
 }
 
 func (r *examQuestionRepository) RemoveQuestionsFromExam(ctx context.Context, examId int, questionIds []int) error {
-	var exam model.Exam
-	if err := r.db.WithContext(ctx).
-		First(&exam, examId).
-		Error; err != nil {
-		return err
-	}
-
 	var questions []model.Question
 	if err := r.db.WithContext(ctx).
 		Where("id IN ?", questionIds).
@@ -83,8 +62,8 @@ func (r *examQuestionRepository) RemoveQuestionsFromExam(ctx context.Context, ex
 	}
 
 	return r.db.WithContext(ctx).
-		Model(&exam).
-		Association("Questions").
+		Model(model.Exam{}).
+		Association("Question").
 		Delete(&questions)
 }
 
@@ -92,7 +71,7 @@ func (r *examQuestionRepository) GetByExamId(ctx context.Context, examId int) ([
 	var examQuestions []model.ExamQuestion
 
 	if err := r.db.WithContext(ctx).
-		Preload("Questions").
+		Preload("Question").
 		Where("exam_id = ?", examId).
 		Find(&examQuestions).Error; err != nil {
 		return nil, err

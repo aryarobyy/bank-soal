@@ -23,6 +23,9 @@ func ExamRoutes(r *gin.Engine, exam *controller.ExamController) {
 			auth.GET("/id", exam.GetById)
 			auth.PUT("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), exam.Update)
 			auth.DELETE("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), exam.Delete)
+			auth.PUT("/q/add/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), middleware.InputValidateJson([]string{"question_ids"}), exam.AddQuestions)
+			auth.PUT("/q/replace/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), middleware.InputValidateJson([]string{"question_ids"}), exam.ReplaceQuestions)
+			auth.DELETE("/q/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), middleware.InputValidateJson([]string{"question_ids"}), exam.RemoveQuestions)
 		}
 	}
 }

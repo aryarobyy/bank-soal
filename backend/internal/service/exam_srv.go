@@ -2,20 +2,25 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
+	"gorm.io/gorm"
 	"latih.in-be/internal/model"
 	"latih.in-be/internal/repository"
 	"latih.in-be/utils/helper"
 )
 
 type ExamService interface {
-	Create(ctx context.Context, data model.Exam) error
+	Create(ctx context.Context, data model.CreateExam) error
 	GetById(ctx context.Context, id int) (*model.Exam, error)
 	Update(ctx context.Context, newData model.Exam, id int, userId int) (*model.Exam, error)
 	Delete(ctx context.Context, id int, userId int) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.Exam, int64, error)
+	AddQuestions(ctx context.Context, examId int, questionIds []int) error
+	ReplaceQuestions(ctx context.Context, examId int, questionIds []int) error
+	RemoveQuestions(ctx context.Context, examId int, questionIds []int) error
 }
 
 type examService struct {
@@ -35,7 +40,8 @@ func NewExamService(
 		questionRepo: questionRepo,
 	}
 }
-func (s *examService) Create(ctx context.Context, data model.Exam) error {
+
+func (s *examService) Create(ctx context.Context, data model.CreateExam) error {
 	if data.FinishedAt.Before(*data.StartedAt) {
 		return fmt.Errorf("finished_at must be after started_at")
 	}
@@ -46,6 +52,7 @@ func (s *examService) Create(ctx context.Context, data model.Exam) error {
 
 	return nil
 }
+
 func (s *examService) GetById(ctx context.Context, id int) (*model.Exam, error) {
 	data, err := s.repo.GetById(ctx, id)
 	if err != nil {
@@ -115,5 +122,112 @@ func (s *examService) Delete(ctx context.Context, id int, userId int) error {
 	if err := s.repo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("failed to delete data: %w", err)
 	}
+	return nil
+}
+
+func (s *examService) AddQuestions(ctx context.Context, examId int, questionIds []int) error {
+	exam, err := s.repo.GetById(ctx, examId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("exam with id %d not found", examId)
+		}
+		return fmt.Errorf("failed to get exam: %w", err)
+	}
+
+	addedScore := 0
+
+	for _, qid := range questionIds {
+		q, err := s.questionRepo.GetById(ctx, qid)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("question with id %d not found", qid)
+			}
+			return fmt.Errorf("failed to get question %d: %w", qid, err)
+		}
+
+		addedScore += q.Score
+	}
+
+	finalScore := exam.Score + addedScore
+
+	if err := s.repo.AddQuestions(ctx, examId, questionIds); err != nil {
+		return fmt.Errorf("failed to add questions: %w", err)
+	}
+
+	if err := s.repo.UpdateScore(ctx, examId, finalScore); err != nil {
+		return fmt.Errorf("failed to update exam score: %w", err)
+	}
+
+	return nil
+}
+
+func (s *examService) ReplaceQuestions(ctx context.Context, examId int, questionIds []int) error {
+	_, err := s.repo.GetById(ctx, examId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("exam with id %d not found", examId)
+		}
+		return fmt.Errorf("failed to get exam: %w", err)
+	}
+
+	newTotal := 0
+
+	for _, qid := range questionIds {
+		q, err := s.questionRepo.GetById(ctx, qid)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("question with id %d not found", qid)
+			}
+			return fmt.Errorf("failed to get question %d: %w", qid, err)
+		}
+		newTotal += q.Score
+	}
+
+	if err := s.repo.ReplaceQuestions(ctx, examId, questionIds); err != nil {
+		return fmt.Errorf("failed to replace exam questions: %w", err)
+	}
+
+	if err := s.repo.UpdateScore(ctx, examId, newTotal); err != nil {
+		return fmt.Errorf("failed to update exam total score: %w", err)
+	}
+
+	return nil
+}
+
+func (s *examService) RemoveQuestions(ctx context.Context, examId int, questionIds []int) error {
+	exam, err := s.repo.GetById(ctx, examId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("exam with id %d not found", examId)
+		}
+		return fmt.Errorf("failed to get exam: %w", err)
+	}
+
+	reduce := 0
+
+	for _, qid := range questionIds {
+		q, err := s.questionRepo.GetById(ctx, qid)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("question with id %d not found", qid)
+			}
+			return fmt.Errorf("failed to get question %d: %w", qid, err)
+		}
+		reduce += q.Score
+	}
+
+	if err := s.repo.RemoveQuestions(ctx, examId, questionIds); err != nil {
+		return fmt.Errorf("failed to remove exam questions: %w", err)
+	}
+
+	final := exam.Score - reduce
+	if final < 0 {
+		final = 0
+	}
+
+	if err := s.repo.UpdateScore(ctx, examId, final); err != nil {
+		return fmt.Errorf("failed to update exam total score: %w", err)
+	}
+
 	return nil
 }
