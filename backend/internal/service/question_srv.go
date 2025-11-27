@@ -35,8 +35,6 @@ type questionService struct {
 	optRepo  repository.OptionRepository
 }
 
-// optionRepoAdapter adapts repository.OptionRepository so its Update method
-// matches the signature expected by update.OptionValidation (returns interface{}).
 type optionRepoAdapter struct {
 	r repository.OptionRepository
 }

@@ -20,6 +20,7 @@ type QuestionRepository interface {
 	GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, int64, error)
 	GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, int64, error)
 	GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, int64, error)
+	GetByExamId(ctx context.Context, examId int) ([]model.Question, error)
 }
 
 type questionRepository struct {
@@ -84,29 +85,30 @@ func (r *questionRepository) GetMany(ctx context.Context, limit int, offset int)
 
 func (r *questionRepository) GetByExam(ctx context.Context, examId int, limit int, offset int) ([]model.Question, int64, error) {
 	var (
-		q     []model.Question
-		total int64
+		questions []model.Question
+		total     int64
 	)
 
-	baseQuery := r.db.WithContext(ctx).
+	base := r.db.WithContext(ctx).
 		Model(&model.Question{}).
 		Joins("JOIN exam_questions eq ON eq.question_id = questions.id").
-		Where("eq.exam_id = ?", examId)
+		Where("eq.exam_id = ?", examId).
+		Distinct()
 
-	if err := baseQuery.Count(&total).Error; err != nil {
+	if err := base.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := baseQuery.
+	if err := base.
 		Preload("Subject").
 		Preload("Options").
 		Limit(limit).
 		Offset(offset).
-		Find(&q).Error; err != nil {
+		Find(&questions).Error; err != nil {
 		return nil, 0, err
 	}
 
-	return q, total, nil
+	return questions, total, nil
 }
 
 func (r *questionRepository) Update(ctx context.Context, q model.UpdateQuestion, id int) (*model.Question, error) {
@@ -160,10 +162,7 @@ func (r *questionRepository) Update(ctx context.Context, q model.UpdateQuestion,
 
 func (r *questionRepository) Delete(ctx context.Context, id int) error {
 	if err := r.db.WithContext(ctx).
-		Joins("JOIN exam_questions eq ON eq.question_id = questions.id AND options o ON o.question_id = question.id").
-		Where("id = ?", id).
-		Delete(&model.Question{}).
-		Delete(id).
+		Delete(&model.Question{}, id).
 		Error; err != nil {
 		return err
 	}
@@ -282,4 +281,16 @@ func (r *questionRepository) GetBySubject(ctx context.Context, subjectId int, li
 		return nil, 0, err
 	}
 	return q, total, nil
+}
+
+func (r *questionRepository) GetByExamId(ctx context.Context, examId int) ([]model.Question, error) { //Khsusus be jgn dibuatin endpoint
+	var exam model.Exam
+
+	if err := r.db.WithContext(ctx).
+		Preload("Questions").
+		First(&exam, examId).Error; err != nil {
+		return nil, err
+	}
+
+	return exam.Questions, nil
 }
