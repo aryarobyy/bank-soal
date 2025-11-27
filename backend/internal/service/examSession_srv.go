@@ -17,15 +17,14 @@ type ExamSessionService interface {
 	Delete(ctx context.Context, id int) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.ExamSession, error)
 	UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error)
-	FinishExam(ctx context.Context, userId int, id int) (*model.FinishExamOutput, error)
+	FinishExam(ctx context.Context, userId int, id int) (*model.ExamSession, error)
 }
 
 type examSessionService struct {
-	repo             repository.ExamSessionRepository
-	examRepo         repository.ExamRepository
-	answerRepo       repository.UserAnswerRepository
-	questionRepo     repository.QuestionRepository
-	examQuestionRepo repository.ExamQuestionRepository
+	repo         repository.ExamSessionRepository
+	examRepo     repository.ExamRepository
+	answerRepo   repository.UserAnswerRepository
+	questionRepo repository.QuestionRepository
 }
 
 func NewExamSessionService(
@@ -33,14 +32,12 @@ func NewExamSessionService(
 	examRepo repository.ExamRepository,
 	answerRepo repository.UserAnswerRepository,
 	questionRepo repository.QuestionRepository,
-	examQuestionRepo repository.ExamQuestionRepository,
 ) ExamSessionService {
 	return &examSessionService{
-		repo:             repo,
-		examRepo:         examRepo,
-		answerRepo:       answerRepo,
-		questionRepo:     questionRepo,
-		examQuestionRepo: examQuestionRepo,
+		repo:         repo,
+		examRepo:     examRepo,
+		answerRepo:   answerRepo,
+		questionRepo: questionRepo,
 	}
 }
 
@@ -113,7 +110,7 @@ func (s *examSessionService) UpdateCurrNo(ctx context.Context, id int, no model.
 	return updated, nil
 }
 
-func (s *examSessionService) FinishExam(ctx context.Context, userId int, id int) (*model.FinishExamOutput, error) {
+func (s *examSessionService) FinishExam(ctx context.Context, userId int, id int) (*model.ExamSession, error) {
 	session, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find session: %w", err)
@@ -157,16 +154,16 @@ func (s *examSessionService) calculateScore(ctx context.Context, userId, session
 		return 0, 0, fmt.Errorf("failed to get user answers: %w", err)
 	}
 
-	examQuestions, err := s.examQuestionRepo.GetByExamId(ctx, examId)
+	examQuestions, err := s.questionRepo.GetByExamId(ctx, examId)
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to get exam questions: %w", err)
 	}
 
 	maxScore := 0
 	for _, eq := range examQuestions {
-		question, err := s.questionRepo.GetById(ctx, eq.QuestionId)
+		question, err := s.questionRepo.GetById(ctx, eq.Id)
 		if err != nil {
-			return 0, 0, fmt.Errorf("failed to get question %d: %w", eq.QuestionId, err)
+			return 0, 0, fmt.Errorf("failed to get question %d: %w", eq.Id, err)
 		}
 		maxScore += question.Score
 	}
