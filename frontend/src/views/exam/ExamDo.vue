@@ -111,9 +111,11 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
+
 // Providers
 import { getExamById } from "../../provider/exam.provider";
-import { getExamQuestions } from "../../provider/examquestion.provider";
+// PERUBAHAN: Ganti import getExamQuestions jadi getQuestionsByExam
+import { getQuestionsByExam } from "../../provider/question.provider"; 
 import { submitUserAnswer } from "../../provider/useranswer.provider";
 import { finishExamSession, updateCurrentNo } from "../../provider/examsession.provider";
 
@@ -185,8 +187,10 @@ onMounted(async () => {
     const examRes = await getExamById(examId);
     exam.value = examRes?.data || examRes;
 
-    // 2. Get Questions
-    const qRes = await getExamQuestions(examId);
+    // 2. Get Questions (PERUBAHAN: Pakai getQuestionsByExam)
+    const qRes = await getQuestionsByExam(examId);
+    
+    // Handle response (Array langsung atau dibungkus .data)
     questions.value = Array.isArray(qRes) ? qRes : qRes.data || [];
 
     // 3. Setup array jawaban kosong
@@ -237,39 +241,28 @@ const finishExam = async () => {
 
   try {
     // 2. Ambil Data & Validasi
-    // Gunakan Number() untuk memaksa konversi ke angka
     const sessionId = Number(route.query.session_id);
     const examId = Number(route.query.id); 
     
-    // Ambil User ID (Prioritas: dari State > LocalStorage)
+    // Ambil User ID
     let userId = user.value?.id;
     if (!userId) {
         userId = Number(localStorage.getItem("id"));
     }
 
-    // --- DEBUGGING (Cek di Console Browser) ---
-    console.log("DEBUG FINISH EXAM:", {
-        sessionId,
-        examId,
-        userId
-    });
+    console.log("DEBUG FINISH EXAM:", { sessionId, examId, userId });
 
     // 3. Validasi Ketat
     if (!sessionId || isNaN(sessionId)) {
-      alert("Error: Session ID hilang. Silakan refresh halaman atau login ulang.");
+      alert("Error: Session ID hilang. Silakan refresh halaman.");
       return;
     }
     if (!userId || isNaN(userId)) {
-      alert("Error: User ID tidak valid. Silakan login ulang.");
-      return;
-    }
-    if (!examId || isNaN(examId)) {
-      alert("Error: Exam ID tidak valid.");
+      alert("Error: User ID tidak valid.");
       return;
     }
 
     // 4. Kirim Jawaban (Looping)
-    // (Bagian ini biarkan seperti kode sebelumnya...)
     for (let i = 0; i < questions.value.length; i++) {
       const q = questions.value[i];
       const selectedId = answers.value[i];
@@ -287,10 +280,10 @@ const finishExam = async () => {
       }
     }
 
-    // 5. FINISH SESSION (Payload yang Benar)
+    // 5. FINISH SESSION (Sesuai perbaikan terakhir)
     const payload = {
-      user_id: userId,  // Pastikan ini Number
-      exam_id: examId   // Pastikan ini Number
+      session_id: sessionId,
+      user_id: userId
     };
 
     console.log("Mengirim Payload ke Backend:", payload);
@@ -303,14 +296,12 @@ const finishExam = async () => {
   } catch (err) {
     console.error("FinishExam Error Full:", err);
     
-    // Tampilkan pesan error yang lebih jelas
     const backendMsg = err.response?.data?.message;
     if (backendMsg === "failed to find session: record not found") {
-        alert("Gagal: Sesi ujian tidak ditemukan di server. Kemungkinan sesi sudah selesai atau belum dimulai dengan benar.");
+        alert("Gagal: Sesi ujian tidak ditemukan di server.");
     } else {
         alert(`Gagal menyelesaikan ujian: ${backendMsg || "Terjadi kesalahan server."}`);
     }
   }
 };
-
 </script>
