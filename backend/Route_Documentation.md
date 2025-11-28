@@ -5,10 +5,10 @@ Dokumentasi ini menjelaskan semua route yang tersedia dalam aplikasi bank soal i
 ## Daftar Isi
 - [Route User](#route-user)
 - [Route Exam](#route-exam)
+- [Route Exam Question](#route-exam-question)
 - [Route Subject](#route-subject)
 - [Route Question](#route-question)
 - [Route Option](#route-option)
-- [Route Exam Question](#route-exam-question)
 - [Route Exam Session](#route-exam-session)
 - [Route Exam Score](#route-exam-score)
 - [Route User Answer](#route-user-answer)
@@ -82,6 +82,20 @@ Route untuk mengelola data pengguna dalam sistem.
 - **Akses**: Terotentikasi
 - **Parameter Query**:
   - `nim` (string, wajib): NIM pengguna
+
+### GET /user/nidn
+- **Deskripsi**: Mendapatkan data pengguna berdasarkan NIDN
+- **Metode HTTP**: GET
+- **Akses**: Terotentikasi
+- **Parameter Query**:
+  - `nidn` (string, wajib): NIDN pengguna
+
+### GET /user/username
+- **Deskripsi**: Mendapatkan data pengguna berdasarkan username
+- **Metode HTTP**: GET
+- **Akses**: Terotentikasi
+- **Parameter Query**:
+  - `username` (string, wajib): Username pengguna
 
 ### GET /user/name
 - **Deskripsi**: Mendapatkan data pengguna berdasarkan nama
@@ -222,6 +236,37 @@ Route untuk mengelola data ujian dalam sistem.
 - **Parameter Path**:
   - `id` (integer, wajib): ID ujian yang akan dihapus
 
+## Route Exam Question
+
+Route untuk mengelola relasi antara ujian dan soal.
+
+### PUT /exam/q/add/:id
+- **Deskripsi**: Menambahkan soal ke dalam ujian
+- **Metode HTTP**: PUT
+- **Akses**: Terotentikasi (Role Admin atau Dosen)
+- **Parameter Path**:
+  - `id` (integer, wajib): ID ujian
+- **Parameter Request (JSON)**:
+  - `question_ids` (array integer, wajib): Array ID soal
+
+### PUT /exam/q/replace/:id
+- **Deskripsi**: Mengganti soal dalam ujian
+- **Metode HTTP**: PUT
+- **Akses**: Terotentikasi (Role Admin atau Dosen)
+- **Parameter Path**:
+  - `id` (integer, wajib): ID ujian
+- **Parameter Request (JSON)**:
+  - `question_ids` (array integer, wajib): Array ID soal baru
+
+### DELETE /exam/q/:id
+- **Deskripsi**: Menghapus soal dari ujian
+- **Metode HTTP**: DELETE
+- **Akses**: Terotentikasi (Role Admin atau Dosen)
+- **Parameter Path**:
+  - `id` (integer, wajib): ID ujian
+- **Parameter Request (JSON)**:
+  - `question_ids` (array integer, wajib): Array ID soal yang akan dihapus
+
 ## Route Subject
 
 Route untuk mengelola data mata kuliah dalam sistem.
@@ -297,6 +342,16 @@ Route untuk mengelola data soal dalam sistem.
   "question_text": "Berapa hasil dari 2 + 2?"
 }
 ```
+
+### POST /question/ (Form Data)
+- **Deskripsi**: Membuat soal baru beserta pilihan jawaban (dengan skor)
+- **Metode HTTP**: POST
+- **Akses**: Terotentikasi (Role Admin atau Dosen)
+- **Parameter Request (Form)**:
+  - `score` (integer, wajib): Skor soal
+  - `creator_id` (integer, wajib): ID pembuat soal
+  - `question_text` (string, wajib): Teks soal
+  - `difficulty` (string, wajib): Tingkat kesulitan soal ("easy", "medium", "hard")
 
 ### POST /question/options
 - **Deskripsi**: Membuat soal baru beserta pilihan jawabannya
@@ -506,11 +561,19 @@ Route untuk mengelola sesi ujian dalam sistem.
   - `current_no` (integer, wajib): Nomor soal saat ini
 
 ### PUT /exam-session/:id/finish
-- **Deskripsi**: Menyelesaikan sesi ujian
+- **Deskripsi**: Menyelesaikan sesi ujian (lama - deprecated)
 - **Metode HTTP**: PUT
 - **Akses**: Terotentikasi
 - **Parameter Path**:
   - `id` (integer, wajib): ID sesi ujian
+
+### PUT /exam-session/finish
+- **Deskripsi**: Menyelesaikan sesi ujian (baru)
+- **Metode HTTP**: PUT
+- **Akses**: Terotentikasi
+- **Parameter Request (JSON)**:
+  - `session_id` (integer, wajib): ID sesi ujian
+  - `user_id` (integer, wajib): ID pengguna
 
 ### DELETE /exam-session/:id
 - **Deskripsi**: Menghapus sesi ujian
@@ -586,13 +649,15 @@ Route untuk mengelola jawaban pengguna dalam sistem.
   - `user_id` (integer, wajib): ID pengguna
   - `question_id` (integer, wajib): ID soal
   - `answer` (string, wajib): Jawaban yang dipilih
+  - `exam_id` (integer, wajib): ID ujian
 - **Contoh Request**:
 ```json
 {
   "exam_session_id": 1,
   "user_id": 1,
   "question_id": 1,
-  "answer": "A"
+  "answer": "A",
+  "exam_id": 1
 }
 ```
 
@@ -662,6 +727,13 @@ Route untuk mengelola file Excel dalam sistem.
 
 ### GET /xlspath/id
 - **Deskripsi**: Mendapatkan data file Excel berdasarkan ID
+- **Metode HTTP**: GET
+- **Akses**: Terotentikasi (Role Admin)
+- **Parameter Query**:
+  - `id` (integer, wajib): ID file Excel
+
+### GET /xlspath/download
+- **Deskripsi**: Mendownload file Excel
 - **Metode HTTP**: GET
 - **Akses**: Terotentikasi (Role Admin)
 - **Parameter Query**:
