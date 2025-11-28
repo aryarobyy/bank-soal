@@ -72,7 +72,7 @@ func (s *examSessionService) GetById(ctx context.Context, id int) (*model.ExamSe
 		return nil, fmt.Errorf("failed to get session: %w", err)
 	}
 	
-	if  data.FinishedAt ! && data.FinishedAt.After(time.Now()) {
+	if data.FinishedAt != nil && data.FinishedAt.After(time.Now()) {
 		return nil, fmt.Errorf("session %d already finished", id)
 	}
 
