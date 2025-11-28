@@ -71,8 +71,8 @@ func (s *examSessionService) GetById(ctx context.Context, id int) (*model.ExamSe
 		}
 		return nil, fmt.Errorf("failed to get session: %w", err)
 	}
-
-	if data.FinishedAt.Before(time.Now()) {
+	
+	if  data.FinishedAt ! && data.FinishedAt.After(time.Now()) {
 		return nil, fmt.Errorf("session %d already finished", id)
 	}
 
@@ -183,6 +183,6 @@ func (s *examSessionService) calculateScore(ctx context.Context, userId, session
 			userScore += question.Score
 		}
 	}
-	fmt.Println("tsaysadus saskas", userScore, maxScore)
+	fmt.Print("tsaysadus saskas", userScore, maxScore)
 	return userScore, maxScore, nil
 }
