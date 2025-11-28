@@ -19,6 +19,7 @@ type ExamRepository interface {
 	AddQuestions(ctx context.Context, examId int, questionIds []int) error
 	ReplaceQuestions(ctx context.Context, examId int, questionIds []int) error
 	RemoveQuestions(ctx context.Context, examId int, questionIds []int) error
+	CheckQuestion(ctx context.Context, examId int, questionId int) (bool, error)
 }
 
 type examRepository struct {
@@ -228,4 +229,13 @@ func (r *examRepository) RemoveQuestions(ctx context.Context, examId int, questi
 		return err
 	}
 	return nil
+}
+
+func (r *examRepository) CheckQuestion(ctx context.Context, examId int, questionId int) (bool, error) {
+	if err := r.db.WithContext(ctx).
+		Where("exam_id = ? AND  question_id = ?", examId, questionId).
+		First(&model.ExamQuestion{}).Error; err != nil {
+		return false, err
+	}
+	return true, nil
 }

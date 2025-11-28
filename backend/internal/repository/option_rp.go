@@ -100,7 +100,7 @@ func (r *optionRepository) CheckCorrectAnswer(ctx context.Context, qId int, answ
 		Where("question_id = ? AND option_label = ?", qId, answer).
 		First(&option).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return false, err
+			return false, nil
 		}
 		return false, err
 	}

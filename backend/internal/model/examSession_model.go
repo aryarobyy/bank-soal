@@ -11,6 +11,8 @@ type ExamSession struct {
 	Status     SessionStatus `json:"status" gorm:"default:'in_progress'"`
 	CurrentNo  int           `json:"current_no" gorm:"default:1"`
 	Score      int           `json:"score"`
+	MaxScore   int           `json:"max_score"`
+	Percentage float64       `json:"percentage" gorm:"default:0.0"`
 	IsPassed   bool          `json:"is_passed" gorm:"default:false"`
 
 	CreatedAt time.Time `json:"created_at" gorm:"index"`
@@ -45,6 +47,8 @@ type FinishExam struct {
 	FinishedAt time.Time     `json:"finished_at"`
 	Status     SessionStatus `json:"status" gorm:"default:'finished'"`
 	Score      int           `json:"score"`
+	MaxScore   int           `json:"max_score"`
+	Percentage float64       `json:"percentage"`
 }
 
 type SessionResponse struct {
@@ -56,6 +60,8 @@ type SessionResponse struct {
 	Status     SessionStatus `json:"status" gorm:"default:'in_progress'"`
 	CurrentNo  int           `json:"current_no" gorm:"not null"`
 	Score      *float64      `json:"score"`
+	MaxScore   int           `json:"max_score"`
+	Percentage float64       `json:"percentage"`
 	IsPassed   bool          `json:"is_passed" gorm:"default:false"`
 
 	UserAnswers []UserAnswer `gorm:"foreignKey:ExamSessionId"`
@@ -65,4 +71,5 @@ type FinishExamOutput struct {
 	FinishedAt time.Time     `json:"finished_at"`
 	Status     SessionStatus `json:"status" gorm:"default:'finished'"`
 	Score      int           `json:"score"`
+	Percentage float64       `json:"percentage"`
 }

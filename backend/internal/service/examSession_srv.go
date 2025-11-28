@@ -128,8 +128,10 @@ func (s *examSessionService) FinishExam(ctx context.Context, userId int, id int)
 
 	now := time.Now()
 	session.FinishedAt = &now
-	session.Score = int(percentageScore)
+	session.Percentage = percentageScore
 	session.Status = model.SessionFinished
+	session.Score = userScore
+	session.MaxScore = maxScore
 	if percentageScore >= 75.0 {
 		session.IsPassed = true
 	}
@@ -138,6 +140,8 @@ func (s *examSessionService) FinishExam(ctx context.Context, userId int, id int)
 		FinishedAt: *session.FinishedAt,
 		Status:     session.Status,
 		Score:      session.Score,
+		Percentage: session.Percentage,
+		MaxScore:   session.MaxScore,
 	}
 
 	updated, err := s.repo.FinishExam(ctx, id, data)
@@ -170,6 +174,7 @@ func (s *examSessionService) calculateScore(ctx context.Context, userId, session
 
 	userScore := 0
 	for _, answer := range userAnswers {
+		fmt.Println("skaksdosak saksdk", answer.Id, answer.QuestionId, answer.IsCorrect)
 		if answer.IsCorrect {
 			question, err := s.questionRepo.GetById(ctx, answer.QuestionId)
 			if err != nil {
@@ -178,6 +183,6 @@ func (s *examSessionService) calculateScore(ctx context.Context, userId, session
 			userScore += question.Score
 		}
 	}
-
+	fmt.Println("tsaysadus saskas", userScore, maxScore)
 	return userScore, maxScore, nil
 }

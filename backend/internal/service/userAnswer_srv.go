@@ -22,16 +22,28 @@ type UserAnswerService interface {
 type userAnswerService struct {
 	repo       repository.UserAnswerRepository
 	optionRepo repository.OptionRepository
+	examRepo   repository.ExamRepository
 }
 
-func NewUserAnswerService(repo repository.UserAnswerRepository, optionRepo repository.OptionRepository) UserAnswerService {
+func NewUserAnswerService(
+	repo repository.UserAnswerRepository,
+	optionRepo repository.OptionRepository,
+	examRepo repository.ExamRepository,
+) UserAnswerService {
 	return &userAnswerService{
 		repo:       repo,
 		optionRepo: optionRepo,
+		examRepo:   examRepo,
 	}
 }
 
 func (s *userAnswerService) Create(ctx context.Context, userAnswer *model.UserAnswer) error {
+	fmt.Println("skdsaoksksos", userAnswer.ExamId, userAnswer.ExamSessionId, userAnswer.QuestionId)
+	_, err := s.examRepo.CheckQuestion(ctx, userAnswer.ExamId, userAnswer.QuestionId)
+	if err != nil {
+		return fmt.Errorf("this question didnt include in exam")
+	}
+
 	checkAnswer, err := s.optionRepo.CheckCorrectAnswer(ctx, userAnswer.QuestionId, userAnswer.Answer)
 	if err != nil {
 		return fmt.Errorf("failed to check correct answer: %w", err)

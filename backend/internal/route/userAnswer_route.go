@@ -15,7 +15,7 @@ func UserAnswerRoutes(r *gin.Engine, userAnswer *controller.UserAnswerController
 		{
 			auth.POST("/", middleware.InputValidateJson([]string{
 				"exam_session_id", "user_id",
-				"question_id", "answer",
+				"question_id", "answer", "exam_id",
 			}), userAnswer.Create)
 			auth.GET("/", userAnswer.GetMany)
 			auth.GET("/id", userAnswer.GetById)
