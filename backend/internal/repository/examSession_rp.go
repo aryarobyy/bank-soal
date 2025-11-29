@@ -19,6 +19,7 @@ type ExamSessionRepository interface {
 	FinishExam(ctx context.Context, id int, e model.FinishExam) (*model.ExamSession, error)
 	CheckUserSession(ctx context.Context, userId int, examId int) error
 	GetScore(ctx context.Context, sessionId int, userId int) (*model.ExamSession, error)
+	GetUserSession(ctx context.Context, userId int, limit int, offset int) ([]model.ExamSession, int64, error)
 }
 
 type examSessionRepository struct {
@@ -184,4 +185,26 @@ func (r *examSessionRepository) GetScore(ctx context.Context, sessionId int, use
 	}
 
 	return &session, nil
+}
+
+func (r *examSessionRepository) GetUserSession(ctx context.Context, userId int, limit int, offset int) ([]model.ExamSession, int64, error) {
+	var (
+		sessions []model.ExamSession
+		total    int64
+	)
+
+	if err := r.db.WithContext(ctx).
+		Where("user_id = ?", userId).
+		Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := r.db.WithContext(ctx).
+		Where("user_id = ?", userId).
+		Find(&sessions).
+		Error; err != nil {
+		return nil, 0, err
+	}
+
+	return sessions, total, nil
 }
