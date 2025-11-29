@@ -21,6 +21,7 @@ func ExamSessionRoutes(r *gin.Engine, examSession *controller.ExamSessionControl
 			auth.PUT("/finish", middleware.InputValidateJson([]string{"session_id", "user_id"}), examSession.FinishExam)
 			auth.DELETE("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), examSession.Delete)
 			auth.GET("/score", examSession.GetScore)
+			auth.GET("/user", examSession.GetUserSession)
 		}
 	}
 }
