@@ -213,11 +213,11 @@ func (h *ExamSessionController) GetScore(c *gin.Context) {
 func (h *ExamSessionController) GetUserSession(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userIdVal, exists := c.Get("user_id")
-	if !exists {
-		helper.Error(c, http.StatusUnauthorized, "user id not found in context %w")
-		return
-	}
+	sessionIdStr := c.Query("id")
+	sessionId := helper.BindToInt(sessionIdStr)
+
+	userIdStr := c.Query("user_id")
+	userId := helper.BindToInt(userIdStr)
 
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
@@ -225,9 +225,7 @@ func (h *ExamSessionController) GetUserSession(c *gin.Context) {
 		return
 	}
 
-	userId := userIdVal.(int)
-
-	data, total, err := h.service.GetUserSession(ctx, userId, limit, offset)
+	data, total, err := h.service.GetUserSession(ctx, sessionId, userId, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 	}
