@@ -154,7 +154,9 @@ func (h *ExamSessionController) UpdateCurrNo(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	sessionsRes := response.SessionResponse(*data)
+
+	helper.Success(c, sessionsRes, "data found")
 }
 
 func (h *ExamSessionController) FinishExam(c *gin.Context) {
@@ -206,4 +208,32 @@ func (h *ExamSessionController) GetScore(c *gin.Context) {
 	}
 
 	helper.Success(c, scoreRes, "score found")
+}
+
+func (h *ExamSessionController) GetUserSession(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	userIdVal, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "user id not found in context %w")
+		return
+	}
+
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	userId := userIdVal.(int)
+
+	data, total, err := h.service.GetUserSession(ctx, userId, limit, offset)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	sessionsRes := response.SessionsResponse(data)
+
+	helper.Success(c, gin.H{"data": sessionsRes, "total": total}, "get data success")
 }

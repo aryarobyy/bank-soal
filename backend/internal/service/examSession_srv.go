@@ -19,6 +19,7 @@ type ExamSessionService interface {
 	UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error)
 	FinishExam(ctx context.Context, userId int, id int) (*model.ExamSession, error)
 	GetScore(ctx context.Context, sessionId int, userId int) (*model.ExamSession, error)
+	GetUserSession(ctx context.Context, userId int, limit int, offset int) ([]model.ExamSession, int64, error)
 }
 
 type examSessionService struct {
@@ -194,4 +195,12 @@ func (s *examSessionService) GetScore(ctx context.Context, sessionId int, userId
 		return nil, fmt.Errorf("failed to get score: %w", err)
 	}
 	return data, nil
+}
+
+func (s *examSessionService) GetUserSession(ctx context.Context, userId int, limit int, offset int) ([]model.ExamSession, int64, error) {
+	data, total, err := s.repo.GetUserSession(ctx, userId, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get user session: %w", err)
+	}
+	return data, total, nil
 }
