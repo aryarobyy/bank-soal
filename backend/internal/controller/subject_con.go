@@ -122,7 +122,7 @@ func (h *SubjectController) Update(c *gin.Context) {
 func (h *SubjectController) Delete(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	idStr := c.Query("id")
+	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid id")

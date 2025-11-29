@@ -67,9 +67,17 @@ type SessionResponse struct {
 	UserAnswers []UserAnswer `gorm:"foreignKey:ExamSessionId"`
 }
 
-type FinishExamOutput struct {
+type FinishexamResponse struct {
+	StartedAt  time.Time     `json:"started_at"`
 	FinishedAt time.Time     `json:"finished_at"`
 	Status     SessionStatus `json:"status" gorm:"default:'finished'"`
+	MaxScore   int           `json:"max_score"`
 	Score      int           `json:"score"`
 	Percentage float64       `json:"percentage"`
+}
+
+type ScoreResponse struct {
+	MaxScore   int     `json:"max_score"`
+	Score      int     `json:"score"`
+	Percentage float64 `json:"percentage"`
 }

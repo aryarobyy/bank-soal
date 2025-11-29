@@ -172,5 +172,38 @@ func (h *ExamSessionController) FinishExam(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "data found")
+	res := model.FinishexamResponse{
+		FinishedAt: *data.FinishedAt,
+		StartedAt:  data.StartedAt,
+		Status:     data.Status,
+		MaxScore:   data.MaxScore,
+		Score:      data.Score,
+		Percentage: data.Percentage,
+	}
+
+	helper.Success(c, res, "data found")
+}
+
+func (h *ExamSessionController) GetScore(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	sessionIdStr := c.Query("id")
+	sessionId := helper.BindToInt(sessionIdStr)
+
+	userIdStr := c.Query("user_id")
+	userId := helper.BindToInt(userIdStr)
+
+	data, err := h.service.GetScore(ctx, sessionId, userId)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, "session not found %s")
+		return
+	}
+
+	scoreRes := model.ScoreResponse{
+		MaxScore:   data.MaxScore,
+		Score:      data.Score,
+		Percentage: data.Percentage,
+	}
+
+	helper.Success(c, scoreRes, "score found")
 }

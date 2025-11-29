@@ -18,6 +18,7 @@ type ExamSessionService interface {
 	GetMany(ctx context.Context, limit int, offset int) ([]model.ExamSession, error)
 	UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error)
 	FinishExam(ctx context.Context, userId int, id int) (*model.ExamSession, error)
+	GetScore(ctx context.Context, sessionId int, userId int) (*model.ExamSession, error)
 }
 
 type examSessionService struct {
@@ -71,7 +72,7 @@ func (s *examSessionService) GetById(ctx context.Context, id int) (*model.ExamSe
 		}
 		return nil, fmt.Errorf("failed to get session: %w", err)
 	}
-	
+
 	if data.FinishedAt != nil && data.FinishedAt.After(time.Now()) {
 		return nil, fmt.Errorf("session %d already finished", id)
 	}
@@ -185,4 +186,12 @@ func (s *examSessionService) calculateScore(ctx context.Context, userId, session
 	}
 	fmt.Print("tsaysadus saskas", userScore, maxScore)
 	return userScore, maxScore, nil
+}
+
+func (s *examSessionService) GetScore(ctx context.Context, sessionId int, userId int) (*model.ExamSession, error) {
+	data, err := s.repo.GetScore(ctx, sessionId, userId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get score: %w", err)
+	}
+	return data, nil
 }

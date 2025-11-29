@@ -2,6 +2,7 @@ package model
 
 import "time"
 
+//perubahan rencana (ngejar deadline, examScore gk dibutuhin)
 type ExamScore struct {
 	Id         int    `json:"id" gorm:"primaryKey;autoIncrement;not null"`
 	ExamId     int    `json:"exam_id" gorm:"not null; index"`

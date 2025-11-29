@@ -18,7 +18,7 @@ func SubjectRoutes(r *gin.Engine, subject *controller.SubjectController) {
 			auth.GET("/id", subject.GetById)
 			auth.GET("/code", subject.GetByCode)
 			auth.PUT("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), subject.Update)
-			auth.DELETE("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), subject.Delete)
+			auth.DELETE("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), subject.Delete)
 		}
 	}
 }

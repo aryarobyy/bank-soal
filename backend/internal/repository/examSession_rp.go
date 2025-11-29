@@ -18,6 +18,7 @@ type ExamSessionRepository interface {
 	UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error)
 	FinishExam(ctx context.Context, id int, e model.FinishExam) (*model.ExamSession, error)
 	CheckUserSession(ctx context.Context, userId int, examId int) error
+	GetScore(ctx context.Context, sessionId int, userId int) (*model.ExamSession, error)
 }
 
 type examSessionRepository struct {
@@ -169,4 +170,18 @@ func (r *examSessionRepository) CheckUserSession(ctx context.Context, userId int
 	}
 
 	return nil
+}
+
+func (r *examSessionRepository) GetScore(ctx context.Context, sessionId int, userId int) (*model.ExamSession, error) {
+	session := model.ExamSession{}
+
+	if err := r.db.WithContext(ctx).
+		Where("id = ? AND user_id = ?", sessionId, userId).
+		Select("max_score", "score", "percentage").
+		First(&session).
+		Error; err != nil {
+		return nil, err
+	}
+
+	return &session, nil
 }
