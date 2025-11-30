@@ -115,13 +115,16 @@ func (h *ExamSessionController) Delete(c *gin.Context) {
 func (h *ExamSessionController) GetMany(c *gin.Context) {
 	ctx := c.Request.Context()
 
+	examIdStr := c.Query("exam_id")
+	examId := helper.BindToInt(examIdStr)
+
 	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	data, err := h.service.GetMany(ctx, limit, offset)
+	data, total, err := h.service.GetMany(ctx, examId, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -129,7 +132,7 @@ func (h *ExamSessionController) GetMany(c *gin.Context) {
 
 	sessionsRes := response.SessionsResponse(data)
 
-	helper.Success(c, sessionsRes, "data updated")
+	helper.Success(c, gin.H{"data": sessionsRes, "total": total}, "data updated")
 }
 
 func (h *ExamSessionController) UpdateCurrNo(c *gin.Context) {
