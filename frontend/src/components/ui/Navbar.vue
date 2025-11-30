@@ -14,9 +14,7 @@
           <li v-if="user.role === 'user'">
             <RouterLink to="/ujian" :class="linkClass('/ujian')">Ujian</RouterLink>
           </li>
-          <li v-if="user.role === 'user'">
-            <RouterLink to="/riwayat" :class="linkClass('/riwayat')">Riwayat</RouterLink>
-          </li>
+   
 
           <div class="relative" ref="dropdownRef">
             <button @click="toggleDropdown" class="flex items-center space-x-2 focus:outline-none">
@@ -73,11 +71,6 @@
             <li v-if="user.role === 'user'">
               <RouterLink to="/ujian" :class="mobileLinkClass('/ujian')" @click="closeMobileMenu">
                 Ujian
-              </RouterLink>
-            </li>
-            <li v-if="user.role === 'user'">
-              <RouterLink to="/riwayat" :class="mobileLinkClass('/riwayat')" @click="closeMobileMenu">
-                Riwayat
               </RouterLink>
             </li>
 
