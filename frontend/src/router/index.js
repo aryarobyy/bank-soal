@@ -9,8 +9,6 @@ import SuperAdminLayout from '../layouts/SuperAdminLayout.vue'
 
 // Halaman-halaman Umum & Autentikasi
 import LoginView from '../views/Auth/LoginView.vue'
-import RegisterView from '../views/Auth/RegisterView.vue'
-import ForgotPassword from '../views/Auth/ForgotPassword.vue'
 import HomePage from '../views/home/HomeView.vue'
 import Profile from '../views/profile/Profile.vue'
 import UpdateProfile from '../views/profile/UpdateProfile.vue'
@@ -19,6 +17,7 @@ import UpdateProfile from '../views/profile/UpdateProfile.vue'
 import UserExamList from '../views/exam/UserExamList.vue' // Halaman Katalog Ujian
 import ExamView from '../views/exam/ExamView.vue'         // Halaman Intro/Detail Ujian (Sebelum Mulai)
 import ExamDo from '../views/exam/ExamDo.vue'             // Halaman Mengerjakan Soal
+
 
 // Halaman Dosen
 import LecturerDashboard from '../views/dosen/LecturerDashboard.vue'
@@ -69,8 +68,6 @@ const examRoutes = [
 const routes = [
   // 1. Rute Tanpa Layout (Login, Register, ExamDo)
   { path: '/login', name: 'login', component: LoginView },
-  { path: '/register', name: 'register', component: RegisterView },
-  { path: '/forgot-password', name: 'ForgotPassword', component: ForgotPassword },
   
   // Halaman Mengerjakan Ujian (Full Screen)
   {
@@ -88,8 +85,8 @@ const routes = [
       
       // Halaman Daftar Ujian (UserExamList)
       { path: 'ujian', name: 'UserExamList', component: UserExamList },
-      
-      // Halaman Detail/Intro Ujian (ExamView)
+    
+ 
       { 
         path: 'exam/view', 
         name: 'UserExamView', 
@@ -98,7 +95,8 @@ const routes = [
       },
 
       { path: 'profile/:id', name: 'Profile', component: Profile },
-      { path: 'update-profile', name: 'UpdateProfile', component: UpdateProfile }
+      { path: 'update-profile', name: 'UpdateProfile', component: UpdateProfile },
+      
     ]
   },
 
