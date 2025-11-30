@@ -20,6 +20,7 @@ type ExamSessionService interface {
 	FinishExam(ctx context.Context, userId int, id int) (*model.ExamSession, error)
 	GetScore(ctx context.Context, sessionId int, userId int) (*model.ExamSession, error)
 	GetUserSession(ctx context.Context, userId int, limit int, offset int) ([]model.ExamSession, int64, error)
+	CheckSession(ctx context.Context, examId int, sessionId int) error
 }
 
 type examSessionService struct {
@@ -44,24 +45,39 @@ func NewExamSessionService(
 }
 
 func (s *examSessionService) Create(ctx context.Context, e model.ExamSession, userId int, examId int) (*model.ExamSession, error) {
-	if err := s.repo.CheckUserSession(ctx, userId, examId); err != nil && err != gorm.ErrRecordNotFound {
-		return nil, fmt.Errorf("failed to check existing session: %w", err)
+
+	existing, err := s.repo.CheckUserSession(ctx, userId, examId)
+	if err == nil {
+		return existing, nil
+	}
+	if err != gorm.ErrRecordNotFound {
+		return nil, fmt.Errorf("failed checking existing session: %w", err)
+	}
+
+	exam, err := s.examRepo.GetById(ctx, examId)
+	if err != nil {
+		return nil, fmt.Errorf("exam didnt exist")
+	}
+
+	now := time.Now()
+
+	if now.Before(*exam.StartedAt) {
+		return nil, fmt.Errorf("exam has not started")
+	}
+	if now.After(*exam.FinishedAt) {
+		return nil, fmt.Errorf("exam is already closed")
 	}
 
 	e.UserId = userId
 	e.ExamId = examId
+	e.StartedAt = now
+	e.Status = model.SessionInProgress
 
 	session, err := s.repo.Create(ctx, e)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create exam session: %w", err)
 	}
 
-	exam, err := s.examRepo.StartSession(ctx, examId)
-	if err != nil {
-		return session, fmt.Errorf("failed to load exam questions: %w", err)
-	}
-
-	println(exam)
 	return session, nil
 }
 
@@ -72,10 +88,6 @@ func (s *examSessionService) GetById(ctx context.Context, id int) (*model.ExamSe
 			return nil, fmt.Errorf("session with id %d not found", id)
 		}
 		return nil, fmt.Errorf("failed to get session: %w", err)
-	}
-
-	if data.FinishedAt != nil && data.FinishedAt.After(time.Now()) {
-		return nil, fmt.Errorf("session %d already finished", id)
 	}
 
 	return data, nil
@@ -207,4 +219,39 @@ func (s *examSessionService) GetUserSession(ctx context.Context, userId int, lim
 		return nil, 0, fmt.Errorf("failed to get user session: %w", err)
 	}
 	return data, total, nil
+}
+
+func (s *examSessionService) CheckSession(ctx context.Context, examId int, sessionId int) error {
+
+	exam, err := s.examRepo.GetById(ctx, examId)
+	if err != nil {
+		return fmt.Errorf("exam not found")
+	}
+
+	session, err := s.repo.GetById(ctx, sessionId)
+	if err != nil {
+		return fmt.Errorf("session not found")
+	}
+
+	now := time.Now()
+
+	if now.Before(*exam.StartedAt) {
+		return fmt.Errorf("exam has not started")
+	}
+	if now.After(*exam.FinishedAt) {
+		return fmt.Errorf("exam is already closed")
+	}
+
+	sessionExpiry := session.StartedAt.Add(time.Duration(exam.LongTime) * time.Minute)
+
+	finalExpiry := *exam.FinishedAt
+	if sessionExpiry.Before(finalExpiry) {
+		finalExpiry = sessionExpiry
+	}
+
+	if now.After(finalExpiry) {
+		return fmt.Errorf("session already finished")
+	}
+
+	return nil
 }

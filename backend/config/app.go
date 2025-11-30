@@ -72,7 +72,7 @@ func NewApp(db *gorm.DB) *App {
 		ExamSession: controller.NewExamSessionController(examSessionService),
 		Subject:     controller.NewSubjectController(subjectService),
 		XlsPath:     controller.NewXlsPathController(xlsPathService),
-		UserAnswer:  controller.NewUserAnswerController(userAnswerService),
+		UserAnswer:  controller.NewUserAnswerController(userAnswerService, examSessionService),
 	}
 
 	store := middleware.InMemoryStore(&middleware.InMemoryOptions{

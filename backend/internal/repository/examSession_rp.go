@@ -17,7 +17,7 @@ type ExamSessionRepository interface {
 	GetMany(ctx context.Context, examId int, limit int, offset int) ([]model.ExamSession, int64, error)
 	UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error)
 	FinishExam(ctx context.Context, id int, e model.FinishExam) (*model.ExamSession, error)
-	CheckUserSession(ctx context.Context, userId int, examId int) error
+	CheckUserSession(ctx context.Context, userId int, examId int) (*model.ExamSession, error)
 	GetScore(ctx context.Context, sessionId int, userId int) (*model.ExamSession, error)
 	GetUserSession(ctx context.Context, userId int, limit int, offset int) ([]model.ExamSession, int64, error)
 }
@@ -171,17 +171,18 @@ func (r *examSessionRepository) FinishExam(ctx context.Context, id int, e model.
 	return &updated, nil
 }
 
-func (r *examSessionRepository) CheckUserSession(ctx context.Context, userId int, examId int) error {
+func (r *examSessionRepository) CheckUserSession(ctx context.Context, userId int, examId int) (*model.ExamSession, error) {
 	var session model.ExamSession
 
 	err := r.db.WithContext(ctx).
 		Where("user_id = ? AND exam_id = ? AND status = ?", userId, examId, model.SessionInProgress).
 		First(&session).Error
+
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &session, nil
 }
 
 func (r *examSessionRepository) GetScore(ctx context.Context, sessionId int, userId int) (*model.ExamSession, error) {

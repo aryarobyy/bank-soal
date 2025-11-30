@@ -12,11 +12,18 @@ import (
 )
 
 type UserAnswerController struct {
-	service service.UserAnswerService
+	service        service.UserAnswerService
+	sessionService service.ExamSessionService
 }
 
-func NewUserAnswerController(service service.UserAnswerService) *UserAnswerController {
-	return &UserAnswerController{service}
+func NewUserAnswerController(
+	service service.UserAnswerService,
+	sessionService service.ExamSessionService,
+) *UserAnswerController {
+	return &UserAnswerController{
+		service,
+		sessionService,
+	}
 }
 
 func (h *UserAnswerController) Create(c *gin.Context) {
@@ -25,6 +32,12 @@ func (h *UserAnswerController) Create(c *gin.Context) {
 	var data model.UserAnswer
 	if err := c.ShouldBindJSON(&data); err != nil {
 		helper.Error(c, http.StatusBadRequest, "invalid input format")
+		return
+	}
+
+	sErr := h.sessionService.CheckSession(ctx, data.ExamId, data.ExamSessionId)
+	if sErr != nil {
+		helper.Error(c, http.StatusBadRequest, sErr.Error())
 		return
 	}
 

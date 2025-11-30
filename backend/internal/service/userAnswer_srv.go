@@ -38,7 +38,6 @@ func NewUserAnswerService(
 }
 
 func (s *userAnswerService) Create(ctx context.Context, userAnswer *model.UserAnswer) error {
-	fmt.Println("skdsaoksksos", userAnswer.ExamId, userAnswer.ExamSessionId, userAnswer.QuestionId)
 	_, err := s.examRepo.CheckQuestion(ctx, userAnswer.ExamId, userAnswer.QuestionId)
 	if err != nil {
 		return fmt.Errorf("this question didnt include in exam")
