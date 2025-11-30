@@ -613,3 +613,27 @@ func (h *UserController) BulkInsert(c *gin.Context) {
 
 	helper.Success(c, response, "users created and xls file saved")
 }
+
+func (h *UserController) Logout(c *gin.Context) {
+	_, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	clear := func(name string) {
+		c.SetCookie(
+			name,
+			"",
+			-1,
+			"/",
+			"",
+			false,
+			true,
+		)
+	}
+
+	clear("refresh_token")
+
+	helper.Success(c, http.StatusOK, "Logout successful")
+}

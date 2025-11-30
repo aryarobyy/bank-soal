@@ -197,7 +197,6 @@ func (s *userService) Login(ctx context.Context, cred model.LoginCredential) (*m
 
 func (s *userService) GetById(ctx context.Context, id int) (*model.User, error) {
 	data, err := s.repo.GetById(ctx, id)
-
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
@@ -211,7 +210,6 @@ func (s *userService) GetById(ctx context.Context, id int) (*model.User, error) 
 
 func (s *userService) GetByEmail(ctx context.Context, email string) (*model.User, error) {
 	data, err := s.repo.GetByEmail(ctx, email)
-
 	if err != nil {
 		return nil, fmt.Errorf("user with email %s not found: %w", email, err)
 	}
