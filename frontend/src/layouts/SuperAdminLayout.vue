@@ -84,7 +84,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 const router = useRouter();
 const route = useRoute();
 const { user } = useGetCurrentUser();
-const isSidebarOpen = ref(false); // State sidebar
+const isSidebarOpen = ref(false); 
 
 onMounted(() => {
   if (user.value) {
@@ -100,6 +100,6 @@ const logout = () => {
   const { removeValue: removeId } = useLocalStorage('id');
   removeToken();
   removeId();
-  window.location.href = '/login';
+  window.location.href = '/';
 };
 </script>

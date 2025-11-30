@@ -104,15 +104,16 @@ import { UserCircle } from 'lucide-vue-next';
 import { useGetCurrentUser } from '../hooks/useGetCurrentUser';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
+import { logoutUser } from '../provider/user.provider';
+
 const showProfileDropdown = ref(false);
-const isSidebarOpen = ref(false); // State untuk Sidebar Mobile
-const dropdownContainer = ref(null); // Ref untuk Click Outside
+const isSidebarOpen = ref(false); 
+const dropdownContainer = ref(null); 
 
 const router = useRouter();
 const route = useRoute();
 const { user } = useGetCurrentUser();
 
-// Daftar Menu agar kode lebih rapi
 const menuItems = [
   { name: 'Dashboard', path: '/admin/dashboard', icon: 'fas fa-th-large' },
   { name: 'Mahasiswa', path: '/admin/mahasiswa', icon: 'fas fa-user-graduate' },
@@ -130,7 +131,6 @@ onMounted(() => {
       logout();
     }
   }
-  // Pasang Event Listener untuk Click Outside
   document.addEventListener('click', handleClickOutside);
 });
 
@@ -138,7 +138,6 @@ onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
 });
 
-// Logic Click Outside
 const handleClickOutside = (event) => {
   if (dropdownContainer.value && !dropdownContainer.value.contains(event.target)) {
     showProfileDropdown.value = false;
@@ -153,12 +152,21 @@ const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
 };
 
-const logout = () => {
+const logout = async () => {
+  // 1. Panggil Backend
+  await logoutUser();
+
+  // 2. Clear Local
   const { removeValue: removeToken } = useLocalStorage('token');
   const { removeValue: removeId } = useLocalStorage('id');
   removeToken();
   removeId();
-  window.location.href = '/login'; 
+  localStorage.removeItem('user_id');
+  localStorage.clear();
+  
+  // 3. Redirect
+  user.value = null;
+  window.location.href = '/'; 
 };
 
 const isActive = (path) => {

@@ -14,6 +14,9 @@
           <li v-if="user.role === 'user'">
             <RouterLink to="/ujian" :class="linkClass('/ujian')">Ujian</RouterLink>
           </li>
+          <li v-if="user.role === 'user'">
+            <RouterLink to="/riwayat" :class="linkClass('/riwayat')">Riwayat</RouterLink>
+          </li>
 
           <div class="relative" ref="dropdownRef">
             <button @click="toggleDropdown" class="flex items-center space-x-2 focus:outline-none">
@@ -43,7 +46,6 @@
 
         <template v-else>
           <li><RouterLink to="/login" :class="linkClass('/login')">Login</RouterLink></li>
-          <li><RouterLink to="/register" :class="linkClass('/register')">Register</RouterLink></li>
         </template>
       </ul>
 
@@ -73,6 +75,11 @@
                 Ujian
               </RouterLink>
             </li>
+            <li v-if="user.role === 'user'">
+              <RouterLink to="/riwayat" :class="mobileLinkClass('/riwayat')" @click="closeMobileMenu">
+                Riwayat
+              </RouterLink>
+            </li>
 
             <li class="pt-3 mt-2 border-t border-gray-100">
               <div class="flex items-center gap-2 px-3 mb-2 text-gray-500 font-medium text-xs uppercase tracking-wider">
@@ -99,11 +106,6 @@
                 Login
               </RouterLink>
             </li>
-            <li>
-              <RouterLink to="/register" :class="mobileLinkClass('/register')" @click="closeMobileMenu">
-                Register
-              </RouterLink>
-            </li>
           </template>
         </ul>
       </div>
@@ -116,24 +118,22 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useGetCurrentUser } from '../../hooks/useGetCurrentUser'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
-// Tambahkan import Menu dan X
 import { User, ChevronDown, Menu, X } from 'lucide-vue-next'
+// IMPORT PROVIDER LOGOUT
+import { logoutUser } from '../../provider/user.provider'
 
 const { user } = useGetCurrentUser()
 const route = useRoute()
 const router = useRouter()
 
-// State Desktop
 const isDropdownOpen = ref(false)
 const dropdownRef = ref(null)
-
-// State Mobile
 const isMobileMenuOpen = ref(false)
 
 const { removeValue: removeToken } = useLocalStorage('token');
 const { removeValue: removeUser } = useLocalStorage('user');
+const { removeValue: removeId } = useLocalStorage('id');
 
-// Styling Link Desktop
 const linkClass = (path) => {
   const isActive = route.path === path;
   return [
@@ -142,7 +142,6 @@ const linkClass = (path) => {
   ].join(' ');
 };
 
-// Styling Link Mobile (Lebih besar area kliknya)
 const mobileLinkClass = (path) => {
   const isActive = route.path === path;
   return [
@@ -151,23 +150,31 @@ const mobileLinkClass = (path) => {
   ].join(' ');
 };
 
-// Toggle Desktop Dropdown
 const toggleDropdown = () => { isDropdownOpen.value = !isDropdownOpen.value; };
 const closeDropdown = () => { isDropdownOpen.value = false; };
-
-// Toggle Mobile Menu
 const toggleMobileMenu = () => { isMobileMenuOpen.value = !isMobileMenuOpen.value; };
 const closeMobileMenu = () => { isMobileMenuOpen.value = false; };
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  // 1. Panggil Backend Logout
+  await logoutUser();
+
+  // 2. Bersihkan Data Lokal
   removeToken();
   removeUser();
+  removeId();
+  localStorage.removeItem('user_id');
+  localStorage.clear(); // Bersihkan semuanya agar aman
+
+  // 3. Reset UI & Redirect
   closeDropdown();
-  closeMobileMenu(); // Tutup menu mobile juga saat logout
-  window.location.href = '/login'; // Hard reload agar bersih
+  closeMobileMenu();
+  // Reset state user (jika menggunakan reactive global state)
+  user.value = null; 
+  
+  window.location.href = '/'; 
 };
 
-// Tutup dropdown desktop saat klik di luar
 const handleClickOutside = (event) => {
   if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
     closeDropdown();
