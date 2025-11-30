@@ -1,4 +1,5 @@
 import { ref, provide, inject, readonly } from "vue";
+import { getUserById } from "../provider/user.provider"; // Pastikan path ini benar
 
 const UserSymbol = Symbol('user')
 
@@ -14,13 +15,42 @@ export const provideUser = () => {
   const clearUser = () => {
     user.value = null
   }
+
+  // --- FUNGSI BARU: Fetch User dengan Validasi Token ---
+  const fetchUser = async () => {
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('id');
+
+    // 1. CEK TOKEN & ID (SOLUSI MASALAH ANDA)
+    // Jika tidak ada token, JANGAN panggil API. Stop di sini.
+    if (!token || !userId) {
+       user.value = null;
+       return; 
+    }
+
+    loading.value = true;
+    try {
+       // Panggil API hanya jika token ada
+       const res = await getUserById(userId);
+       // Sesuaikan dengan struktur response (res.data atau res)
+       user.value = res.data || res; 
+    } catch (err) {
+       console.error("Gagal mengambil data user:", err);
+       error.value = err;
+       // Jika error 401, biasanya api.handler sudah handle logout
+       user.value = null;
+    } finally {
+       loading.value = false;
+    }
+  }
   
   provide(UserSymbol, {
     user: readonly(user),
     loading: readonly(loading),
     error: readonly(error),
     setUser,
-    clearUser
+    clearUser,
+    fetchUser // <-- Expose fungsi ini agar bisa dipanggil di App.vue
   })
   
   return {
@@ -28,7 +58,8 @@ export const provideUser = () => {
     loading,
     error,
     setUser,
-    clearUser
+    clearUser,
+    fetchUser
   }
 }
 
@@ -43,11 +74,7 @@ export const useUser = () => {
 }
 
 export const useGetCurrentUser = () => {
-  const { user, loading, error } = useUser()
-  
-  return {
-    user,
-    loading,
-    error
-  }
+  // Return semua yang dibutuhkan komponen
+  const context = useUser();
+  return context;
 }
