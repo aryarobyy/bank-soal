@@ -2,7 +2,7 @@ import ApiHandler from "./api.handler";
 
 const EXAM_SESSION = "exam-session";
 
-// 🚀 Create exam session
+
 export const createExamSession = async (examId) => {
   const res = await ApiHandler.post(`/${EXAM_SESSION}/`, {
     exam_id: examId,
@@ -10,25 +10,20 @@ export const createExamSession = async (examId) => {
   return res.data;
 };
 
-// 📌 Get session by ID -> pakai query ?id=
+
 export const getExamSessionById = async (sessionId) => {
   const res = await ApiHandler.get(`/${EXAM_SESSION}/id?id=${sessionId}`);
   return res.data;
 };
 
-// 📌 Get all sessions (admin/lecturer)
-export const getExamSessions = async () => {
-  const res = await ApiHandler.get(`/${EXAM_SESSION}/`);
-  return res.data;
-};
 
-// 🔁 Update entire exam-session (rarely used)
+
 export const updateExamSession = async (sessionId, payload) => {
   const res = await ApiHandler.put(`/${EXAM_SESSION}/${sessionId}`, payload);
   return res.data;
 };
 
-// 🔁 Update current_no -> /exam-session/:id/no
+
 export const updateCurrentNo = async (sessionId, currentNo) => {
   const res = await ApiHandler.put(`/${EXAM_SESSION}/${sessionId}/no`, {
     current_no: currentNo,
@@ -36,15 +31,64 @@ export const updateCurrentNo = async (sessionId, currentNo) => {
   return res.data;
 };
 
-// 🏁 Finish exam session → /finish (NO ID)
+
 export const finishExamSession = async (payload) => {
-  // Payload berisi { user_id: ..., exam_id: ... }
   const res = await ApiHandler.put(`/${EXAM_SESSION}/finish`, payload);
   return res.data;
 };
 
-// ❌ Delete session -> /exam-session/:id
 export const deleteExamSession = async (sessionId) => {
   const res = await ApiHandler.delete(`/${EXAM_SESSION}/${sessionId}`);
   return res.data;
+};
+
+export const getExamSessions = async (limit = 100, offset = 0, examId = null) => {
+  const params = new URLSearchParams();
+  params.append('limit', limit);
+  params.append('offset', offset);
+  
+  if (examId) {
+    params.append('exam_id', examId);
+  }
+  try {
+    const res = await ApiHandler.get(`/${EXAM_SESSION}/?${params.toString()}`);
+    if (res.data && res.data.data && Array.isArray(res.data.data.data)) {
+      
+        return res.data.data;
+    } 
+    if (res.data && Array.isArray(res.data.data)) {
+        return res.data.data;
+    }
+    return []; 
+  } catch (error) {
+    console.error("Gagal mengambil data sesi ujian:", error);
+    return [];
+  }
+};
+
+export const getExamSessionByUser = async (userId, limit = 10, offset = 0) => {
+  const params = new URLSearchParams();
+  params.append('user_id', userId);
+  params.append('limit', limit);
+  params.append('offset', offset);
+
+  try {
+
+    const res = await ApiHandler.get(`/${EXAM_SESSION}/user?${params.toString()}`);
+    
+    if (res.data && res.data.data && Array.isArray(res.data.data.data)) {
+        return res.data.data.data;
+    }
+    
+   
+    if (res.data && Array.isArray(res.data.data)) {
+        return res.data.data;
+    }
+
+    return [];
+
+  } catch (error) {
+    console.error("Gagal ambil session user:", error);
+    return [];
+  }
 };

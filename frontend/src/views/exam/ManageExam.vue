@@ -10,25 +10,22 @@
       </router-link>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      <select v-model="sortBy" class="border rounded-lg p-2">
-        <option>Last Modified</option>
-        <option>A-Z</option>
-        <option>Z-A</option>
-      </select>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="flex items-center gap-2">
+        <span class="text-sm text-gray-600 font-medium">Urutkan:</span>
+        <select v-model="sortBy" class="border rounded-lg p-2 flex-1 bg-white">
+          <option value="Last Modified">Terbaru (Last Modified)</option>
+          <option value="A-Z">Judul (A-Z)</option>
+          <option value="Z-A">Judul (Z-A)</option>
+        </select>
+      </div>
 
-      <select v-model="statusFilter" class="border rounded-lg p-2">
-        <option value="">Filter by Status</option>
-        <option value="not_started">Not Started</option>
-        <option value="running">Running</option>
-        <option value="finished">Finished</option>
-      </select>
-
-      <div class="flex items-center border rounded-lg px-3">
+      <div class="flex items-center border rounded-lg px-3 bg-white">
+        <i class="fas fa-search text-gray-400 mr-2"></i>
         <input
           type="text"
           v-model="search"
-          placeholder="Search your exam"
+          placeholder="Cari judul ujian..."
           class="w-full p-2 outline-none"
         />
       </div>
@@ -39,50 +36,54 @@
 
       <table class="w-full min-w-[600px]">
         <thead>
-          <tr class="text-left border-b text-sm font-bold">
-            <th class="p-2">Nama Ujian</th>
-            <th class="p-2">Status</th>
-            <th class="p-2 text-center">Actions</th>
+          <tr class="text-left border-b text-sm font-bold bg-gray-100 text-gray-700">
+            <th class="p-3">Nama Ujian & Deskripsi</th>
+            <th class="p-3">Durasi</th>
+            <th class="p-3">Waktu Mulai</th>
+            <th class="p-3 text-center">Aksi</th>
           </tr>
         </thead>
 
-        <tbody>
+        <tbody class="text-sm">
           <tr
             v-for="exam in paginatedExams"
             :key="exam.id"
-            class="border-b hover:bg-gray-100 transition"
+            class="border-b hover:bg-white transition"
           >
-            <td class="p-2">
-              <div class="font-medium">{{ exam.title }}</div>
-              <div class="text-xs text-gray-500 line-clamp-1">{{ exam.description }}</div>
+            <td class="p-3">
+              <div class="font-bold text-gray-800">{{ exam.title }}</div>
+              <div class="text-xs text-gray-500 mt-1 line-clamp-1">{{ exam.description || 'Tidak ada deskripsi' }}</div>
             </td>
-            <td class="p-2">
-              <span :class="statusBadgeClass(exam.status)">
-                {{ statusText(exam.status) }}
+            <td class="p-3">
+              <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-semibold">
+                {{ exam.long_time }} Menit
               </span>
             </td>
-            <td class="p-2 flex items-center justify-center gap-3">
+            <td class="p-3 text-gray-600">
+              {{ formatDate(exam.started_at) }}
+            </td>
+            <td class="p-3 flex items-center justify-center gap-3">
               <router-link
                 :to="{ name: isAdminRoute ? 'AdminExamDetail' : 'DosenExamDetail', params: { id: exam.id } }"
-                class="text-blue-600 hover:underline text-sm"
+                class="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
               >
-                👁️ View
+                <i class="fas fa-eye"></i> Detail
               </router-link>
 
               <button
                 @click="removeExam(exam.id)"
-                class="text-red-600 hover:text-red-800 text-sm"
+                class="text-red-600 hover:text-red-800 flex items-center gap-1"
               >
-                🗑️ Delete
+                <i class="fas fa-trash"></i> Hapus
               </button>
             </td>
           </tr>
 
           <tr v-if="paginatedExams.length === 0">
-            <td colspan="3" class="text-center p-8 text-gray-500">
+            <td colspan="4" class="text-center p-8 text-gray-500">
               <div class="flex flex-col items-center">
                 <i class="fas fa-inbox text-4xl mb-2 text-gray-300"></i>
-                <p>Tidak ada ujian ditemukan</p>
+                <p>Tidak ada ujian ditemukan.</p>
               </div>
             </td>
           </tr>
@@ -117,7 +118,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
-// Pastikan path import ini sesuai dengan struktur folder Anda
 import { getAllExam, deleteExam } from "../../provider/exam.provider";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 
@@ -127,14 +127,13 @@ const isAdminRoute = computed(() => route.path.startsWith('/admin'));
 const exams = ref([]);
 const search = ref("");
 const sortBy = ref("Last Modified");
-const statusFilter = ref("");
 const page = ref(1);
 const limit = 10;
 const totalItems = ref(0);
 
 const { user } = useGetCurrentUser();
 
-// --- LOGIC LOAD DATA (DIPERBAIKI) ---
+// --- LOAD DATA ---
 const loadExams = async () => {
   if (!user.value) return;
 
@@ -145,17 +144,13 @@ const loadExams = async () => {
     // Panggil Provider
     const result = await getAllExam(limit, offset, creatorId);
 
-    // FIX: Cek apakah result memiliki properti .data (Objek) atau result itu sendiri adalah Array
     if (result && Array.isArray(result.data)) {
-        // Format Baru: { data: [...], total: ... }
         exams.value = result.data;
         totalItems.value = result.total || 0;
     } else if (Array.isArray(result)) {
-        // Format Lama (Fallback): [...]
         exams.value = result;
         totalItems.value = result.length;
     } else {
-        // Data kosong atau format salah
         exams.value = [];
         totalItems.value = 0;
     }
@@ -169,10 +164,10 @@ const loadExams = async () => {
 
 onMounted(loadExams);
 
-// Watcher: Reload saat page berubah atau user baru login
+
 watch([page, user], loadExams, { immediate: true });
 
-// --- FILTERING DI SISI CLIENT (Hanya untuk data halaman ini) ---
+
 const filteredExams = computed(() => {
   let data = [...exams.value];
 
@@ -183,71 +178,64 @@ const filteredExams = computed(() => {
     );
   }
 
-  // 2. Filter Status
-  if (statusFilter.value) {
-    data = data.filter((e) => e.status === statusFilter.value);
-  }
-
-  // 3. Sorting
+  
   if (sortBy.value === "A-Z") {
     data.sort((a, b) => a.title.localeCompare(b.title));
   } else if (sortBy.value === "Z-A") {
     data.sort((a, b) => b.title.localeCompare(a.title));
+  } else if (sortBy.value === "Last Modified") {
+    
+    data.sort((a, b) => {
+      const dateA = new Date(a.updated_at || a.created_at).getTime();
+      const dateB = new Date(b.updated_at || b.created_at).getTime();
+      return dateB - dateA; 
+    });
   }
-  // 'Last Modified' biasanya default dari server (created_at desc), jadi tidak perlu sort manual di sini
 
   return data;
 });
 
-// --- LOGIC PAGINATION (DIPERBAIKI) ---
-
-// Total halaman dihitung dari totalItems server, bukan filteredExams
+// --- PAGINATION ---
 const totalPages = computed(() => {
   if (totalItems.value === 0) return 1;
   return Math.ceil(totalItems.value / limit);
 });
 
-// FIX: Jangan slice lagi! Data dari server sudah terpotong (paginated)
-// Kita langsung tampilkan hasil filter dari data yang ada.
 const paginatedExams = computed(() => {
+
   return filteredExams.value; 
 });
 
 const nextPage = () => {
   if (page.value < totalPages.value) {
     page.value++;
-    // Watcher 'page' akan otomatis memanggil loadExams()
   }
 };
 
 const prevPage = () => {
   if (page.value > 1) {
     page.value--;
-    // Watcher 'page' akan otomatis memanggil loadExams()
   }
 };
 
 // --- UTILS ---
-const statusText = (status) => {
-  if (status === "not_started") return "Not Started";
-  if (status === "running") return "Ongoing";
-  if (status === "finished") return "Finished";
-  return status || "-";
-};
-
-const statusBadgeClass = (status) => {
-  const base = "px-2 py-1 rounded text-xs font-semibold";
-  if (status === "not_started") return `${base} bg-gray-100 text-gray-600`;
-  if (status === "running") return `${base} bg-blue-100 text-blue-600`;
-  if (status === "finished") return `${base} bg-green-100 text-green-600`;
-  return `${base} bg-gray-100 text-gray-600`;
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString("id-ID", {
+    day: "numeric", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit"
+  });
 };
 
 const removeExam = async (id) => {
-  if (!confirm("Apakah kamu yakin ingin menghapus ujian ini?")) return;
+  if (!confirm("Apakah kamu yakin ingin menghapus ujian ini? Data soal dan nilai terkait juga akan terhapus.")) return;
+  
   try {
-    await deleteExam(id);
+
+    await deleteExam(Number(id));
+    
     alert("✅ Ujian berhasil dihapus!");
+    
     // Jika halaman saat ini kosong setelah hapus, mundur 1 halaman
     if (exams.value.length === 1 && page.value > 1) {
       page.value--;
@@ -256,7 +244,8 @@ const removeExam = async (id) => {
     }
   } catch (error) {
     console.error("Gagal menghapus ujian:", error);
-    alert("❌ Gagal menghapus ujian. Coba lagi nanti.");
+    const msg = error.response?.data?.message || "Gagal menghapus ujian.";
+    alert(`❌ ${msg}`);
   }
 };
 </script>

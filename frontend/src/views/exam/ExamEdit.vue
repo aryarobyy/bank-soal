@@ -153,7 +153,7 @@ const handleSubmit = async () => {
       finished_at: new Date(form.value.finished_at).toISOString(),
     };
 
-    await updateExam(id, payload);
+    await updateExam(Number(id), payload);
     alert("✅ Ujian berhasil diperbarui!");
     // Navigasi dinamis
     router.push({ name: isAdminRoute.value ? 'AdminManageExam' : 'DosenManageExam' });

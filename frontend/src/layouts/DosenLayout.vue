@@ -109,6 +109,8 @@ import { useRouter, useRoute } from 'vue-router';
 import { UserCircle } from 'lucide-vue-next';
 import { useGetCurrentUser } from '../hooks/useGetCurrentUser'; 
 import { useLocalStorage } from '../hooks/useLocalStorage'; 
+// IMPORT PROVIDER LOGOUT
+import { logoutUser } from '../provider/user.provider';
 
 const showProfileDropdown = ref(false);
 const isSidebarOpen = ref(false);
@@ -140,12 +142,18 @@ const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
 };
 
-const logout = () => {
+const logout = async () => {
+  await logoutUser();
+  
   const { removeValue: removeToken } = useLocalStorage('token');
   const { removeValue: removeId } = useLocalStorage('id'); 
   removeToken();
   removeId();
-  window.location.href = '/login';
+  localStorage.removeItem('user_id');
+  localStorage.clear();
+
+  user.value = null;
+  window.location.href = '/';
 };
 
 const isActive = (path) => {

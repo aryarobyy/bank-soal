@@ -17,12 +17,14 @@
           <select 
             id="subject" 
             v-model="currentSoal.subject_id" 
+            @change="handleSubjectChange"
             class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option :value="null" disabled>-- Pilih Subjek --</option>
             <option v-for="subject in subjects" :key="subject.id" :value="subject.id">
               {{ subject.title }} ({{ subject.code }})
             </option>
+            <option value="NEW_SUBJECT" class="font-bold text-blue-600">+ Buat Subjek Baru</option>
           </select>
           <p v-if="subjects.length === 0" class="text-xs text-gray-400 mt-1">Memuat mata kuliah...</p>
         </div>
@@ -86,12 +88,37 @@
         </div>
       </div>
     </div>
+
+    <div v-if="showSubjectModal" class="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 w-96 shadow-xl">
+        <h3 class="text-lg font-bold mb-4">Buat Subjek Baru</h3>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Judul Subjek (Title)</label>
+          <input v-model="newSubject.title" type="text" class="w-full p-2 border rounded-md" placeholder="Contoh: Matematika Dasar">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Kode Subjek (Code)</label>
+          <input v-model="newSubject.code" type="text" class="w-full p-2 border rounded-md" placeholder="Contoh: MAT-101">
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button @click="closeSubjectModal" class="px-4 py-2 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300">Batal</button>
+          <button @click="handleCreateSubject" class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700" :disabled="isCreatingSubject">
+            {{ isCreatingSubject ? 'Menyimpan...' : 'Simpan' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script>
 import { createQuestionWithOptions, getQuestionById, updateQuestion } from '../../provider/question.provider';
-import { getPaginatedSubjects } from '../../provider/subject.provider';
+// Import createSubject juga
+import { getPaginatedSubjects, createSubject } from '../../provider/subject.provider';
 import { useGetCurrentUser } from '../../hooks/useGetCurrentUser';
 import { API_BASE_URL } from '../../core/constant'; 
 
@@ -130,6 +157,14 @@ export default {
       soalList: [],
       answerColors: ['bg-red-500', 'bg-blue-500', 'bg-yellow-500', 'bg-green-500'],
       isLoadingData: false,
+      
+      // State Modal Subject
+      showSubjectModal: false,
+      isCreatingSubject: false,
+      newSubject: {
+        title: '',
+        code: ''
+      }
     };
   },
   
@@ -143,27 +178,20 @@ export default {
   },
   
   methods: {
-   
     async fetchSubjects() {
       try {
-        
+        // Ambil banyak subjek (100)
         const response = await getPaginatedSubjects(100, 0);
         
-
-        console.log("Data Subject dari API:", response);
-
         if (response && response.data && Array.isArray(response.data.data)) {
             this.subjects = response.data.data;
-        } 
-     
-        else if (response && Array.isArray(response.data)) {
+        } else if (response && Array.isArray(response.data)) {
             this.subjects = response.data;
-        } 
-        else {
+        } else {
             this.subjects = [];
-            console.warn("Format data subject tidak dikenali:", response);
         }
        
+        // Default select ke item pertama jika bukan edit mode
         if (!this.isEditMode && this.subjects.length > 0 && !this.currentSoal.subject_id) {
            this.currentSoal.subject_id = this.subjects[0].id;
         }
@@ -172,8 +200,55 @@ export default {
         this.subjects = []; 
       }
     },
-    // -----------------------------------
 
+    // Deteksi jika user memilih "Buat Subjek Baru"
+    handleSubjectChange() {
+      if (this.currentSoal.subject_id === 'NEW_SUBJECT') {
+        this.newSubject = { title: '', code: '' };
+        this.showSubjectModal = true;
+        this.currentSoal.subject_id = null; // Reset dulu agar dropdown tidak nyangkut di value 'NEW_SUBJECT'
+      }
+    },
+
+    closeSubjectModal() {
+      this.showSubjectModal = false;
+      // Kembalikan ke null atau subject pertama jika batal
+      if (!this.currentSoal.subject_id && this.subjects.length > 0) {
+        this.currentSoal.subject_id = this.subjects[0].id;
+      }
+    },
+
+    async handleCreateSubject() {
+      if (!this.newSubject.title || !this.newSubject.code) {
+        alert("Judul dan Kode subjek harus diisi!");
+        return;
+      }
+
+      this.isCreatingSubject = true;
+      try {
+        const res = await createSubject(this.newSubject);
+        
+        // Output dari backend: { data: { id: ..., title: ..., code: ... } }
+        const createdSubject = res.data; 
+        
+        alert("Subjek berhasil dibuat!");
+        
+        // Tambahkan ke list dropdown
+        this.subjects.push(createdSubject);
+        
+        // Langsung pilih subjek baru tersebut
+        this.currentSoal.subject_id = createdSubject.id;
+        
+        this.closeSubjectModal();
+      } catch (error) {
+        console.error("Gagal membuat subjek:", error);
+        alert("Gagal membuat subjek baru. Coba lagi.");
+      } finally {
+        this.isCreatingSubject = false;
+      }
+    },
+
+    // ... (Sisa method tidak berubah) ...
     constructImageUrl(serverPath) {
       if (!serverPath) return null;
       if (serverPath.startsWith('http')) return serverPath;
@@ -289,7 +364,7 @@ export default {
     formatPayload(soal, creatorId, examId) {
         const payload = {
             exam_id: examId,
-            creator_id: creatorId,
+    
             subject_id: soal.subject_id,
             question_text: soal.question,
             difficulty: soal.level,
@@ -303,6 +378,10 @@ export default {
                 })),
         };
 
+        if (!this.isEditMode) {
+            payload.creator_id = creatorId;
+        }
+   
         if (soal.imageFile) {
             payload.image = soal.imageFile;
         } 

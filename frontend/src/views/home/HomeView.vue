@@ -14,7 +14,12 @@
       <h2 class="text-4xl font-bold text-center mb-12">Apa itu Latih.in?</h2>
       <div class="flex flex-col md:flex-row items-center gap-12">
         <div class="flex-1">
-          <img :src="illustration1" class="w-full h-auto max-w-sm mx-auto" />
+          <img 
+            :src="illustration1" 
+            alt="Ilustrasi Edukasi" 
+            loading="lazy"
+            class="w-full h-auto max-w-sm mx-auto" 
+          />
         </div>
         <div class="flex-1">
           <p class="text-lg leading-relaxed text-medium-text">
@@ -27,7 +32,12 @@
     <section class="max-w-6xl mx-auto px-4 py-16">
       <div class="flex flex-col md:flex-row-reverse items-center gap-12">
         <div class="flex-1">
-          <img :src="illustration2" class="w-full h-auto max-w-sm mx-auto" />
+          <img 
+            :src="illustration2" 
+            alt="Ilustrasi Belajar Online" 
+            loading="lazy"
+            class="w-full h-auto max-w-sm mx-auto" 
+          />
         </div>
         <div class="flex-1">
           <p class="text-lg leading-relaxed text-medium-text">
@@ -48,6 +58,9 @@
 </template>
 
 <script setup>
+// Import gambar dari lokasi src/assets
+import illustration1 from '../../assets/illustration-1.jpg';
+import illustration2 from '../../assets/illustration-2.jpg';
 
-
+// import Navbar from '@/components/Navbar.vue'; 
 </script>
