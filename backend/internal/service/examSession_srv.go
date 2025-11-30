@@ -101,7 +101,7 @@ func (s *examSessionService) GetMany(ctx context.Context, examId int, limit int,
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get sessions: %w", err)
 	}
-	if data != nil || len(data) == 0 {
+	if len(data) == 0 {
 		return nil, 0, fmt.Errorf("no exam sessions found")
 	}
 
