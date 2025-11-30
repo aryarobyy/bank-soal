@@ -35,8 +35,17 @@
         </div>
 
         <div class="bg-[#f5f7ff] rounded-2xl p-6 sm:p-8 mb-8">
+          
+          <div v-if="currentQuestion?.img_url" class="mb-5 flex justify-center">
+            <img 
+              :src="constructImageUrl(currentQuestion.img_url)" 
+              alt="Gambar Soal"
+              class="max-h-[300px] max-w-full rounded-lg shadow-sm border border-gray-300 object-contain"
+            />
+          </div>
+
           <p class="text-sm sm:text-base font-semibold text-gray-800 mb-4">
-            Question: {{ currentQuestion?.question_text || "-" }}
+            {{ currentQuestion?.question_text || "-" }}
           </p>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -69,7 +78,7 @@
               currentNo === n
                 ? 'bg-blue-600 text-white border-blue-600'
                 : answers[n-1] 
-                  ? 'bg-green-100 text-green-700 border-green-300' // Hijau jika sudah dijawab
+                  ? 'bg-green-100 text-green-700 border-green-300'
                   : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400',
             ]"
           >
@@ -111,15 +120,14 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
+import { API_BASE_URL } from "../../core/constant"; 
 
 // Providers
 import { getExamById } from "../../provider/exam.provider";
-// PERUBAHAN: Ganti import getExamQuestions jadi getQuestionsByExam
 import { getQuestionsByExam } from "../../provider/question.provider"; 
-import { submitUserAnswer } from "../../provider/useranswer.provider";
-import { finishExamSession, updateCurrentNo } from "../../provider/examsession.provider";
+import { submitUserAnswer, getUserAnswersBySession } from "../../provider/useranswer.provider";
+import { finishExamSession, updateCurrentNo, getExamSessionById } from "../../provider/examsession.provider";
 
-// Router & User
 const route = useRoute();
 const router = useRouter();
 const { user } = useGetCurrentUser();
@@ -130,24 +138,54 @@ const error = ref("");
 const exam = ref(null);
 const questions = ref([]);
 const currentNo = ref(1);
-const answers = ref([]);
+const answers = ref([]); 
 
-// Soal aktif
 const currentQuestion = computed(() => {
   return questions.value[currentNo.value - 1] || null;
 });
 
-// Simpan jawaban lokal (state)
-const selectAnswer = (optionId) => {
+const selectAnswer = async (optionId) => {
   answers.value[currentNo.value - 1] = optionId;
+
+  const sessionId = Number(route.query.session_id);
+  const examId = Number(route.query.id);
+  let userId = user.value?.id || Number(localStorage.getItem("id"));
+  const questionId = currentQuestion.value.id;
+  
+  const selectedOption = currentQuestion.value.options.find(opt => opt.id === optionId);
+  const answerLabel = selectedOption?.option_label || selectedOption?.label;
+
+  if (!sessionId || !userId || !answerLabel) return;
+
+  try {
+    await submitUserAnswer({
+      exam_session_id: sessionId,
+      user_id: userId,
+      question_id: questionId,
+      answer: answerLabel,
+      exam_id: examId 
+    });
+  } catch (err) {
+    console.error("Gagal menyimpan jawaban:", err);
+  }
 };
 
-// ===================== TIMER =====================
+// untuk menampilkan gambar
+const constructImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  // Hapus titik atau slash di depan agar URL bersih
+  const cleanPath = path.startsWith("./") ? path.substring(2) : path.startsWith("/") ? path.substring(1) : path;
+  return `${API_BASE_URL}/${cleanPath}`;
+};
+
+// =TIMER LOGIC ==
 const timeLeft = ref(0);
 let timer = null;
 
-const startTimer = (minutes) => {
-  timeLeft.value = minutes * 60;
+const startTimer = (seconds) => {
+  timeLeft.value = seconds;
+  if (timer) clearInterval(timer);
 
   timer = setInterval(() => {
     if (timeLeft.value > 0) {
@@ -155,7 +193,7 @@ const startTimer = (minutes) => {
     } else {
       clearInterval(timer);
       alert("Waktu Habis! Ujian akan diselesaikan otomatis.");
-      finishExam(); // Auto finish saat waktu habis
+      finishExam(); 
     }
   }, 1000);
 };
@@ -170,103 +208,115 @@ const formattedTime = computed(() => {
   }
   return `${m}:${s < 10 ? "0" + s : s}`;
 });
-// =================================================
 
-// Load data ujian
+// == ON MOUNTED ==
 onMounted(async () => {
   const examId = Number(route.query.id);
+  const sessionId = Number(route.query.session_id);
 
-  if (!examId) {
-    error.value = "ID ujian tidak ditemukan.";
+  if (!examId || !sessionId) {
+    error.value = "ID ujian atau sesi tidak ditemukan.";
     loading.value = false;
     return;
   }
 
   try {
-    // 1. Get Exam Info
     const examRes = await getExamById(examId);
     exam.value = examRes?.data || examRes;
 
-    // 2. Get Questions (PERUBAHAN: Pakai getQuestionsByExam)
+    const sessionRes = await getExamSessionById(sessionId);
+    const sessionData = sessionRes.data || sessionRes; 
+
     const qRes = await getQuestionsByExam(examId);
-    
-    // Handle response (Array langsung atau dibungkus .data)
     questions.value = Array.isArray(qRes) ? qRes : qRes.data || [];
 
-    // 3. Setup array jawaban kosong
     answers.value = Array(questions.value.length).fill(null);
 
-    // 4. Jalankan Timer
-    const duration = exam.value?.long_time || 120; 
-    startTimer(duration);
+    // Restore Jawaban
+    try {
+        const savedAnswers = await getUserAnswersBySession(sessionId);
+        if (savedAnswers && savedAnswers.length > 0) {
+            savedAnswers.forEach(ans => {
+                const qIndex = questions.value.findIndex(q => q.id === ans.question_id);
+                if (qIndex !== -1) {
+                    const question = questions.value[qIndex];
+                    const selectedOption = question.options.find(opt => 
+                        (opt.option_label || opt.label) === ans.answer
+                    );
+                    if (selectedOption) {
+                        answers.value[qIndex] = selectedOption.id;
+                    }
+                }
+            });
+        }
+    } catch (err) {
+        console.warn("Gagal merestore jawaban:", err);
+    }
+
+    // Restore Posisi
+    if (sessionData && sessionData.current_no && sessionData.current_no > 0) {
+        currentNo.value = sessionData.current_no;
+    }
+
+    // Restore Timer
+    if (sessionData && sessionData.started_at) {
+        const durationMinutes = exam.value?.long_time || 120;
+        const startTime = new Date(sessionData.started_at).getTime();
+        const now = new Date().getTime();
+        const endTime = startTime + (durationMinutes * 60 * 1000);
+        const remainingSeconds = Math.floor((endTime - now) / 1000);
+
+        if (remainingSeconds > 0) {
+            startTimer(remainingSeconds);
+        } else {
+            alert("Waktu ujian telah habis.");
+            finishExam();
+        }
+    } else {
+        startTimer((exam.value?.long_time || 120) * 60);
+    }
     
   } catch (e) {
     console.error(e);
-    error.value = "Terjadi kesalahan saat memuat ujian.";
+    if (e.response && e.response.status === 500) {
+       console.warn("Backend error 500 saat load sesi, menggunakan mode fallback.");
+       if (!questions.value.length) {
+          const qRes = await getQuestionsByExam(examId);
+          questions.value = Array.isArray(qRes) ? qRes : qRes.data || [];
+          answers.value = Array(questions.value.length).fill(null);
+       }
+       startTimer((exam.value?.long_time || 120) * 60);
+    } else {
+       error.value = "Terjadi kesalahan saat memuat ujian.";
+    }
   } finally {
     loading.value = false;
   }
 });
 
-// ===================== NAVIGASI & AUTO SAVE POSISI =====================
+const goToQuestion = (n) => { currentNo.value = n; };
+const nextQuestion = () => { if (currentNo.value < questions.value.length) currentNo.value++; };
+const prevQuestion = () => { if (currentNo.value > 1) currentNo.value--; };
 
-const goToQuestion = (n) => {
-  currentNo.value = n;
-};
-const nextQuestion = () => {
-  if (currentNo.value < questions.value.length) currentNo.value++;
-};
-const prevQuestion = () => {
-  if (currentNo.value > 1) currentNo.value--;
-};
-
-// Watcher: Simpan posisi nomor soal ke backend setiap pindah soal
 watch(currentNo, async (newNo) => {
   const sessionId = Number(route.query.session_id);
   if (sessionId) {
-    try {
-      await updateCurrentNo(sessionId, newNo);
-    } catch (e) {
-      console.error("Gagal menyimpan posisi soal", e);
-    }
+    try { await updateCurrentNo(sessionId, newNo); } catch (e) { console.error(e); }
   }
 });
 
-// ===================== FINISH EXAM =====================
 const finishExam = async () => {
-  // 1. Cek Timer & Konfirmasi
-  if (timeLeft.value > 0 && !confirm("Apakah Anda yakin ingin menyelesaikan ujian?")) {
-    return;
-  }
+  if (timeLeft.value > 0 && !confirm("Apakah Anda yakin ingin menyelesaikan ujian?")) return;
 
   try {
-    // 2. Ambil Data & Validasi
     const sessionId = Number(route.query.session_id);
     const examId = Number(route.query.id); 
-    
-    // Ambil User ID
-    let userId = user.value?.id;
-    if (!userId) {
-        userId = Number(localStorage.getItem("id"));
-    }
+    let userId = user.value?.id || Number(localStorage.getItem("id"));
 
-    console.log("DEBUG FINISH EXAM:", { sessionId, examId, userId });
-
-    // 3. Validasi Ketat
-    if (!sessionId || isNaN(sessionId)) {
-      alert("Error: Session ID hilang. Silakan refresh halaman.");
-      return;
-    }
-    if (!userId || isNaN(userId)) {
-      alert("Error: User ID tidak valid.");
-      return;
-    }
-
-    // 4. Kirim Jawaban (Looping)
+    // Kirim ulang jawaban terakhir (opsional/safety)
     for (let i = 0; i < questions.value.length; i++) {
       const q = questions.value[i];
       const selectedId = answers.value[i];
-
       if (selectedId) {
         const selectedOption = q.options.find((opt) => opt.id === selectedId);
         if (selectedOption) {
@@ -275,30 +325,29 @@ const finishExam = async () => {
             user_id: userId,
             question_id: q.id,
             answer: selectedOption.option_label || selectedOption.label, 
+            exam_id: Number(examId) 
           });
         }
       }
     }
 
-    // 5. FINISH SESSION (Sesuai perbaikan terakhir)
     const payload = {
       session_id: sessionId,
+      exam_id: examId,
       user_id: userId
     };
-
-    console.log("Mengirim Payload ke Backend:", payload);
-
+    
     await finishExamSession(payload);
 
     alert("Ujian selesai! Nilai Anda telah disimpan.");
     router.push("/ujian"); 
 
   } catch (err) {
-    console.error("FinishExam Error Full:", err);
-    
+    console.error("FinishExam Error:", err);
     const backendMsg = err.response?.data?.message;
     if (backendMsg === "failed to find session: record not found") {
-        alert("Gagal: Sesi ujian tidak ditemukan di server.");
+        alert("Sesi selesai (Data tersimpan).");
+        router.push("/ujian");
     } else {
         alert(`Gagal menyelesaikan ujian: ${backendMsg || "Terjadi kesalahan server."}`);
     }
