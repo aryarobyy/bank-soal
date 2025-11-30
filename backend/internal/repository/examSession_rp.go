@@ -14,7 +14,7 @@ type ExamSessionRepository interface {
 	GetById(ctx context.Context, id int) (*model.ExamSession, error)
 	Update(ctx context.Context, id int, e model.UpdateExamSession) (*model.ExamSession, error)
 	Delete(ctx context.Context, id int) error
-	GetMany(ctx context.Context, limit int, offset int) ([]model.ExamSession, error)
+	GetMany(ctx context.Context, examId int, limit int, offset int) ([]model.ExamSession, int64, error)
 	UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error)
 	FinishExam(ctx context.Context, id int, e model.FinishExam) (*model.ExamSession, error)
 	CheckUserSession(ctx context.Context, userId int, examId int) error
@@ -108,16 +108,28 @@ func (r *examSessionRepository) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (r *examSessionRepository) GetMany(ctx context.Context, limit int, offset int) ([]model.ExamSession, error) {
-	var sessions []model.ExamSession
-	if err := r.db.WithContext(ctx).
+func (r *examSessionRepository) GetMany(ctx context.Context, examId int, limit int, offset int) ([]model.ExamSession, int64, error) {
+	var (
+		sessions []model.ExamSession
+		total    int64
+	)
+	query := r.db.WithContext(ctx).
+		Model(model.ExamSession{}).
+		Where("exam_id = ?", examId).
 		Limit(limit).
-		Offset(offset).
+		Offset(offset)
+
+	if err := query.
+		Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.
 		Find(&sessions).
 		Error; err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return sessions, nil
+	return sessions, total, nil
 }
 
 func (r *examSessionRepository) UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error) {
@@ -165,7 +177,6 @@ func (r *examSessionRepository) CheckUserSession(ctx context.Context, userId int
 	err := r.db.WithContext(ctx).
 		Where("user_id = ? AND exam_id = ? AND status = ?", userId, examId, model.SessionInProgress).
 		First(&session).Error
-
 	if err != nil {
 		return err
 	}

@@ -15,7 +15,7 @@ type ExamSessionService interface {
 	GetById(ctx context.Context, id int) (*model.ExamSession, error)
 	Update(ctx context.Context, id int, e model.UpdateExamSession) (*model.ExamSession, error)
 	Delete(ctx context.Context, id int) error
-	GetMany(ctx context.Context, limit int, offset int) ([]model.ExamSession, error)
+	GetMany(ctx context.Context, examId int, limit int, offset int) ([]model.ExamSession, int64, error)
 	UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error)
 	FinishExam(ctx context.Context, userId int, id int) (*model.ExamSession, error)
 	GetScore(ctx context.Context, sessionId int, userId int) (*model.ExamSession, error)
@@ -96,12 +96,16 @@ func (s *examSessionService) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *examSessionService) GetMany(ctx context.Context, limit int, offset int) ([]model.ExamSession, error) {
-	data, err := s.repo.GetMany(ctx, limit, offset)
+func (s *examSessionService) GetMany(ctx context.Context, examId int, limit int, offset int) ([]model.ExamSession, int64, error) {
+	data, total, err := s.repo.GetMany(ctx, examId, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get sessions: %w", err)
+		return nil, 0, fmt.Errorf("failed to get sessions: %w", err)
 	}
-	return data, nil
+	if len(data) == 0 {
+		return nil, 0, fmt.Errorf("no exam sessions found")
+	}
+
+	return data, total, nil
 }
 
 func (s *examSessionService) UpdateCurrNo(ctx context.Context, id int, no model.UpdateCurrNo) (*model.ExamSession, error) {
