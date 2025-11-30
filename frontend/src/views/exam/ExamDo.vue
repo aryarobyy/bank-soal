@@ -40,6 +40,7 @@
             <img 
               :src="constructImageUrl(currentQuestion.img_url)" 
               alt="Gambar Soal"
+              loading="lazy"
               class="max-h-[300px] max-w-full rounded-lg shadow-sm border border-gray-300 object-contain"
             />
           </div>
