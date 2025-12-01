@@ -107,7 +107,7 @@
           <button
             v-else
             class="px-4 py-2 rounded-md text-sm bg-green-600 text-white hover:bg-green-700"
-            @click="finishExam"
+            @click="finishExam(false)"
           >
             Selesaikan Ujian
           </button>
@@ -118,7 +118,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue"; // Tambahkan onUnmounted
 import { useRoute, useRouter } from "vue-router";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import { API_BASE_URL } from "../../core/constant"; 
@@ -140,6 +140,11 @@ const exam = ref(null);
 const questions = ref([]);
 const currentNo = ref(1);
 const answers = ref([]); 
+
+// Timer & Interval State
+const timeLeft = ref(0);
+let timer = null;
+let statusCheckInterval = null; // Variable untuk Polling Interval
 
 const currentQuestion = computed(() => {
   return questions.value[currentNo.value - 1] || null;
@@ -171,18 +176,13 @@ const selectAnswer = async (optionId) => {
   }
 };
 
-// untuk menampilkan gambar
 const constructImageUrl = (path) => {
   if (!path) return null;
   if (path.startsWith("http")) return path;
-  // Hapus titik atau slash di depan agar URL bersih
   const cleanPath = path.startsWith("./") ? path.substring(2) : path.startsWith("/") ? path.substring(1) : path;
   return `${API_BASE_URL}/${cleanPath}`;
 };
 
-// =TIMER LOGIC ==
-const timeLeft = ref(0);
-let timer = null;
 
 const startTimer = (seconds) => {
   timeLeft.value = seconds;
@@ -193,8 +193,8 @@ const startTimer = (seconds) => {
       timeLeft.value--;
     } else {
       clearInterval(timer);
-      alert("Waktu Habis! Ujian akan diselesaikan otomatis.");
-      finishExam(); 
+      // Panggil finishExam dengan mode Auto (true) saat waktu habis
+      finishExam(true); 
     }
   }, 1000);
 };
@@ -210,7 +210,7 @@ const formattedTime = computed(() => {
   return `${m}:${s < 10 ? "0" + s : s}`;
 });
 
-// == ON MOUNTED ==
+
 onMounted(async () => {
   const examId = Number(route.query.id);
   const sessionId = Number(route.query.session_id);
@@ -233,7 +233,7 @@ onMounted(async () => {
 
     answers.value = Array(questions.value.length).fill(null);
 
-    // Restore Jawaban
+    // 1. Restore Jawaban
     try {
         const savedAnswers = await getUserAnswersBySession(sessionId);
         if (savedAnswers && savedAnswers.length > 0) {
@@ -254,12 +254,12 @@ onMounted(async () => {
         console.warn("Gagal merestore jawaban:", err);
     }
 
-    // Restore Posisi
+    // 2. Restore Posisi Soal
     if (sessionData && sessionData.current_no && sessionData.current_no > 0) {
         currentNo.value = sessionData.current_no;
     }
 
-    // Restore Timer
+    // 3. Restore Timer Logic
     if (sessionData && sessionData.started_at) {
         const durationMinutes = exam.value?.long_time || 120;
         const startTime = new Date(sessionData.started_at).getTime();
@@ -270,12 +270,30 @@ onMounted(async () => {
         if (remainingSeconds > 0) {
             startTimer(remainingSeconds);
         } else {
-            alert("Waktu ujian telah habis.");
-            finishExam();
+            // Jika saat dimuat waktu sudah habis, langsung finish auto
+            finishExam(true);
         }
     } else {
         startTimer((exam.value?.long_time || 120) * 60);
     }
+
+    statusCheckInterval = setInterval(async () => {
+        try {
+            const res = await getExamSessionById(sessionId);
+            const currentSession = res.data || res;
+
+            // Jika Backend bilang status sudah 'finished' (karena waktu server habis/admin close)
+            // TAPI di frontend kita masih mengerjakan
+            if (currentSession.status === 'finished' || currentSession.status === 'submitted') {
+                clearInterval(statusCheckInterval);
+                clearInterval(timer);
+                alert("Sesi ujian telah berakhir menurut Server (Waktu Habis/Ditutup Admin).");
+                router.replace("/ujian");
+            }
+        } catch (err) {
+            console.warn("Gagal cek status berkala:", err);
+        }
+    }, 60000); // Cek setiap 60 detik (1 menit)
     
   } catch (e) {
     console.error(e);
@@ -295,6 +313,12 @@ onMounted(async () => {
   }
 });
 
+// CLEANUP SAAT KELUAR HALAMAN
+onUnmounted(() => {
+  if (timer) clearInterval(timer);
+  if (statusCheckInterval) clearInterval(statusCheckInterval);
+});
+
 const goToQuestion = (n) => { currentNo.value = n; };
 const nextQuestion = () => { if (currentNo.value < questions.value.length) currentNo.value++; };
 const prevQuestion = () => { if (currentNo.value > 1) currentNo.value--; };
@@ -306,32 +330,47 @@ watch(currentNo, async (newNo) => {
   }
 });
 
-const finishExam = async () => {
-  if (timeLeft.value > 0 && !confirm("Apakah Anda yakin ingin menyelesaikan ujian?")) return;
+
+
+const finishExam = async (isAuto = false) => {
+  // 1. Konfirmasi manual (skip jika waktu habis/auto)
+  if (!isAuto && timeLeft.value > 0) {
+     if (!confirm("Apakah Anda yakin ingin menyelesaikan ujian?")) return;
+  }
+
+  // Set loading agar user tahu proses sedang berjalan
+  loading.value = true;
 
   try {
     const sessionId = Number(route.query.session_id);
     const examId = Number(route.query.id); 
     let userId = user.value?.id || Number(localStorage.getItem("id"));
 
-    // Kirim ulang jawaban terakhir (opsional/safety)
-    for (let i = 0; i < questions.value.length; i++) {
-      const q = questions.value[i];
-      const selectedId = answers.value[i];
-      if (selectedId) {
-        const selectedOption = q.options.find((opt) => opt.id === selectedId);
-        if (selectedOption) {
-          await submitUserAnswer({
-            exam_session_id: sessionId,
-            user_id: userId,
-            question_id: q.id,
-            answer: selectedOption.option_label || selectedOption.label, 
-            exam_id: Number(examId) 
-          });
+   
+    const savePromises = questions.value.map((q, index) => {
+        const selectedId = answers.value[index];
+        if (selectedId) {
+            const selectedOption = q.options.find((opt) => opt.id === selectedId);
+            if (selectedOption) {
+              // Return promise
+                return submitUserAnswer({
+                    exam_session_id: sessionId,
+                    user_id: userId,
+                    question_id: q.id,
+                    answer: selectedOption.option_label || selectedOption.label, 
+                    exam_id: Number(examId) 
+                }).catch(e => console.warn(`Gagal save soal ${q.id}:`, e)); 
+            }
         }
-      }
-    }
+        return Promise.resolve();
+    });
 
+    // Tunggu semua proses simpan selesai
+    await Promise.allSettled(savePromises);
+
+    // ===============================================
+    // EKSEKUSI FINISH
+    // ===============================================
     const payload = {
       session_id: sessionId,
       exam_id: examId,
@@ -340,18 +379,33 @@ const finishExam = async () => {
     
     await finishExamSession(payload);
 
-    alert("Ujian selesai! Nilai Anda telah disimpan.");
-    router.push("/ujian"); 
+    // Feedback User
+    if (isAuto) {
+        alert("Waktu Habis! Jawaban Anda telah disimpan otomatis.");
+    } else {
+        alert("Ujian selesai! Nilai Anda telah disimpan.");
+    }
+
+    // Redirect Keluar (Replace agar tidak bisa Back)
+    router.replace("/ujian");
 
   } catch (err) {
     console.error("FinishExam Error:", err);
     const backendMsg = err.response?.data?.message;
-    if (backendMsg === "failed to find session: record not found") {
-        alert("Sesi selesai (Data tersimpan).");
-        router.push("/ujian");
+    
+    // Handle error khusus
+    if (backendMsg && (backendMsg.includes("not found") || backendMsg.includes("record not found"))) {
+        router.replace("/ujian");
     } else {
-        alert(`Gagal menyelesaikan ujian: ${backendMsg || "Terjadi kesalahan server."}`);
+        // Jika mode Auto (waktu habis), tetap paksa keluar walau error
+        if (isAuto) {
+             router.replace("/ujian");
+        } else {
+            alert(`Gagal menyelesaikan ujian: ${backendMsg || "Terjadi kesalahan server."}`);
+        }
     }
+  } finally {
+    loading.value = false;
   }
 };
 </script>
