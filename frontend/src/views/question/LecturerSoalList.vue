@@ -85,7 +85,7 @@
 </template>
 
 <script>
-// Pastikan path provider Anda sudah benar
+
 import { getmanyQuestions, deleteQuestion, getQuestionsBySubject, getQuestionsByCreator } from '../../provider/question.provider';
 
 export default {
@@ -96,7 +96,7 @@ export default {
       loading: true,
       subjectId: null, 
       creatorId: null,
-      currentPage: 1, // Akan di-set oleh 'handleRouteChange'
+      currentPage: 1, 
       limit: 10,
       totalSoal: 0,
     };
@@ -106,13 +106,13 @@ export default {
       return this.$route.path.startsWith('/admin/soal');
     },
     isFiltered() {
-      // 'show_last_page' dan 'page' tidak dihitung sebagai filter visual
+      
       return !!this.$route.query.subject_id || !!this.$route.query.creator_id;
     },
     pageTitle() {
       if (this.$route.query.subject_id) return 'Daftar Soal per Subjek';
       if (this.$route.query.creator_id) return 'Soal yang Dibuat Pengguna';
-      return 'Daftar Semua Soal'; // Judul default
+      return 'Daftar Semua Soal'; 
     },
     totalPages() {
       const pages = Math.ceil(this.totalSoal / this.limit);
@@ -120,50 +120,49 @@ export default {
     }
   },
   methods: {
-    // ## METHOD UTAMA UNTUK MENGATUR NAVIGASI & DATA ##
+  
     async handleRouteChange(isFirstLoad = false) {
       const query = this.$route.query;
       
-      // PRIORITAS 1: Datang dari 'Edit Soal'
+     
       if (query.page) {
         this.loading = true;
         this.currentPage = parseInt(query.page, 10) || 1;
         
-        // Bersihkan query 'page' dari URL, tapi pertahankan query filter
+        
         const newQuery = { ...query };
         delete newQuery.page;
         this.$router.replace({ query: newQuery });
         
-        this.fetchSoalList(); // Ambil data untuk halaman yang dituju
-
-      // PRIORITAS 2: Datang dari 'Buat Soal'
+        this.fetchSoalList(); 
+    
       } else if (query.show_last_page === 'true') {
         this.loading = true;
-        this.$router.replace({ query: {} }); // Hapus semua query
+        this.$router.replace({ query: {} }); 
         try {
-          // Ambil total untuk hitung halaman terakhir
+          
           const response = await getmanyQuestions(1, 0);
           this.totalSoal = response.total || 0;
-          this.currentPage = this.totalPages; // Set ke halaman terakhir
-          this.fetchSoalList(); // Ambil data halaman terakhir
+          this.currentPage = this.totalPages; 
+          this.fetchSoalList();
         } catch (error) {
           console.error("Gagal pre-fetch total soal:", error);
           this.currentPage = 1;
           this.fetchSoalList();
         }
         
-      // PRIORITAS 3: Alur Normal (Filter atau Load Pertama Kali)
+
       } else {
-        // Jika ini BUKAN load pertama (artinya user klik filter), reset ke hal 1
+     
         if (!isFirstLoad) {
           this.currentPage = 1;
         }
-        // Jika ini load pertama, 'currentPage' tetap 1 (default)
+        
         this.fetchSoalList();
       }
     },
 
-    // 'fetchSoalList' hanya mengambil data berdasarkan state saat ini
+   
     async fetchSoalList() {
       this.loading = true;
       this.subjectId = this.$route.query.subject_id;
@@ -194,7 +193,7 @@ export default {
       }
     },
     
-    // Tombol paginasi
+   
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
@@ -208,23 +207,23 @@ export default {
       }
     },
 
-    // ## editSoal DIPERBARUI ##
+
     editSoal(id) {
       const routeName = this.isAdminRoute ? 'AdminSoalEdit' : 'DosenSoalEdit';
       const query = {};
       
-      // Kirim filter subjek (jika ada)
+   
       if (this.subjectId) {
         query.return_subject_id = this.subjectId;
       }
       
-      // Kirim halaman saat ini
+  
       query.return_page = this.currentPage;
       
       this.$router.push({ 
         name: routeName, 
         params: { id: id },
-        query: query // query berisi return_page
+        query: query 
       });
     },
 
@@ -234,12 +233,12 @@ export default {
           await deleteQuestion(id);
           alert('Soal berhasil dihapus dari database!');
 
-          // Cek jika ini item terakhir di halaman terakhir
+          
           if (this.soalList.length === 1 && this.currentPage > 1) {
             this.currentPage--;
           }
           
-          this.fetchSoalList(); // Muat ulang data halaman saat ini
+          this.fetchSoalList(); 
         } catch (error) {
           console.error("Gagal menghapus soal:", error);
           alert('Gagal menghapus soal.');
@@ -248,22 +247,22 @@ export default {
     }
   },
   
-  // ## created DIPERBARUI ##
+
   created() {
-    // Panggil controller utama, tandai sebagai 'load pertama'
+
     this.handleRouteChange(true);
   },
   
-  // ## watch DIPERBARUI ##
+  
   watch: {
     '$route.query'(newQuery, oldQuery) {
-      // Cek apakah perubahan query ini dari 'replace' programatik kita
+   
       const isProgrammaticChange = (oldQuery.show_last_page && !newQuery.show_last_page) || 
                                    (oldQuery.page && !newQuery.page);
       
-      // Jika BUKAN perubahan programatik, jalankan handle (ini filter)
+   
       if (!isProgrammaticChange) {
-        // Kirim 'false' (bukan load pertama)
+     
         this.handleRouteChange(false); 
       }
     }
