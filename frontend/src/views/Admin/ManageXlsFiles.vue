@@ -83,14 +83,14 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
-// BARU: Impor fungsi download
+
 import { getAllXlsPaths, deleteXlsPath, downloadXlsFile } from "../../provider/xlspath.provider.js"; 
 
 const fileList = ref([]);
 const loading = ref(true);
 const error = ref(null);
 
-// BARU: State untuk melacak download
+
 const isDownloading = ref({});
 
 const currentPage = ref(1);
@@ -156,22 +156,22 @@ const getFileName = (path) => {
   return parts[parts.length - 1];
 };
 
-// BARU: Fungsi untuk menangani download
+
 const handleDownload = async (file) => {
   const fileId = file.id;
   isDownloading.value[fileId] = true;
 
   try {
-    // 1. Panggil provider (mengharapkan blob)
+
     const response = await downloadXlsFile(fileId);
 
-    // 2. Buat Blob dari data
+ 
     const blob = new Blob([response.data], { 
       type: response.headers['content-type'] 
     });
 
-    // 3. Tentukan nama file
-    let filename = getFileName(file.file_path); // Nama fallback
+ 
+    let filename = getFileName(file.file_path); 
     const contentDisposition = response.headers['content-disposition'];
     if (contentDisposition) {
       const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
@@ -180,7 +180,7 @@ const handleDownload = async (file) => {
       }
     }
 
-    // 4. Buat link sementara untuk memicu download
+  
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -188,13 +188,13 @@ const handleDownload = async (file) => {
     document.body.appendChild(link);
     link.click();
 
-    // 5. Bersihkan
+
     window.URL.revokeObjectURL(url);
     document.body.removeChild(link);
 
   } catch (error) {
     console.error("Gagal download file:", error);
-    // Jika backend mengirim error (JSON) padahal kita minta blob
+    
     if (error.response && error.response.data instanceof Blob) {
       try {
         const errorText = await error.response.data.text();

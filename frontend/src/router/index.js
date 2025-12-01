@@ -14,9 +14,9 @@ import Profile from '../views/profile/Profile.vue'
 import UpdateProfile from '../views/profile/UpdateProfile.vue'
 
 // --- HALAMAN UJIAN USER ---
-import UserExamList from '../views/exam/UserExamList.vue' // Halaman Katalog Ujian
-import ExamView from '../views/exam/ExamView.vue'         // Halaman Intro/Detail Ujian (Sebelum Mulai)
-import ExamDo from '../views/exam/ExamDo.vue'             // Halaman Mengerjakan Soal
+import UserExamList from '../views/exam/UserExamList.vue' 
+import ExamView from '../views/exam/ExamView.vue'        
+import ExamDo from '../views/exam/ExamDo.vue'            
 
 
 // Halaman Dosen
@@ -66,24 +66,24 @@ const examRoutes = [
 ]
 
 const routes = [
-  // 1. Rute Tanpa Layout (Login, Register, ExamDo)
+  
   { path: '/login', name: 'login', component: LoginView },
   
-  // Halaman Mengerjakan Ujian (Full Screen)
+
   {
     path: "/exam/start",
     name: "ExamDo",
     component: ExamDo,
   },
 
-  // 2. Rute User (Mahasiswa)
+
   {
     path: '/',
     component: UserLayout,
     children: [
       { path: '', name: 'HomePage', component: HomePage },
       
-      // Halaman Daftar Ujian (UserExamList)
+     
       { path: 'ujian', name: 'UserExamList', component: UserExamList },
     
  
@@ -100,7 +100,7 @@ const routes = [
     ]
   },
 
-  // 3. Rute Dosen
+
   {
     path: '/dosen',
     component: DosenLayout,
@@ -110,14 +110,14 @@ const routes = [
       { path: 'profile/:id', name: 'DosenProfile', component: Profile },
       { path: 'update-profile', name: 'DosenUpdateProfile', component: UpdateProfile },
       
-      // Manajemen Soal Dosen
+
       {
         path: 'soal',
         component: RouterWrapper, 
         children: soalRoutes.map(route => ({ ...route, name: `Dosen${route.name}` })) 
       },
       
-      // Manajemen Ujian Dosen
+   
       {
         path: 'exam', 
         component: RouterWrapper,
@@ -126,7 +126,7 @@ const routes = [
     ]
   },
 
-  // 4. Rute Admin
+
   {
     path: '/admin',
     component: AdminLayout,
@@ -137,21 +137,20 @@ const routes = [
       { path: 'mahasiswa', name: 'AdminManageMahasiswa', component: ManageMahasiswa },
       { path: 'dosen', name: 'AdminManageDosen', component: ManageDosen },
       
-      // Manajemen Soal Admin
+
       {
         path: 'soal',
         component: RouterWrapper, 
         children: soalRoutes.map(route => ({ ...route, name: `Admin${route.name}` }))
       },
-      
-      // Manajemen Ujian Admin
+
       {
         path: 'ujian', 
         component: RouterWrapper,
         children: examRoutes.map(route => ({ ...route, name: `Admin${route.name}` }))
       },
       
-      // Laporan Nilai
+
       {
         path: 'reports',
         name: 'AdminExamReports',
@@ -169,7 +168,7 @@ const routes = [
     ]
   },
 
-  // 5. Rute Super Admin
+
   {
     path: '/superadmin',
     component: SuperAdminLayout, 

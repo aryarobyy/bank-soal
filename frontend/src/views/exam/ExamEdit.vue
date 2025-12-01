@@ -117,20 +117,18 @@ const form = ref({
   long_time: 0,
 });
 
-// --- PERBAIKAN UTAMA DI SINI ---
-// Fungsi ini mengonversi UTC (dari backend) ke Waktu Lokal (untuk input HTML)
+
 const formatForInput = (dateStr) => {
   if (!dateStr) return "";
   try {
     const date = new Date(dateStr);
-    // Ambil komponen waktu lokal
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     
-    // Gabungkan jadi format YYYY-MM-DDTHH:mm
+    
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   } catch (e) {
     console.error("Invalid date format from backend:", dateStr);
@@ -138,7 +136,7 @@ const formatForInput = (dateStr) => {
   }
 };
 
-// 1. Load Data
+
 onMounted(async () => {
   try {
     const res = await getExamById(id);
@@ -146,12 +144,12 @@ onMounted(async () => {
     
     if (!exam) throw new Error("Data ujian tidak ditemukan!");
 
-    // Isi form
+   
     form.value = {
       title: exam.title,
       description: exam.description || "",
       difficulty: exam.difficulty || "easy",
-      // Gunakan fungsi format baru agar jam sesuai zona waktu user
+    
       started_at: formatForInput(exam.started_at),
       finished_at: formatForInput(exam.finished_at),
       long_time: exam.long_time || 0,
@@ -183,8 +181,7 @@ const handleSubmit = async () => {
       return;
     }
 
-    // Konversi ke ISO String (UTC) untuk dikirim ke Backend
-    // Backend Go sangat suka format ISO 8601 lengkap
+
     const payload = {
       title: form.value.title,
       description: form.value.description,

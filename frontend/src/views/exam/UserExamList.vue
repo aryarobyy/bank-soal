@@ -121,20 +121,20 @@ import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 const router = useRouter();
 const { user } = useGetCurrentUser();
 
-// State Tabs
-const activeTab = ref('available'); // 'available' or 'history'
 
-// State Data
+const activeTab = ref('available'); 
+
+
 const exams = ref([]);
 const historyList = ref([]);
 const loading = ref(true);
 const loadingHistory = ref(false);
 
-// State Filter
+
 const searchQuery = ref("");
 const selectedDifficulty = ref("");
 
-// 1. Fetch Exams (Untuk Tab Available & Mapping Judul)
+
 const fetchExams = async () => {
   try {
     loading.value = true;
@@ -151,14 +151,13 @@ const fetchExams = async () => {
   }
 };
 
-// 2. Fetch History (Untuk Tab History)
+
 const fetchHistory = async () => {
   if (!user.value) return;
   try {
     loadingHistory.value = true;
     
-    // PERBAIKAN: Kirim ID User asli (Bukan 0)
-    // Karena backend di Postman butuh ?user_id=1
+ 
     const res = await getExamSessionByUser(user.value.id, 50, 0); 
     
     if (Array.isArray(res)) {

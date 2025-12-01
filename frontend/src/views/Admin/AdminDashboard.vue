@@ -95,23 +95,19 @@ const fetchDashboardData = async () => {
     const [userResponse, lecturerResponse, examResponse, questionResponse] = await Promise.all([
       getUsers(10, 0), 
       getUsersByRole('lecturer', 1, 0),
-      getAllExam(1, 0), // Tetap ambil 1 saja untuk efisiensi
+      getAllExam(1, 0), 
       getmanyQuestions(1, 0)
     ]);
 
-    // Data Pengguna
+ 
     const userList = userResponse.data || [];
     const totalUsers = userResponse.total || 0;
     
-    // Data Dosen
     const totalLecturers = lecturerResponse.total || 0;
     
-    // Data Ujian (DIPERBAIKI)
-    // Langsung ambil .total dari examResponse, jangan masuk ke .data lagi
-    // Tambahkan fallback examResponse?.total untuk jaga-jaga
+   
     const totalExams = examResponse?.total || 0;
 
-    // Data Soal
     const totalQuestions = questionResponse.total || 0; 
 
     // Set Statistik
@@ -120,7 +116,7 @@ const fetchDashboardData = async () => {
     stats.value.totalExams = totalExams; 
     stats.value.totalQuestions = totalQuestions;
 
-    // Set Recent Users
+   
     recentUsers.value = userList.slice(-5).reverse();
 
   } catch (err) {

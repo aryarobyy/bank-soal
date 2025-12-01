@@ -33,11 +33,10 @@ export default {
   },
   methods: {
     handleConfirm() {
-      // Logika untuk mengirim email reset password
-      // Untuk sekarang, kita hanya menampilkan alert
+    
       if (this.email) {
         alert(`Tautan reset password telah dikirim ke: ${this.email}`);
-        // Di aplikasi nyata, di sini Anda akan memanggil API backend
+      
       } else {
         alert('Silakan masukkan email Anda.');
       }
@@ -47,7 +46,7 @@ export default {
 </script>
 
 <style scoped>
-/* Menggunakan font dari Google Fonts untuk tampilan yang lebih modern */
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
 .page-container {
@@ -60,14 +59,14 @@ export default {
   width: 100%;
 }
 
-/* KODE DI BAWAH INI SUDAH DISAMAKAN DENGAN HALAMAN LOGIN */
+
 .forgot-password-card {
   position: relative;
   background: #ffffff;
-  padding: 40px 50px; /* <-- Diubah agar sama dengan login */
-  border-radius: 15px; /* <-- Diubah agar sama dengan login */
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* <-- Diubah agar sama dengan login */
-  width: 400px; /* <-- Diubah agar sama dengan login */
+  padding: 40px 50px; 
+  border-radius: 15px; 
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); 
+  width: 400px; 
   text-align: center;
   box-sizing: border-box;
 }

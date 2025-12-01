@@ -244,7 +244,6 @@ const examQuestions = ref([]);
 const loading = ref(true);
 const error = ref("");
 
-// State Modal & Pagination
 const showAddSoalModal = ref(false);
 const modalLoading = ref(false);
 const saveLoading = ref(false);
@@ -253,9 +252,8 @@ const selectedSubject = ref(null);
 const questionsForSubject = ref([]);
 const selectedQuestions = ref([]);
 
-// Pagination State Khusus Modal
 const modalPage = ref(1);
-const modalLimit = 10; // Ambil 10 soal per halaman agar tidak error backend
+const modalLimit = 10; 
 const modalTotalItems = ref(0);
 
 // Computed Total Pages Modal
@@ -264,7 +262,7 @@ const modalTotalPages = computed(() => {
   return Math.ceil(modalTotalItems.value / modalLimit);
 });
 
-// Load Detail Ujian
+
 const loadExamDetails = async () => {
   try {
     const id = route.params.id;
@@ -276,7 +274,7 @@ const loadExamDetails = async () => {
   }
 };
 
-// Load Daftar Soal yang sudah ada di Ujian
+
 const loadExamQuestions = async () => {
   try {
     const id = route.params.id;
@@ -312,12 +310,12 @@ const handleDeleteQuestion = async (question) => {
   }
 };
 
-// Open Modal
+
 const openAddSoalModal = () => {
   selectedSubject.value = null;
   questionsForSubject.value = [];
   selectedQuestions.value = [];
-  modalPage.value = 1; // Reset page
+  modalPage.value = 1; 
   modalTotalItems.value = 0;
   
   fetchAvailableSubjects();
@@ -328,7 +326,7 @@ const closeAddSoalModal = () => {
   showAddSoalModal.value = false;
 };
 
-// Fetch Subjects
+
 const fetchAvailableSubjects = async () => {
   modalLoading.value = true;
   try {
@@ -341,7 +339,7 @@ const fetchAvailableSubjects = async () => {
   }
 };
 
-// Fetch Soal per Halaman (PAGINATION FIX)
+
 const fetchQuestionsForSubject = async (subjectId) => {
   if (!subjectId) {
     questionsForSubject.value = [];
@@ -350,21 +348,20 @@ const fetchQuestionsForSubject = async (subjectId) => {
   
   modalLoading.value = true;
   try {
-    // Hitung offset berdasarkan halaman saat ini
+ 
     const offset = (modalPage.value - 1) * modalLimit;
     
-    // Panggil API dengan limit kecil (10)
+ 
     const result = await getQuestionsBySubject(subjectId, modalLimit, offset);
     
-    // Backend Anda harusnya return { data: [], total: ... }
-    // Jika return array, handle fallback
+ 
     if (result.data && Array.isArray(result.data)) {
        questionsForSubject.value = result.data;
        modalTotalItems.value = result.total || result.data.length; 
     } else if (Array.isArray(result)) {
-       // Jika backend lama return array langsung (tanpa total)
+      
        questionsForSubject.value = result;
-       modalTotalItems.value = result.length; // Pagination mungkin kurang akurat
+       modalTotalItems.value = result.length; 
     } else {
        questionsForSubject.value = [];
        modalTotalItems.value = 0;
@@ -378,7 +375,7 @@ const fetchQuestionsForSubject = async (subjectId) => {
   }
 };
 
-// Navigasi Pagination Modal
+
 const nextModalPage = () => {
   if (modalPage.value < modalTotalPages.value) {
     modalPage.value++;
@@ -410,12 +407,12 @@ const handleAddSoal = async () => {
   }
 };
 
-// Helper: Cek apakah soal sudah ada di ujian (untuk disable checkbox)
+
 const isQuestionAlreadyAdded = (qId) => {
   return examQuestions.value.some(eq => eq.id === qId);
 };
 
-// Watch jika Subject berubah -> Reset page ke 1 & fetch
+
 watch(selectedSubject, (newSubjectId) => {
   if (newSubjectId) {
     modalPage.value = 1;
@@ -425,7 +422,7 @@ watch(selectedSubject, (newSubjectId) => {
   }
 });
 
-// Formatters
+
 const formatDate = (date) => {
   if (!date) return "-";
   return new Date(date).toLocaleString("id-ID", {
