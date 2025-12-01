@@ -13,7 +13,7 @@
           <input
             v-model="form.title"
             type="text"
-            class="w-full border rounded-lg p-2 bg-gray-50"
+            class="w-full border rounded-lg p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
             required
           />
         </div>
@@ -23,7 +23,7 @@
           <textarea
             v-model="form.description"
             rows="3"
-            class="w-full border rounded-lg p-2 bg-gray-50"
+            class="w-full border rounded-lg p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
           ></textarea>
         </div>
 
@@ -31,7 +31,7 @@
           <label class="font-semibold text-gray-700">Kesulitan</label>
           <select
             v-model="form.difficulty"
-            class="w-full border rounded-lg p-2 bg-gray-50"
+            class="w-full border rounded-lg p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
             required
           >
             <option value="easy">Mudah</option>
@@ -40,13 +40,13 @@
           </select>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="font-semibold text-gray-700">Tanggal Mulai</label>
             <input
               v-model="form.started_at"
               type="datetime-local"
-              class="w-full border rounded-lg p-2 bg-gray-50"
+              class="w-full border rounded-lg p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
               required
             />
           </div>
@@ -56,7 +56,7 @@
             <input
               v-model="form.finished_at"
               type="datetime-local"
-              class="w-full border rounded-lg p-2 bg-gray-50"
+              class="w-full border rounded-lg p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
               required
             />
           </div>
@@ -68,40 +68,45 @@
             v-model.number="form.long_time"
             type="number"
             min="1"
-            class="w-full border rounded-lg p-2 bg-gray-50"
+            class="w-full border rounded-lg p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
             required
           />
         </div>
 
-        <button
-          type="submit"
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg py-2 transition"
-          :disabled="saving"
-        >
-          {{ saving ? "Menyimpan..." : "Simpan Perubahan" }}
-        </button>
+        <div class="pt-4 flex flex-col gap-3">
+          <button
+            type="submit"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg py-2 transition disabled:opacity-50"
+            :disabled="saving"
+          >
+            {{ saving ? "Menyimpan..." : "Simpan Perubahan" }}
+          </button>
 
-        <router-link
-          :to="{ name: isAdminRoute ? 'AdminManageExam' : 'DosenManageExam' }"
-          class="block text-center text-gray-600 hover:underline mt-3"
-        >
-          🔙 Kembali ke Daftar Ujian
-        </router-link>
+          <button
+            type="button"
+            @click="handleCancel"
+            class="w-full text-center text-gray-600 hover:text-gray-900 hover:underline transition"
+          >
+            🔙 Kembali ke Daftar Ujian
+          </button>
+        </div>
       </form>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue"; // Impor computed
+import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-// Pastikan path provider Anda sudah benar
-import { getExamById, updateExam } from "/src/provider/exam.provider";
+import { getExamById, updateExam } from "../../provider/exam.provider";
 
 const route = useRoute();
 const router = useRouter();
-// Tambahkan computed isAdminRoute
 const isAdminRoute = computed(() => route.path.startsWith('/admin'));
+
+const id = route.params.id;
+const loading = ref(true);
+const saving = ref(false);
 
 const form = ref({
   title: "",
@@ -112,54 +117,92 @@ const form = ref({
   long_time: 0,
 });
 
-const loading = ref(true);
-const saving = ref(false);
-const id = route.params.id;
+// --- PERBAIKAN UTAMA DI SINI ---
+// Fungsi ini mengonversi UTC (dari backend) ke Waktu Lokal (untuk input HTML)
+const formatForInput = (dateStr) => {
+  if (!dateStr) return "";
+  try {
+    const date = new Date(dateStr);
+    // Ambil komponen waktu lokal
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    // Gabungkan jadi format YYYY-MM-DDTHH:mm
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  } catch (e) {
+    console.error("Invalid date format from backend:", dateStr);
+    return "";
+  }
+};
 
-// Ambil data ujian berdasarkan ID dan isi form
+// 1. Load Data
 onMounted(async () => {
   try {
     const res = await getExamById(id);
     const exam = res?.data || res;
+    
     if (!exam) throw new Error("Data ujian tidak ditemukan!");
 
-    // isi form
+    // Isi form
     form.value = {
       title: exam.title,
       description: exam.description || "",
       difficulty: exam.difficulty || "easy",
-      started_at: exam.started_at ? exam.started_at.slice(0, 16) : "",
-      finished_at: exam.finished_at ? exam.finished_at.slice(0, 16) : "",
+      // Gunakan fungsi format baru agar jam sesuai zona waktu user
+      started_at: formatForInput(exam.started_at),
+      finished_at: formatForInput(exam.finished_at),
       long_time: exam.long_time || 0,
     };
   } catch (err) {
-    alert("❌ Gagal memuat data ujian!");
     console.error(err);
-    // Navigasi dinamis
-    router.push({ name: isAdminRoute.value ? 'AdminManageExam' : 'DosenManageExam' });
+    alert("❌ Gagal memuat data ujian!");
+    goBack();
   } finally {
     loading.value = false;
   }
 });
 
-// Submit perubahan
+const handleCancel = () => {
+  goBack();
+};
+
+const goBack = () => {
+  router.push({ name: isAdminRoute.value ? 'AdminManageExam' : 'DosenManageExam' });
+};
+
+// 2. Submit Data
 const handleSubmit = async () => {
   saving.value = true;
   try {
+    if (!form.value.started_at || !form.value.finished_at) {
+      alert("Tanggal mulai dan selesai harus diisi!");
+      saving.value = false;
+      return;
+    }
+
+    // Konversi ke ISO String (UTC) untuk dikirim ke Backend
+    // Backend Go sangat suka format ISO 8601 lengkap
     const payload = {
-      ...form.value,
+      title: form.value.title,
+      description: form.value.description,
+      difficulty: form.value.difficulty,
       long_time: Number(form.value.long_time),
       started_at: new Date(form.value.started_at).toISOString(),
       finished_at: new Date(form.value.finished_at).toISOString(),
     };
 
     await updateExam(Number(id), payload);
+    
     alert("✅ Ujian berhasil diperbarui!");
-    // Navigasi dinamis
-    router.push({ name: isAdminRoute.value ? 'AdminManageExam' : 'DosenManageExam' });
+    goBack();
+
   } catch (err) {
     console.error("Gagal update ujian:", err);
-    alert("❌ Gagal menyimpan perubahan.");
+    const msg = err.response?.data?.message || "Gagal menyimpan perubahan.";
+    alert(`❌ ${msg}`);
   } finally {
     saving.value = false;
   }
