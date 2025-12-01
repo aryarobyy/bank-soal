@@ -79,7 +79,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-// ## 1. IMPORT ICON BARU (BookText) ##
+
 import { ArrowLeft, User, CreditCard, Mail, Camera, Clipboard, BookText } from 'lucide-vue-next';
 import { useUser } from '../../hooks/useGetCurrentUser'; 
 import Button from '../../components/ui/Button.vue';
@@ -98,7 +98,7 @@ const avatarInputRef = ref(null);
 const avatarFile = ref(null);
 const avatarPreview = ref(null);
 
-// ## 2. TAMBAHKAN 'major' DAN 'faculty' KE formData ##
+
 const formData = ref({
   name: '',
   nim: '',
@@ -116,7 +116,7 @@ onMounted(() => {
   console.log("Mounted user:", user.value)
 
   if (user.value) {
-    // ## 2. POPULATE 'major' DAN 'faculty' SAAT MOUNTED ##
+    
     formData.value = {
       name: user.value.name || '',
       email: user.value.email || '',
@@ -127,7 +127,7 @@ onMounted(() => {
       faculty: user.value.faculty || '',
     };
     
-    // Set avatar preview dari database
+  
     if (user.value.img_url) {
       avatarPreview.value = user.value.img_url;
     }
@@ -160,7 +160,7 @@ onMounted(() => {
         placeholder: 'Enter your NIDN', icon: Clipboard, type: 'text'
       });
     } 
-    // ## 3. TAMBAHKAN BLOK 'else if' UNTUK ROLE 'admin' ##
+   
     else if (user.value.role === 'admin') {
       fields.value.push({
         name: 'major', title: 'Jurusan (Major)',
@@ -195,7 +195,7 @@ const handleFileSelect = (event) => {
 
   avatarFile.value = file;
   
-  // Preview gambar yang baru dipilih
+
   const reader = new FileReader();
   reader.onload = (e) => {
     avatarPreview.value = e.target.result;
@@ -238,13 +238,13 @@ const handleSubmit = async () => {
       dataToUpdate.nip = formData.value.nip;
       dataToUpdate.nidn = formData.value.nidn;
     }
-    // ## 4. TAMBAHKAN BLOK 'else if' UNTUK SUBMIT DATA 'admin' ##
+    
     else if (user.value.role === 'admin') {
       dataToUpdate.major = formData.value.major;
       dataToUpdate.faculty = formData.value.faculty;
     }
 
-    // Kirim file gambar jika ada
+
     if (avatarFile.value) {
       dataToUpdate.image = avatarFile.value; 
     }
@@ -256,7 +256,7 @@ const handleSubmit = async () => {
     
     const updatedUserData = response.data;
     
-    // PENTING: Fetch ulang data user dari server untuk memastikan img_url terbaru
+
     console.log('Fetching fresh user data from server...');
     const freshUserResponse = await getUserById(user.value.id);
     const freshUserData = freshUserResponse.data;
@@ -264,14 +264,14 @@ const handleSubmit = async () => {
     console.log('Fresh user data:', freshUserData);
     console.log('Image URL:', freshUserData.img_url);
     
-    // Update semua state dengan data terbaru
+  
     setUser(freshUserData); 
     removeValue();
     setValue(freshUserData);
     
     toastRef.value.showToast("success", "Profile Updated", "Your profile has been updated successfully!");
     
-    // Kembali ke halaman profile setelah 1.5 detik
+    
     setTimeout(() => {
       router.back();
     }, 1500);
