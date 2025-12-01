@@ -14,6 +14,7 @@
       </div>
 
       <form @submit.prevent="handleSubmit" class="space-y-5">
+        
         <div v-for="field in fields" :key="field.name">
           <label class="block text-sm font-medium text-gray-700 mb-2">{{
             field.label
@@ -23,16 +24,13 @@
               v-model="formData[field.name]"
               :title="field.title"
               :place-holder="field.placeholder"
-              :required="true"
+              :required="false" 
               :id="field.id"
               :icon="field.icon"
               :type="field.type"
             />
           </div>
-          <p v-if="errors[field.name]" class="text-red-500 text-sm mt-1">
-            {{ errors[field.name] }}
-          </p>
-        </div>
+          </div>
 
         <Button
           :text="isSubmitting ? 'Masuk...' : 'Masuk'"
@@ -52,7 +50,6 @@
 
 <script setup>
 import { ref } from "vue";
-// <-- PERUBAHAN: Impor 'User' menggantikan 'Mail'
 import { User, Lock, GraduationCap } from "lucide-vue-next";
 import Input from '../../components/ui/Input.vue'
 import Button from "../../components/ui/Button.vue";
@@ -67,30 +64,27 @@ const { setValue: setId } = useLocalStorage("id");
 const { setUser: setGlobalUser } = useUser();
 
 const toastRef = ref(null);
-// <-- PERUBAHAN: 'email' diubah menjadi 'login_id'
+const router = useRouter()
+
 const formData = ref({
   login_id: "",
   password: "",
 });
-const errors = ref({});
-const isSubmitting = ref(false);
-const router = useRouter()
 
-// <-- PERUBAHAN: Field email diganti dengan login_id
+const isSubmitting = ref(false);
+
 const fields = [
   { 
     id: 1, 
     name: "login_id", 
-    
     title: "Login ID", 
     type: "text", 
     placeholder: "NIM / NIDN / Username", 
-    icon: User, // <-- Ikon diubah
+    icon: User, 
   },
   { 
     id: 2, 
     name: "password", 
-    
     title: "Password", 
     type: "password", 
     placeholder: "Minimal 6 karakter", 
@@ -98,13 +92,39 @@ const fields = [
   },
 ];
 
+
+const validateForm = () => {
+  const { login_id, password } = formData.value;
+
+  if (!login_id && !password) {
+    toastRef.value.showToast("error", "Validasi Gagal", "Harap isi Login ID dan Password");
+    return false;
+  }
+
+ 
+  if (!login_id) {
+    toastRef.value.showToast("error", "Validasi Gagal", "Login ID belum diisi");
+    return false;
+  }
+
+  if (!password) {
+    toastRef.value.showToast("error", "Validasi Gagal", "Password belum diisi");
+    return false;
+  }
+
+  return true;
+};
+
 const handleSubmit = async () => {
+
+  if (!validateForm()) {
+    return; 
+  }
+
   try {
     isSubmitting.value = true;
-    // Panggilan 'login' tidak perlu diubah,
-    // karena 'formData.value' sekarang sudah berisi { login_id: "...", password: "..." }
-    const data = await login(formData.value);
     
+    const data = await login(formData.value);
     const userData = data.data.data;
 
     if (data.data.token && userData) {
@@ -124,22 +144,25 @@ const handleSubmit = async () => {
       redirectPath = '/superadmin/dashboard';
     }
 
+    
     toastRef.value.showToast(
       "success",
       "Login Berhasil",
       "Selamat datang kembali!"
     );
 
-    isSubmitting.value = false;
     router.push(redirectPath);
 
   } catch (error) {
-    console.log("Something error", error.response?.data);
+    console.log("Login error", error.response?.data);
+    
+
     toastRef.value.showToast(
       "error",
       "Login Gagal",
-      "Login ID atau password salah." // <-- Pesan error diperbarui
+      "Login ID atau Password yang Anda masukkan salah" 
     );
+  } finally {
     isSubmitting.value = false;
   }
 };
