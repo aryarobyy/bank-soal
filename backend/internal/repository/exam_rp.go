@@ -89,10 +89,10 @@ func (r *examRepository) Update(ctx context.Context, e model.Exam, id int) (*mod
 	if e.Difficulty != "" {
 		updateData["difficulty"] = e.Difficulty
 	}
-	if e.StartedAt == nil || e.StartedAt.IsZero() {
+	if !e.StartedAt.IsZero() {
 		updateData["started_at"] = e.StartedAt
 	}
-	if e.FinishedAt == nil || e.FinishedAt.IsZero() {
+	if !e.StartedAt.IsZero() {
 		updateData["finished_at"] = e.FinishedAt
 	}
 	if e.LongTime != 0 {

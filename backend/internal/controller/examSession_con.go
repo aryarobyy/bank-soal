@@ -240,3 +240,22 @@ func (h *ExamSessionController) GetUserSession(c *gin.Context) {
 
 	helper.Success(c, gin.H{"data": sessionsRes, "total": total}, "get data success")
 }
+
+// sementara gk pakai socket ngejar dl, pakai ini tiap 5 menit biar bisa keusir
+func (h *ExamSessionController) CheckUserSession(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	sessionStr := c.Query("id")
+	sessionId := helper.BindToInt(sessionStr)
+
+	examIdStr := c.Query("exam_id")
+	examId := helper.BindToInt(examIdStr)
+
+	err := h.service.CheckSession(ctx, examId, sessionId)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	helper.Success(c, "", "user can continue the exam")
+}

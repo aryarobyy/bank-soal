@@ -45,7 +45,6 @@ func NewExamSessionService(
 }
 
 func (s *examSessionService) Create(ctx context.Context, e model.ExamSession, userId int, examId int) (*model.ExamSession, error) {
-
 	existing, err := s.repo.CheckUserSession(ctx, userId, examId)
 	if err == nil {
 		return existing, nil
@@ -239,6 +238,7 @@ func (s *examSessionService) CheckSession(ctx context.Context, examId int, sessi
 		return fmt.Errorf("exam has not started")
 	}
 	if now.After(*exam.FinishedAt) {
+		_, _ = s.FinishExam(ctx, session.UserId, examId)
 		return fmt.Errorf("exam is already closed")
 	}
 
@@ -250,8 +250,8 @@ func (s *examSessionService) CheckSession(ctx context.Context, examId int, sessi
 	}
 
 	if now.After(finalExpiry) {
+		_, _ = s.FinishExam(ctx, session.UserId, examId)
 		return fmt.Errorf("session already finished")
 	}
-
 	return nil
 }

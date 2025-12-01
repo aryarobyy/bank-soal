@@ -22,6 +22,7 @@ func ExamSessionRoutes(r *gin.Engine, examSession *controller.ExamSessionControl
 			auth.DELETE("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), examSession.Delete)
 			auth.GET("/score", examSession.GetScore)
 			auth.GET("/user", examSession.GetUserSession)
+			auth.POST("/check", examSession.CheckUserSession)
 		}
 	}
 }
