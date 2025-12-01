@@ -116,3 +116,14 @@ export const getQuestionsBySubject = async (subjectId, limit, offset) => {
 
   return res.data.data; 
 };
+
+export const createWithJson = async () => {
+  const res = await ApiHandler.post(
+    `/${QUESTION}/json/`,{
+      headers: {
+      'Content-Type': 'application/json',
+    },
+  }
+  )
+  return res.data.data
+}

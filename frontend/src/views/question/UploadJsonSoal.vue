@@ -38,68 +38,70 @@
   </div>
 </template>
 
-<script>
-// Pastikan path impor ini benar dari lokasi file Anda
-import { createQuestionFromJson } from '../../provider/question.provider'; 
+<script setup>
+import { ref, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { createQuestionFromJson } from '../../provider/question.provider';
 
-export default {
-  name: 'UploadJsonSoal',
-  data() {
-    return {
-      isDragging: false,
-      selectedFile: null, // Store the whole file object
-      selectedFileName: null,
-    };
-  },
-  
-  // ## 1. TAMBAHKAN COMPUTED PROPERTY INI ##
-  computed: {
-    isAdminRoute() {
-      return this.$route.path.startsWith('/admin/soal');
-    },
-    // Membuat properti untuk nama rute 'list' yang benar
-    listRouteName() {
-      return this.isAdminRoute ? 'AdminSoalList' : 'DosenSoalList';
-    }
-  },
-  
-  methods: {
-    triggerFileInput() { this.$refs.fileInput.click(); },
-    handleFileSelect(event) { this.processFile(event.target.files[0]); },
-    handleDrop(event) { this.isDragging = false; this.processFile(event.dataTransfer.files[0]); },
-    processFile(file) {
-      if (file && file.type === 'application/json') {
-        this.selectedFile = file; // Save the file object
-        this.selectedFileName = file.name;
-      } else {
-        alert('Hanya file dengan format .json yang diperbolehkan!'); 
-        this.selectedFile = null;
-        this.selectedFileName = null;
-      }
-    },
-    
-    async saveFile() {
-      if (!this.selectedFile) {
-        alert('Silakan pilih file terlebih dahulu.'); 
-        return;
-      }
+const route = useRoute();
+const router = useRouter();
 
-      const formData = new FormData();
-      formData.append('file', this.selectedFile);
+const isDragging = ref(false);
+const selectedFile = ref(null);
+const selectedFileName = ref(null);
 
-      try {
-        await createQuestionFromJson(formData);
-        alert(`File ${this.selectedFileName} berhasil diunggah dan soal telah dibuat!`);
-        
-        // ## 2. PERBAIKI METODE INI (MENGGUNAKAN NAMED ROUTE) ##
-        // Menggunakan nama rute yang sudah kita siapkan di computed
-        this.$router.push({ name: this.listRouteName });
+const isAdminRoute = computed(() =>
+  route.path.startsWith('/admin/soal')
+);
 
-      } catch (error) {
-        console.error("Gagal mengunggah file JSON:", error);
-        alert('Terjadi kesalahan saat menyimpan file. Silakan periksa format JSON Anda.');
-      }
-    }
+const listRouteName = computed(() =>
+  isAdminRoute.value ? 'AdminSoalList' : 'DosenSoalList'
+);
+
+const fileInput = ref(null);
+
+const triggerFileInput = () => {
+  fileInput.value.click();
+}
+
+const handleFileSelect = (event) => {
+  processFile(event.target.files[0]);
+}
+
+const handleDrop = (event) => {
+  isDragging.value = false;
+  processFile(event.dataTransfer.files[0]);
+}
+
+const processFile = (file) =>  {
+  if (file && file.type === 'application/json') {
+    selectedFile.value = file;
+    selectedFileName.value = file.name;
+  } else {
+    alert('Hanya file dengan format .json yang diperbolehkan!');
+    selectedFile.value = null;
+    selectedFileName.value = null;
+  }
+}
+
+const saveFile = async () => {
+  if (!selectedFile.value) {
+    alert('Silakan pilih file terlebih dahulu.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', selectedFile.value);
+
+  try {
+    await createQuestionFromJson(formData);
+    alert(`File ${selectedFileName.value} berhasil diunggah dan soal telah dibuat!`);
+
+    router.push({ name: listRouteName.value });
+  } catch (error) {
+    console.error("Gagal mengunggah file JSON:", error);
+    alert('Terjadi kesalahan saat menyimpan file. Silakan periksa format JSON Anda.');
   }
 };
+
 </script>
