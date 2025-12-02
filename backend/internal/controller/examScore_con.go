@@ -62,7 +62,7 @@ func (h *ExamScoreController) GetMany(c *gin.Context) {
 	idStr := c.Query("exam_id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid user id")
+		helper.Error(c, http.StatusBadRequest, "invalid exam id")
 		return
 	}
 
@@ -93,7 +93,7 @@ func (h *ExamScoreController) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid user id")
+		helper.Error(c, http.StatusBadRequest, "invalid score id")
 		return
 	}
 	var data model.ExamScore
@@ -120,7 +120,7 @@ func (h *ExamScoreController) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid user id")
+		helper.Error(c, http.StatusBadRequest, "invalid score id")
 		return
 	}
 	err = h.service.Delete(ctx, id)

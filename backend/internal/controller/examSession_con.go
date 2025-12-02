@@ -52,7 +52,7 @@ func (h *ExamSessionController) GetById(c *gin.Context) {
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid id")
+		helper.Error(c, http.StatusBadRequest, "invalid session id")
 		return
 	}
 
@@ -73,7 +73,7 @@ func (h *ExamSessionController) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid id")
+		helper.Error(c, http.StatusBadRequest, "invalid session id")
 		return
 	}
 
@@ -100,7 +100,7 @@ func (h *ExamSessionController) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid id")
+		helper.Error(c, http.StatusBadRequest, "invalid session id")
 		return
 	}
 
@@ -141,7 +141,7 @@ func (h *ExamSessionController) UpdateCurrNo(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid id")
+		helper.Error(c, http.StatusBadRequest, "invalid session id")
 		return
 	}
 

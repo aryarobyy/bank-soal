@@ -159,6 +159,7 @@ func (s *examSessionService) FinishExam(ctx context.Context, userId int, id int)
 		Score:      session.Score,
 		Percentage: session.Percentage,
 		MaxScore:   session.MaxScore,
+		IsPassed:   session.IsPassed,
 	}
 
 	updated, err := s.repo.FinishExam(ctx, id, data)

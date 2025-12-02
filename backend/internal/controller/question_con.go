@@ -168,6 +168,7 @@ func (h *QuestionController) CreateFromJson(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	file, err := c.FormFile("file")
+	println("SLSKSKAOKS", file)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, "File tidak ditemukan. Gunakan key 'file' untuk upload")
 		return

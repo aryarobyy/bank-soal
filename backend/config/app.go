@@ -1,6 +1,8 @@
 package config
 
 import (
+	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -33,8 +35,9 @@ type Controllers struct {
 func NewApp(db *gorm.DB) *App {
 	router := gin.Default()
 
+	origins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
 	corsConfig := cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     origins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},

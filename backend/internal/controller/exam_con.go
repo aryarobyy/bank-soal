@@ -49,7 +49,7 @@ func (h *ExamController) GetById(c *gin.Context) {
 	idStr := c.Query("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid data id")
+		helper.Error(c, http.StatusBadRequest, "invalid exam id")
 		return
 	}
 

@@ -569,7 +569,7 @@ func (h *UserController) BulkInsert(c *gin.Context) {
 		return
 	}
 
-	prefix := year[len(year)-2:]
+	prefix := year[len(year)-3:]
 
 	startStr := c.Query("start")
 	endStr := c.Query("end")

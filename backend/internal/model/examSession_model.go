@@ -49,6 +49,7 @@ type FinishExam struct {
 	Score      int           `json:"score"`
 	MaxScore   int           `json:"max_score"`
 	Percentage float64       `json:"percentage"`
+	IsPassed   bool          `json:"is_passed"`
 }
 
 type SessionResponse struct {
