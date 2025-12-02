@@ -4,11 +4,13 @@
   >
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
       <div class="text-center mb-8">
-        <div
-          class="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full mb-4"
-        >
-          <GraduationCap class="w-8 h-8 text-white" />
-        </div>
+        
+        <img 
+          :src="logoImage" 
+          alt="Logo Latih.in" 
+          class="w-24 h-auto mb-4 mx-auto object-contain"
+        />
+
         <h1 class="text-3xl font-bold text-gray-800 mb-2">Login</h1>
         <p class="text-gray-600">Masuk ke akun Anda</p>
       </div>
@@ -30,7 +32,7 @@
               :type="field.type"
             />
           </div>
-          </div>
+        </div>
 
         <Button
           :text="isSubmitting ? 'Masuk...' : 'Masuk'"
@@ -50,7 +52,7 @@
 
 <script setup>
 import { ref } from "vue";
-import { User, Lock, GraduationCap } from "lucide-vue-next";
+import { User, Lock } from "lucide-vue-next"; 
 import Input from '../../components/ui/Input.vue'
 import Button from "../../components/ui/Button.vue";
 import { login } from "../../provider/user.provider";
@@ -58,6 +60,7 @@ import { useLocalStorage } from "../../hooks/useLocalStorage";
 import Toast from "../../components/utils/Toast.vue";
 import { useRouter } from 'vue-router'
 import { useUser } from "../../hooks/useGetCurrentUser";
+import logoImage from '../../assets/login-illustration.webp';
 
 const { setValue: setToken } = useLocalStorage("token");
 const { setValue: setId } = useLocalStorage("id");
@@ -100,7 +103,6 @@ const validateForm = () => {
     toastRef.value.showToast("error", "Validasi Gagal", "Harap isi Login ID dan Password");
     return false;
   }
-
  
   if (!login_id) {
     toastRef.value.showToast("error", "Validasi Gagal", "Login ID belum diisi");
@@ -144,7 +146,6 @@ const handleSubmit = async () => {
       redirectPath = '/superadmin/dashboard';
     }
 
-    
     toastRef.value.showToast(
       "success",
       "Login Berhasil",
@@ -156,7 +157,6 @@ const handleSubmit = async () => {
   } catch (error) {
     console.log("Login error", error.response?.data);
     
-
     toastRef.value.showToast(
       "error",
       "Login Gagal",
