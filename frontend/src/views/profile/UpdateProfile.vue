@@ -49,6 +49,7 @@
               ]"
             />
           </div>
+          <p v-if="errors[field.name]" class="text-red-500 text-xs mt-1">{{ errors[field.name] }}</p>
         </div>
       </div>
 
@@ -79,7 +80,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-
 import { ArrowLeft, User, CreditCard, Mail, Camera, Clipboard, BookText } from 'lucide-vue-next';
 import { useUser } from '../../hooks/useGetCurrentUser'; 
 import Button from '../../components/ui/Button.vue';
@@ -98,7 +98,6 @@ const avatarInputRef = ref(null);
 const avatarFile = ref(null);
 const avatarPreview = ref(null);
 
-
 const formData = ref({
   name: '',
   nim: '',
@@ -113,10 +112,7 @@ const errors = ref({});
 const fields = ref([]);
 
 onMounted(() => {
-  console.log("Mounted user:", user.value)
-
   if (user.value) {
-    
     formData.value = {
       name: user.value.name || '',
       email: user.value.email || '',
@@ -127,7 +123,6 @@ onMounted(() => {
       faculty: user.value.faculty || '',
     };
     
-  
     if (user.value.img_url) {
       avatarPreview.value = user.value.img_url;
     }
@@ -159,9 +154,7 @@ onMounted(() => {
         name: 'nidn', title: 'NIDN',
         placeholder: 'Enter your NIDN', icon: Clipboard, type: 'text'
       });
-    } 
-   
-    else if (user.value.role === 'admin') {
+    } else if (user.value.role === 'admin') {
       fields.value.push({
         name: 'major', title: 'Jurusan (Major)',
         placeholder: 'Enter your major', icon: BookText, type: 'text'
@@ -195,7 +188,6 @@ const handleFileSelect = (event) => {
 
   avatarFile.value = file;
   
-
   const reader = new FileReader();
   reader.onload = (e) => {
     avatarPreview.value = e.target.result;
@@ -207,20 +199,34 @@ const handleSubmit = async () => {
   errors.value = {};
   let isValid = true;
   
+
   if (!formData.value.name.trim()) {
-    errors.value.name = 'Full name is required'; isValid = false;
+    errors.value.name = 'Nama lengkap wajib diisi'; 
+    isValid = false;
+  } else if (!/^[a-zA-Z\s]+$/.test(formData.value.name)) {
+    // Regex: Hanya a-z, A-Z, dan spasi
+    errors.value.name = 'Nama hanya boleh berisi huruf'; 
+    isValid = false;
   }
+
+ 
   if (user.value && user.value.role === 'user' && !formData.value.nim.trim()) {
-     errors.value.nim = 'NIM is required'; isValid = false;
+     errors.value.nim = 'NIM wajib diisi'; 
+     isValid = false;
   }
+
+
   if (!formData.value.email.trim()) {
-    errors.value.email = 'Email is required'; isValid = false;
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.value.email)) {
-    errors.value.email = 'Invalid email format'; isValid = false;
+    errors.value.email = 'Email wajib diisi'; 
+    isValid = false;
+  } else if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.value.email)) {
+   
+    errors.value.email = 'Format email tidak valid (dilarang menggunakan simbol khusus selain @, titik, underscore)'; 
+    isValid = false;
   }
   
   if (!isValid) {
-    toastRef.value.showToast("error", "Validation Error", "Please fill in all required fields correctly.");
+    toastRef.value.showToast("error", "Validasi Gagal", "Mohon periksa kembali inputan Anda.");
     return;
   }
 
@@ -237,40 +243,25 @@ const handleSubmit = async () => {
     } else if (user.value.role === 'lecturer') {
       dataToUpdate.nip = formData.value.nip;
       dataToUpdate.nidn = formData.value.nidn;
-    }
-    
-    else if (user.value.role === 'admin') {
+    } else if (user.value.role === 'admin') {
       dataToUpdate.major = formData.value.major;
       dataToUpdate.faculty = formData.value.faculty;
     }
-
 
     if (avatarFile.value) {
       dataToUpdate.image = avatarFile.value; 
     }
     
-    console.log('Sending update request...', { userId: user.value.id, hasImage: !!avatarFile.value });
-    
     const response = await updateUser(dataToUpdate, user.value.id);
-    console.log('Update response:', response);
     
-    const updatedUserData = response.data;
-    
-
-    console.log('Fetching fresh user data from server...');
     const freshUserResponse = await getUserById(user.value.id);
     const freshUserData = freshUserResponse.data;
     
-    console.log('Fresh user data:', freshUserData);
-    console.log('Image URL:', freshUserData.img_url);
-    
-  
     setUser(freshUserData); 
     removeValue();
     setValue(freshUserData);
     
-    toastRef.value.showToast("success", "Profile Updated", "Your profile has been updated successfully!");
-    
+    toastRef.value.showToast("success", "Berhasil", "Profil berhasil diperbarui!");
     
     setTimeout(() => {
       router.back();
@@ -278,8 +269,8 @@ const handleSubmit = async () => {
     
   } catch (error) {
     console.error('Failed to update profile:', error);
-    const errorMessage = error.response?.data?.message || error.message || "Failed to update profile. Please try again.";
-    toastRef.value.showToast("error", "Update Failed", errorMessage);
+    const errorMessage = error.response?.data?.message || "Gagal memperbarui profil.";
+    toastRef.value.showToast("error", "Gagal", errorMessage);
   } finally {
     loading.value = false;
   }
