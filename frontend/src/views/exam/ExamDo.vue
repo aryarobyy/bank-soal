@@ -121,7 +121,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue"; 
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import { API_BASE_URL } from "../../core/constant"; 
-
+import { useRoute, useRouter } from "vue-router";
 
 import { getExamById } from "../../provider/exam.provider";
 import { getQuestionsByExam } from "../../provider/question.provider"; 
