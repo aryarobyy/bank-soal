@@ -24,7 +24,7 @@ type UserService interface {
 	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
 	GetByNim(ctx context.Context, nim string, requesterRole model.Role) (*model.User, error)
 	GetByUsn(ctx context.Context, username string, requesterRole model.Role) (*model.User, error)
-	GetByNidn(ctx context.Context, nidn string, requesterRole model.Role) (*model.User, error)
+	GetByNip(ctx context.Context, nip string, requesterRole model.Role) (*model.User, error)
 	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error)
 	GetByRole(ctx context.Context, role string, limit int, offset int, requesterRole string) ([]model.User, int64, error)
 	ChangePassword(ctx context.Context, id int, newPassword string, role model.Role) error
@@ -84,8 +84,8 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 
 	switch data.Role {
 	case model.RoleLecturer:
-		if data.Nip == "" || data.Nidn == "" {
-			return fmt.Errorf("lecturer must have both NIP and NIDN")
+		if data.Nip == "" {
+			return fmt.Errorf("lecturer must have both NIP")
 		}
 	case model.RoleUser:
 		if data.Nim == "" {
@@ -115,7 +115,6 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 		AcademicYear: finalAcademicYear,
 		Nim:          helper.BindAndConvertToPtr(data.Nim),
 		Nip:          helper.BindAndConvertToPtr(data.Nip),
-		Nidn:         helper.BindAndConvertToPtr(data.Nidn),
 		Username:     helper.BindAndConvertToPtr(finalUsername),
 		Role:         data.Role,
 	}
@@ -146,13 +145,13 @@ func (s *userService) Login(ctx context.Context, cred model.LoginCredential) (*m
 	}
 
 	switch loginType {
-	case "nidn":
-		data, err = s.repo.GetByNidn(ctx, loginId)
+	case "nip":
+		data, err = s.repo.GetByNip(ctx, loginId)
 		if err != nil {
 			return nil, "", "", fmt.Errorf("user not found")
 		}
 		if data.Role != model.RoleLecturer {
-			return nil, "", "", fmt.Errorf("you cant login use nidn %s", err)
+			return nil, "", "", fmt.Errorf("you cant login use nip %s", err)
 		}
 	case "nim":
 		data, err = s.repo.GetByNim(ctx, loginId)
@@ -319,14 +318,14 @@ func (s *userService) GetByNim(ctx context.Context, nim string, requesterRole mo
 	return data, nil
 }
 
-func (s *userService) GetByNidn(ctx context.Context, nidn string, requesterRole model.Role) (*model.User, error) {
-	if len(nidn) > 10 {
-		return nil, fmt.Errorf("nidn cannot be more than 9 characters: %s", nidn)
+func (s *userService) GetByNip(ctx context.Context, nip string, requesterRole model.Role) (*model.User, error) {
+	if len(nip) > 10 {
+		return nil, fmt.Errorf("nip cannot be more than 9 characters: %s", nip)
 	}
 
-	data, err := s.repo.GetByNidn(ctx, nidn)
+	data, err := s.repo.GetByNip(ctx, nip)
 	if err != nil {
-		return nil, fmt.Errorf("user with nidn %q not found: %w", nidn, err)
+		return nil, fmt.Errorf("user with nip %q not found: %w", nip, err)
 	}
 
 	if data.Role == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {

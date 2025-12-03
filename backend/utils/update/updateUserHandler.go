@@ -33,11 +33,6 @@ func ValidateAuthorization(effectiveRole model.Role, oldUser *model.User, data m
 			return fmt.Errorf("nip only for lecturer role")
 		}
 	}
-	if data.Nidn != nil && *data.Nidn != "" {
-		if effectiveRole != model.RoleLecturer {
-			return fmt.Errorf("nidn only for lecturer role")
-		}
-	}
 
 	if requesterRole == model.RoleAdmin {
 		if oldUser.Role == model.RoleSuperAdmin {
@@ -71,12 +66,10 @@ func NormalizeRoleTransition(oldUser *model.User, data *model.UpdateUser, effect
 	case oldUser.Role == model.RoleLecturer && effectiveRole == model.RoleUser:
 		emptyString := ""
 		data.Nip = &emptyString
-		data.Nidn = &emptyString
 
 	case oldUser.Role == model.RoleLecturer && (effectiveRole == model.RoleAdmin || effectiveRole == model.RoleSuperAdmin):
 		emptyString := ""
 		data.Nip = &emptyString
-		data.Nidn = &emptyString
 
 	case oldUser.Role == model.RoleUser && (effectiveRole == model.RoleAdmin || effectiveRole == model.RoleSuperAdmin):
 		emptyString := ""
@@ -89,9 +82,6 @@ func ValidateRoleRequirements(data model.UpdateUser, effectiveRole model.Role) e
 	case model.RoleUser:
 		if data.Nip != nil && *data.Nip != "" {
 			return fmt.Errorf("user role cannot have nip")
-		}
-		if data.Nidn != nil && *data.Nidn != "" {
-			return fmt.Errorf("user role cannot have nidn")
 		}
 
 	case model.RoleLecturer:
@@ -137,14 +127,10 @@ func MergeDefaults(oldUser *model.User, data *model.UpdateUser, effectiveRole mo
 		}
 		emptyString := ""
 		data.Nip = &emptyString
-		data.Nidn = &emptyString
 
 	case model.RoleLecturer:
 		if data.Nip == nil {
 			data.Nip = oldUser.Nip
-		}
-		if data.Nidn == nil {
-			data.Nidn = oldUser.Nidn
 		}
 		emptyString := ""
 		data.Nim = &emptyString
@@ -155,7 +141,6 @@ func MergeDefaults(oldUser *model.User, data *model.UpdateUser, effectiveRole mo
 		emptyString := ""
 		data.Nim = &emptyString
 		data.Nip = &emptyString
-		data.Nidn = &emptyString
 		emptyAcademicYear := ""
 		data.AcademicYear = &emptyAcademicYear
 	}
@@ -227,9 +212,6 @@ func ValidateRoleTransitionRequirements(oldUser *model.User, data model.UpdateUs
 		case model.RoleLecturer:
 			if data.Nip == nil || *data.Nip == "" {
 				return fmt.Errorf("nip is require for lecturer")
-			}
-			if data.Nidn == nil || *data.Nidn == "" {
-				return fmt.Errorf("nidn is require for lecturer")
 			}
 
 		case model.RoleAdmin:

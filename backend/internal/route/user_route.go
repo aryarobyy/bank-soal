@@ -21,7 +21,7 @@ func UserRoutes(r *gin.Engine, user *controller.UserController) {
 			usersAuth.POST("/register", middleware.RoleGuard(model.RoleAdmin, model.RoleSuperAdmin), middleware.InputValidateJson([]string{"name", "password", "major", "faculty"}), user.Register)
 			usersAuth.GET("/email", user.GetByEmail)
 			usersAuth.GET("/nim", user.GetByNim)
-			usersAuth.GET("/nidn", user.GetByNidn)
+			usersAuth.GET("/nip", user.GetByNip)
 			usersAuth.GET("/username", user.GetByUsn)
 			usersAuth.GET("/name", user.GetByName)
 			usersAuth.GET("/role", user.GetByRole)

@@ -16,7 +16,7 @@ type UserRepository interface {
 	Delete(ctx context.Context, id int) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
 	GetByNim(ctx context.Context, nim string) (*model.User, error)
-	GetByNidn(ctx context.Context, nidn string) (*model.User, error)
+	GetByNip(ctx context.Context, nip string) (*model.User, error)
 	GetByUsn(ctx context.Context, username string) (*model.User, error)
 	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error)
 	GetByRole(ctx context.Context, role model.Role, limit int, offset int) ([]model.User, int64, error)
@@ -89,13 +89,6 @@ func (r *userRepository) Update(ctx context.Context, user model.UpdateUser, id i
 			updateData["nip"] = user.Nip
 		} else {
 			updateData["nip"] = nil
-		}
-	}
-	if user.Nidn != nil {
-		if *user.Nidn != "" {
-			updateData["nidn"] = user.Nidn
-		} else {
-			updateData["nidn"] = nil
 		}
 	}
 	if user.Major != nil {
@@ -192,12 +185,12 @@ func (r *userRepository) GetByNim(ctx context.Context, nim string) (*model.User,
 	return &user, nil
 }
 
-func (r *userRepository) GetByNidn(ctx context.Context, nidn string) (*model.User, error) {
+func (r *userRepository) GetByNip(ctx context.Context, nip string) (*model.User, error) {
 	user := model.User{}
 	if err := r.db.
 		WithContext(ctx).
 		Model(model.User{}).
-		Where("nidn = ?", nidn).
+		Where("nip = ?", nip).
 		First(&user).
 		Error; err != nil {
 		return nil, err

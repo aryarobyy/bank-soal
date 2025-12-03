@@ -177,7 +177,6 @@ func (h *UserController) Update(c *gin.Context) {
 	email := c.PostForm("email")
 	nim := c.PostForm("nim")
 	nip := c.PostForm("nip")
-	nidn := c.PostForm("nidn")
 	username := c.PostForm("username")
 	roleForm := c.PostForm("role")
 	major := c.PostForm("major")
@@ -198,7 +197,6 @@ func (h *UserController) Update(c *gin.Context) {
 		Username: helper.BindAndConvertToPtr(username),
 		Nim:      helper.BindAndConvertToPtr(nim),
 		Nip:      helper.BindAndConvertToPtr(nip),
-		Nidn:     helper.BindAndConvertToPtr(nidn),
 
 		Major:        helper.BindAndConvertToPtr(major),
 		Faculty:      helper.BindAndConvertToPtr(faculty),
@@ -306,12 +304,12 @@ func (h *UserController) GetByNim(c *gin.Context) {
 	helper.Success(c, userRes, "user found")
 }
 
-func (h *UserController) GetByNidn(c *gin.Context) {
+func (h *UserController) GetByNip(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	nidn := c.Query("nidn")
-	if len(nidn) >= 11 {
-		helper.Error(c, http.StatusBadRequest, "invalid nidn")
+	nip := c.Query("nip")
+	if len(nip) >= 11 {
+		helper.Error(c, http.StatusBadRequest, "invalid nip")
 		return
 	}
 
@@ -329,7 +327,7 @@ func (h *UserController) GetByNidn(c *gin.Context) {
 
 	role := model.Role(roleStr)
 
-	user, err := h.service.GetByNidn(ctx, nidn, role)
+	user, err := h.service.GetByNip(ctx, nip, role)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return

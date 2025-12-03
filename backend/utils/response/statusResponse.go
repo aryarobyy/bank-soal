@@ -7,7 +7,6 @@ func UserResponse(data model.User) model.UserResponse {
 		Id:           data.Id,
 		Name:         &data.Name,
 		Nim:          data.Nim,
-		Nidn:         data.Nidn,
 		Nip:          data.Nip,
 		Username:     data.Username,
 		ImgUrl:       &data.ImgUrl,

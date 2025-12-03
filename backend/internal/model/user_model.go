@@ -7,7 +7,6 @@ type User struct {
 	Name         string  `json:"name" validate:"required"`
 	Nim          *string `json:"nim" gorm:"unique"`
 	Nip          *string `json:"nip" gorm:"unique"`
-	Nidn         *string `json:"nidn" gorm:"unique"`
 	Username     *string `json:"username" gorm:"unique"`
 	ImgUrl       string  `json:"img_url,omitempty"`
 	Email        *string `json:"email" gorm:"unique"`
@@ -26,7 +25,6 @@ type UpdateUser struct {
 	Name         *string `json:"name" validate:"omitempty"`
 	Nim          *string `json:"nim" gorm:"unique"`
 	Nip          *string `json:"nip" gorm:"unique"`
-	Nidn         *string `json:"nidn" gorm:"unique"`
 	Username     *string `json:"username,omitempty" gorm:"unique"`
 	ImgUrl       *string `json:"img_url,omitempty"`
 	Email        *string `json:"email" gorm:"unique;"`
@@ -50,7 +48,6 @@ type RegisterCredential struct {
 	Name         string `json:"name" validate:"required"`
 	Nim          string `json:"nim,omitempty"`
 	Nip          string `json:"nip,omitempty"`
-	Nidn         string `json:"nidn,omitempty"`
 	Username     string `json:"username,omitempty" gorm:"unique"`
 	Major        string `json:"major" validate:"required" gorm:"default:informatika"`
 	Faculty      string `json:"faculty" validate:"required" gorm:"default:teknik"`
@@ -65,7 +62,6 @@ type ChangePasswordCredential struct {
 type ChangeRoleCredential struct {
 	Nim          *string `json:"nim,omitempty"`
 	Nip          *string `json:"nip,omitempty"`
-	Nidn         *string `json:"nidn,omitempty"`
 	Username     *string `json:"username,omitempty"`
 	AcademicYear *string `json:"academic_year,omitempty"`
 	Role         Role    `json:"role" binding:"required"`
@@ -90,7 +86,6 @@ type UserResponse struct {
 	Name         *string   `json:"name,omitempty"`
 	Nim          *string   `json:"nim,omitempty"`
 	Nip          *string   `json:"nip,omitempty"`
-	Nidn         *string   `json:"nidn,omitempty"`
 	Username     *string   `json:"username,omitempty"`
 	ImgUrl       *string   `json:"img_url,omitempty"`
 	Email        *string   `json:"email,omitempty"`
