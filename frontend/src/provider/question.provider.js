@@ -80,11 +80,36 @@ export const createQuestionFromJson = async (data) => {
   return res.data;
 };
 
-export const getQuestionsByExam = async (examId) => {
 
-  const res = await ApiHandler.get(`${QUESTION}/exam?exam_id=${examId}`); 
-  return res.data.data;
+export const getQuestionsByExam = async (examId, limit = 10, offset = 0) => {
+  try {
+    const res = await ApiHandler.get(
+      `${QUESTION}/exam?exam_id=${examId}&limit=${limit}&offset=${offset}`
+    );
+    const responseBody = res.data;
+    if (responseBody.data && Array.isArray(responseBody.data.data)) {
+        return { 
+            data: responseBody.data.data, 
+            total: responseBody.data.total || 0 
+        };
+    }
+    if (Array.isArray(responseBody.data)) {
+        return { 
+            data: responseBody.data, 
+            total: responseBody.total || responseBody.data.length 
+        };
+    }
+    if (Array.isArray(responseBody)) {
+        return { data: responseBody, total: responseBody.length };
+    }
+    return { data: [], total: 0 };
+  } catch (error) {
+    console.error("Gagal load questions:", error);
+    return { data: [], total: 0 };
+  }
 };
+
+
 export const getQuestionsByDiff = async (difficulty) => {
   const res = await ApiHandler.get(`${QUESTION}/diff?diff=${difficulty}`);
   return res.data.data;
