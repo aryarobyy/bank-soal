@@ -48,8 +48,17 @@ func IsValidSubjectTitle(title model.SubjectTitle) bool {
 }
 
 func IsValidEmail(e string) bool {
-	re := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
-	return re.MatchString(e)
+	if e == "" {
+		return false
+	}
+
+	for _, r := range e {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '@' || r ==
+			'.' || r == '_' || r == '-') {
+			return false
+		}
+	}
+	return true
 }
 
 func GetPaginationQuery(c *gin.Context, defaultLimit int, defaultOffset int) (int, int, error) {
@@ -80,13 +89,13 @@ func GetPaginationQuery(c *gin.Context, defaultLimit int, defaultOffset int) (in
 
 func DetectLoginType(id string) string {
 	var (
-		nidnRegex = regexp.MustCompile(`^0\d{9}$`)
-		nimRegex  = regexp.MustCompile(`^(G1A0\d{5}|Y1G0\d{5})$`)
+		nipRegex = regexp.MustCompile(`^(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])(19|20)\d{2}(0[1-9]|1[0-2])[12]\d{3}$`)
+		nimRegex = regexp.MustCompile(`^(G1A0\d{5}|Y1G0\d{5})$`)
 	)
 
 	switch {
-	case nidnRegex.MatchString(id):
-		return "nidn"
+	case nipRegex.MatchString(id):
+		return "nip"
 	case nimRegex.MatchString(id):
 		return "nim"
 	default:
@@ -94,10 +103,14 @@ func DetectLoginType(id string) string {
 	}
 }
 
-func ContainsNumber(s string) bool {
+func IsValidName(s string) bool {
+	if s == "" {
+		return false
+	}
+
 	for _, ch := range s {
-		if ch >= '0' && ch <= '9' {
-			return true
+		if !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == ' ') {
+			return false
 		}
 	}
 	return false
@@ -142,4 +155,19 @@ func BindToIntPtr(value string) *int {
 	}
 
 	return nil
+}
+
+func ValidateAndFilterUserData(userData map[string]interface{}) map[string]interface{} {
+	sensitiveFields := map[string]bool{
+		"password": true,
+		"salt":     true,
+	}
+
+	filteredData := make(map[string]interface{})
+	for key, value := range userData {
+		if !sensitiveFields[key] {
+			filteredData[key] = value
+		}
+	}
+	return filteredData
 }

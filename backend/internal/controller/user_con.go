@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -35,11 +34,25 @@ func (h *UserController) Register(c *gin.Context) {
 		return
 	}
 
-	// email is unnecessary
-	// if !helper.IsValidEmail(user.Email) {
-	// 	helper.Error(c, http.StatusBadRequest, "wrong email format")
-	// 	return
-	// }
+	if user.Name == "" {
+		helper.Error(c, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	if user.Password == "" {
+		helper.Error(c, http.StatusBadRequest, "password is required")
+		return
+	}
+
+	if len(user.Password) < 6 {
+		helper.Error(c, http.StatusBadRequest, "password must be at least 6 characters")
+		return
+	}
+
+	if user.Email != "" && !helper.IsValidEmail(user.Email) {
+		helper.Error(c, http.StatusBadRequest, "invalid email format")
+		return
+	}
 
 	currRole, exists := c.Get("role")
 	if !exists {
@@ -54,6 +67,16 @@ func (h *UserController) Register(c *gin.Context) {
 	}
 
 	role := model.Role(roleStr)
+
+	allowedRoles := map[string]bool{
+		"admin":    true,
+		"user":     true,
+		"lecturer": true,
+	}
+	if !allowedRoles[string(role)] {
+		helper.Error(c, http.StatusBadRequest, "invalid role")
+		return
+	}
 
 	if err := h.service.Register(ctx, user, role); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
@@ -82,8 +105,8 @@ func (h *UserController) Login(c *gin.Context) {
 		helper.Error(c, http.StatusInternalServerError, "failed to set cookie")
 		return
 	}
-
-	helper.Success(c, user, "login successful", accessToken)
+	sanitizedUser := helper.SanitizeUserResponse(user)
+	helper.Success(c, sanitizedUser, "login successful", accessToken)
 }
 
 func (h *UserController) GetById(c *gin.Context) {
@@ -157,12 +180,19 @@ func (h *UserController) Update(c *gin.Context) {
 		helper.Error(c, http.StatusUnauthorized, "id not found in context")
 		return
 	}
-	fmt.Println("SKSKSK", currId)
 
 	currIdInt, ok := currId.(int)
 	if !ok {
 		helper.Error(c, http.StatusBadRequest, "invalid user_id type")
 		return
+	}
+
+	if id != currIdInt {
+		roleStr, _ := currRole.(string)
+		if roleStr != "admin" && roleStr != "super_admin" {
+			helper.Error(c, http.StatusBadRequest, "you can't update other user profile")
+			return
+		}
 	}
 
 	roleStr, ok := currRole.(string)
@@ -185,27 +215,83 @@ func (h *UserController) Update(c *gin.Context) {
 	statusForm := c.PostForm("status")
 	imgDelete := c.PostForm("img_delete")
 
-	if email != "" && !helper.IsValidEmail(email) {
-		helper.Error(c, http.StatusBadRequest, "wrong email format")
+	if name != "" && len(name) > 100 {
+		helper.Error(c, http.StatusBadRequest, "name too long")
 		return
 	}
 
+	if email != "" {
+		if len(email) > 254 {
+			helper.Error(c, http.StatusBadRequest, "email too long")
+			return
+		}
+		if !helper.IsValidEmail(email) {
+			helper.Error(c, http.StatusBadRequest, "wrong email format")
+			return
+		}
+	}
+
+	if nim != "" && len(nim) > 20 {
+		helper.Error(c, http.StatusBadRequest, "nim too long")
+		return
+	}
+
+	if nip != "" && len(nip) != 18 {
+		helper.Error(c, http.StatusBadRequest, "nip must be exactly 18 characters")
+		return
+	}
+
+	if username != "" {
+		if len(username) > 50 {
+			helper.Error(c, http.StatusBadRequest, "username too long")
+			return
+		}
+		if helper.IsValidName(username) && len(username) < 3 {
+			helper.Error(c, http.StatusBadRequest, "username too short with numbers")
+			return
+		}
+	}
+
+	if academicYear != "" && len(academicYear) != 4 {
+		helper.Error(c, http.StatusBadRequest, "academic year must be 4 digits")
+		return
+	}
+
+	if roleForm != "" {
+		allowedRoles := map[string]bool{
+			"admin":    true,
+			"user":     true,
+			"lecturer": true,
+		}
+		if !allowedRoles[roleForm] {
+			helper.Error(c, http.StatusBadRequest, "invalid role")
+			return
+		}
+	}
+
+	if statusForm != "" {
+		allowedStatuses := map[string]bool{
+			"passed":     true,
+			"not_passed": true,
+		}
+		if !allowedStatuses[statusForm] {
+			helper.Error(c, http.StatusBadRequest, "invalid status")
+			return
+		}
+	}
+
 	updateData := model.UpdateUser{
-		Name: helper.BindAndConvertToPtr(name),
-
-		Email:    helper.BindAndConvertToPtr(email),
-		Username: helper.BindAndConvertToPtr(username),
-		Nim:      helper.BindAndConvertToPtr(nim),
-		Nip:      helper.BindAndConvertToPtr(nip),
-
+		Name:         helper.BindAndConvertToPtr(name),
+		Email:        helper.BindAndConvertToPtr(email),
+		Username:     helper.BindAndConvertToPtr(username),
+		Nim:          helper.BindAndConvertToPtr(nim),
+		Nip:          helper.BindAndConvertToPtr(nip),
 		Major:        helper.BindAndConvertToPtr(major),
 		Faculty:      helper.BindAndConvertToPtr(faculty),
 		AcademicYear: helper.BindAndConvertToPtr(academicYear),
-
-		Role:   (*model.Role)(helper.BindAndConvertToPtr(roleForm)),
-		Status: (*model.Status)(helper.BindAndConvertToPtr(statusForm)),
-
-		ImgDelete: helper.BindAndConvertToBoolPtr(imgDelete),
+		Role:         (*model.Role)(helper.BindAndConvertToPtr(roleForm)),
+		Status:       (*model.Status)(helper.BindAndConvertToPtr(statusForm)),
+		ImgDelete:    helper.BindAndConvertToBoolPtr(imgDelete),
 	}
 
 	updatedUser, err := h.service.Update(ctx, c, updateData, id, currentRole, currIdInt)
@@ -308,7 +394,7 @@ func (h *UserController) GetByNip(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	nip := c.Query("nip")
-	if len(nip) >= 11 {
+	if len(nip) != 18 {
 		helper.Error(c, http.StatusBadRequest, "invalid nip")
 		return
 	}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"latih.in-be/internal/model"
@@ -78,6 +79,16 @@ func (h *QuestionController) Update(c *gin.Context) {
 	optionsJson := c.PostForm("options")
 	imgDelete := c.PostForm("img_delete")
 
+	if questionText != "" && len(questionText) > 5000 {
+		helper.Error(c, http.StatusBadRequest, "question_text is too long")
+		return
+	}
+
+	if answer != "" && len(answer) > 1000 {
+		helper.Error(c, http.StatusBadRequest, "answer is too long")
+		return
+	}
+
 	data := model.UpdateQuestion{
 		SubjectId:    helper.BindToIntPtr(subjectId),
 		CreatorId:    helper.BindToIntPtr(creatorId),
@@ -91,6 +102,11 @@ func (h *QuestionController) Update(c *gin.Context) {
 	if optionsJson != "" {
 		if err := json.Unmarshal([]byte(optionsJson), &data.Options); err != nil {
 			helper.Error(c, http.StatusBadRequest, "invalid options format")
+			return
+		}
+
+		if len(data.Options) > 20 {
+			helper.Error(c, http.StatusBadRequest, "too many options")
 			return
 		}
 	}
@@ -136,21 +152,45 @@ func (h *QuestionController) CreateWithOptions(c *gin.Context) {
 
 	var data model.Question
 
-	data.SubjectId, _ = strconv.Atoi(c.PostForm("subject_id"))
-	data.CreatorId, _ = strconv.Atoi(c.PostForm("creator_id"))
-	data.QuestionText = c.PostForm("question_text")
-	data.Difficulty = model.Difficulty(c.PostForm("difficulty"))
-	data.Answer = c.PostForm("answer")
-	data.Score, _ = strconv.Atoi(c.PostForm("score"))
-
+	subjectIdStr := c.PostForm("subject_id")
+	creatorIdStr := c.PostForm("creator_id")
+	questionText := c.PostForm("question_text")
+	difficulty := c.PostForm("difficulty")
+	answer := c.PostForm("answer")
+	scoreStr := c.PostForm("score")
 	optionsJson := c.PostForm("options")
+
 	if optionsJson == "" {
 		helper.Error(c, http.StatusBadRequest, "options cannot be empty")
 		return
 	}
 
-	if err := json.Unmarshal([]byte(optionsJson), &data.Options); err != nil {
-		helper.Error(c, http.StatusBadRequest, "invalid options format")
+	data.SubjectId = helper.BindToInt(subjectIdStr)
+	data.CreatorId = helper.BindToInt(creatorIdStr)
+	data.QuestionText = questionText
+	data.Difficulty = model.Difficulty(difficulty)
+	data.Answer = answer
+	data.Score = helper.BindToInt(scoreStr)
+
+	if optionsJson != "" {
+		if err := json.Unmarshal([]byte(optionsJson), &data.Options); err != nil {
+			helper.Error(c, http.StatusBadRequest, "invalid options format")
+			return
+		}
+	}
+
+	if data.QuestionText == "" {
+		helper.Error(c, http.StatusBadRequest, "question_text is required")
+		return
+	}
+
+	if string(data.Difficulty) == "" {
+		helper.Error(c, http.StatusBadRequest, "difficulty is required")
+		return
+	}
+
+	if len(data.Options) == 0 {
+		helper.Error(c, http.StatusBadRequest, "options are required")
 		return
 	}
 
@@ -168,14 +208,18 @@ func (h *QuestionController) CreateFromJson(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	file, err := c.FormFile("file")
-	println("SLSKSKAOKS", file)
 	if err != nil {
-		helper.Error(c, http.StatusBadRequest, "File tidak ditemukan. Gunakan key 'file' untuk upload")
+		helper.Error(c, http.StatusBadRequest, "File not found. Use key 'file' untuk upload")
 		return
 	}
 
-	if file.Header.Get("Content-Type") != "application/json" {
-		helper.Error(c, http.StatusBadRequest, "file berformat json")
+	if file.Size > 10*1024*1024 {
+		helper.Error(c, http.StatusBadRequest, "File is too big. Max 10MB")
+		return
+	}
+
+	if file.Header.Get("Content-Type") != "application/json" && !strings.HasSuffix(strings.ToLower(file.Filename), ".json") {
+		helper.Error(c, http.StatusBadRequest, "File must be json")
 		return
 	}
 

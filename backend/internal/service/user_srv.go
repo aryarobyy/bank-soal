@@ -54,6 +54,10 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 		return fmt.Errorf("validation failed: %w", err)
 	}
 
+	if !helper.IsValidName(data.Name) {
+		return fmt.Errorf("invalid name format")
+	}
+
 	existingEmail, _ := s.repo.GetByEmail(ctx, data.Email)
 	if existingEmail != nil {
 		return fmt.Errorf("email %s already used", data.Email)
@@ -85,7 +89,7 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 	switch data.Role {
 	case model.RoleLecturer:
 		if data.Nip == "" {
-			return fmt.Errorf("lecturer must have both NIP")
+			return fmt.Errorf("lecturer must have NIP")
 		}
 	case model.RoleUser:
 		if data.Nim == "" {
@@ -226,6 +230,10 @@ func (s *userService) Update(ctx context.Context, c *gin.Context, data model.Upd
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
+	if !helper.IsValidName(*data.Name) {
+		return nil, fmt.Errorf("invalid name format")
+	}
+
 	effectiveRole := oldUser.Role
 	if data.Role != nil {
 		effectiveRole = *data.Role
@@ -319,8 +327,8 @@ func (s *userService) GetByNim(ctx context.Context, nim string, requesterRole mo
 }
 
 func (s *userService) GetByNip(ctx context.Context, nip string, requesterRole model.Role) (*model.User, error) {
-	if len(nip) > 10 {
-		return nil, fmt.Errorf("nip cannot be more than 9 characters: %s", nip)
+	if len(nip) != 18 {
+		return nil, fmt.Errorf("nip must be exactly 18 characters: %s", nip)
 	}
 
 	data, err := s.repo.GetByNip(ctx, nip)
@@ -353,7 +361,7 @@ func (s *userService) GetByUsn(ctx context.Context, username string, requesterRo
 }
 
 func (s *userService) GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error) {
-	if helper.ContainsNumber(name) {
+	if helper.IsValidName(name) {
 		return nil, 0, fmt.Errorf("name cannot contain numbers")
 	}
 
