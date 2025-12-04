@@ -24,7 +24,6 @@
             <th class="px-4 py-3 text-left">Nama</th>
             <th class="px-4 py-3 text-left">Email</th>
             <th class="px-4 py-3 text-left">NIP</th>
-            <th class="px-4 py-3 text-left">NIDN</th>
             <th class="px-4 py-3 text-left">Role</th>
             <th class="px-4 py-3 text-left">Tanggal Dibuat</th>
             <th class="px-4 py-3 text-left">Aksi</th>
@@ -39,8 +38,7 @@
             <td class="px-4 py-3">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
             <td class="px-4 py-3 font-medium">{{ dosen.name }}</td>
             <td class="px-4 py-3">{{ dosen.email }}</td>
-            <td class="px-4 py-3">{{ dosen.nip }}</td>
-            <td class="px-4 py-3">{{ dosen.nidn }}</td>
+            <td class="px-4 py-3">{{ dosen.nip || '-' }}</td>
             <td class="px-4 py-3">
               <span 
                 :class="roleClass(dosen.role)" 
@@ -66,13 +64,14 @@
             </td>
           </tr>
           <tr v-if="dosenList.length === 0">
-            <td colspan="8" class="px-4 py-4 text-center text-gray-500">
+            <td colspan="7" class="px-4 py-4 text-center text-gray-500">
               Belum ada data dosen
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+    
     <div v-if="!loading && totalPages > 1" class="flex justify-between items-center mt-6">
       <span class="text-sm text-gray-700">
         Halaman <span class="font-semibold">{{ currentPage }}</span> dari <span class="font-semibold">{{ totalPages }}</span> (Total <span class="font-semibold">{{ totalItems }}</span> dosen)
@@ -116,6 +115,13 @@
 
           <template v-if="!editMode">
             <div class="mb-3">
+              <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
+              <div class="w-full p-2 border rounded-md bg-gray-100 text-gray-600 font-medium">
+                Dosen (Lecturer)
+              </div>
+            </div>
+
+            <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Password</label>
               <input 
                 v-model="form.password" 
@@ -128,10 +134,6 @@
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">NIP</label>
               <input v-model="form.nip" type="text" required class="w-full p-2 border rounded-md"/>
-            </div>
-            <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700">NIDN</label>
-              <input v-model="form.nidn" type="text" required class="w-full p-2 border rounded-md"/>
             </div>
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
@@ -156,10 +158,6 @@
               <div class="mb-3">
                 <label class="block mb-1 text-sm font-medium text-gray-700">NIP</label>
                 <input v-model="form.nip" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk dosen"/>
-              </div>
-              <div class="mb-3">
-                <label class="block mb-1 text-sm font-medium text-gray-700">NIDN</label>
-                <input v-model="form.nidn" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk dosen"/>
               </div>
             </div>
 
@@ -193,14 +191,6 @@
               />
             </div>
           </template>
-
-          <div class="mb-3" v-if="!editMode">
-            <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
-            <select v-model="form.role" required class="w-full p-2 border rounded-md bg-white">
-              <option value="lecturer" selected>Dosen (lecturer)</option>
-              <option value="user">Mahasiswa (user)</option>
-              </select>
-          </div>
 
           <div class="flex justify-end gap-2 mt-4">
             <button
@@ -239,10 +229,9 @@ const error = ref(null);
 const showModal = ref(false);
 const editMode = ref(false);
 
-
 const initialFormState = {
   id: null, name: "", email: "", password: "",
-  role: "lecturer", nip: "", nidn: "", 
+  role: "lecturer", nip: "", 
   major: "", faculty: "", nim: "", academic_year: "" 
 };
 const form = ref({ ...initialFormState });
@@ -307,7 +296,6 @@ const closeModal = () => {
   showModal.value = false;
 };
 
-
 const simpanDosen = async () => {
   try {
     const userId = form.value.id;
@@ -319,7 +307,6 @@ const simpanDosen = async () => {
     }
 
     if (editMode.value) {
-  
       if (!userId) {
         alert("Error: ID pengguna tidak ditemukan. Tidak dapat mengedit.");
         return;
@@ -336,7 +323,6 @@ const simpanDosen = async () => {
 
       if (form.value.role === 'lecturer') {
         dataToUpdate.nip = form.value.nip || null;
-        dataToUpdate.nidn = form.value.nidn || null;
         dataToUpdate.nim = null;
         dataToUpdate.major = null;
         dataToUpdate.faculty = null;
@@ -347,13 +333,10 @@ const simpanDosen = async () => {
         dataToUpdate.faculty = form.value.faculty || null;
         dataToUpdate.academic_year = form.value.academic_year || null;
         dataToUpdate.nip = null;
-        dataToUpdate.nidn = null;
       }
       
-     
       await updateUser(dataToUpdate, userId);
       
- 
       if (form.value.password && form.value.password.trim() !== "") {
         try {
           await changePassword(userId, form.value.password, adminId);
@@ -364,7 +347,6 @@ const simpanDosen = async () => {
         }
       }
       
-   
       if (passwordErrorMessage) {
         alert(`Data berhasil diperbarui, TAPI: ${passwordErrorMessage}`);
       } else if (passwordSuccess) {
@@ -374,17 +356,16 @@ const simpanDosen = async () => {
       }
 
     } else {
-    
+      // Create Mode (Selalu Lecturer)
       const dataToCreate = {
         name: form.value.name,
         email: form.value.email,
         password: form.value.password,
-        role: form.value.role,
+        role: form.value.role, 
       };
 
       if (form.value.role === 'lecturer') {
         dataToCreate.nip = form.value.nip || null;
-        dataToCreate.nidn = form.value.nidn || null;
         dataToCreate.major = form.value.major || "N/A";
         dataToCreate.faculty = form.value.faculty || "N/A";
         dataToCreate.nim = null;
@@ -394,7 +375,6 @@ const simpanDosen = async () => {
         dataToCreate.faculty = form.value.faculty || null;
         dataToCreate.academic_year = form.value.academic_year || null;
         dataToCreate.nip = null;
-        dataToCreate.nidn = null;
       }
 
       await register(dataToCreate);
@@ -430,7 +410,6 @@ const editDosen = (dosen) => {
     ...initialFormState, 
     ...dosen,
     nip: dosen.nip || "",
-    nidn: dosen.nidn || "",
     nim: dosen.nim || "",
     major: dosen.major || "",
     faculty: dosen.faculty || "",

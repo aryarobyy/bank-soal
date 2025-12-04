@@ -128,6 +128,7 @@ import { getQuestionsByExam } from "../../provider/question.provider";
 import { submitUserAnswer, getUserAnswersBySession } from "../../provider/useranswer.provider";
 import { finishExamSession, updateCurrentNo, getExamSessionById } from "../../provider/examsession.provider";
 
+import { getAllQuestionsForExamDo } from "../../provider/question.provider";
 const route = useRoute();
 const router = useRouter();
 const { user } = useGetCurrentUser();
@@ -220,17 +221,19 @@ onMounted(async () => {
     return;
   }
 
-  try {
-    const examRes = await getExamById(examId);
-    exam.value = examRes?.data || examRes;
+ try {
+        const examRes = await getExamById(examId);
+        exam.value = examRes?.data || examRes;
 
-    const sessionRes = await getExamSessionById(sessionId);
-    const sessionData = sessionRes.data || sessionRes; 
+        const sessionRes = await getExamSessionById(sessionId);
+        const sessionData = sessionRes.data || sessionRes; 
 
-    const qRes = await getQuestionsByExam(examId);
-    questions.value = Array.isArray(qRes) ? qRes : qRes.data || [];
+      
+        const qRes = await getAllQuestionsForExamDo(examId);
+      
+        questions.value = qRes || [];
 
-    answers.value = Array(questions.value.length).fill(null);
+        answers.value = Array(questions.value.length).fill(null);
 
     // 1. Restore Jawaban
     try {

@@ -227,24 +227,31 @@ export default {
       });
     },
 
-    async handleDeleteSoal(id) {
-      if (confirm(`Apakah Anda yakin ingin menghapus soal ID: ${id}?`)) {
-        try {
-          await deleteQuestion(id);
-          alert('Soal berhasil dihapus dari database!');
+   async handleDeleteSoal(id) {
+  if (confirm(`Apakah Anda yakin ingin menghapus soal ID: ${id}?`)) {
+    try {
+      await deleteQuestion(id);
+      alert('✅ Soal berhasil dihapus dari database!');
 
-          
-          if (this.soalList.length === 1 && this.currentPage > 1) {
-            this.currentPage--;
-          }
-          
-          this.fetchSoalList(); 
-        } catch (error) {
-          console.error("Gagal menghapus soal:", error);
-          alert('Gagal menghapus soal.');
-        }
+
+      if (this.soalList.length === 1 && this.currentPage > 1) {
+        this.currentPage--;
+      }
+      
+      this.fetchSoalList(); 
+    } catch (error) {
+      console.error("Gagal menghapus soal:", error);
+    
+      const backendMsg = error.response?.data?.message || "";
+      
+      if (backendMsg.includes("foreign key constraint fails") || backendMsg.includes("Cannot delete or update")) {
+          alert("Soal ini tidak bisa dihapus karena sedang digunakan di dalam Ujian.\n\nSilakan hapus soal ini dari Ujian terlebih dahulu.");
+      } else {
+          alert(`❌ Gagal menghapus soal: ${backendMsg || "Terjadi kesalahan server"}`);
       }
     }
+  }
+}
   },
   
 

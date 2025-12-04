@@ -131,24 +131,31 @@
 
           <template v-if="!editMode">
             <div class="mb-3">
+              <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
+              <div class="w-full p-2 border rounded-md bg-gray-100 text-gray-600 font-medium">
+                Mahasiswa (User)
+              </div>
+            </div>
+
+            <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Password</label>
               <input v-model="form.password" type="password" required class="w-full p-2 border rounded-md"/>
             </div>
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">NIM</label>
-              <input v-model="form.nim" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi jika role 'user'"/>
+              <input v-model="form.nim" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi"/>
             </div>
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
-              <input v-model="form.major" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi jika role 'user'"/>
+              <input v-model="form.major" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi"/>
             </div>
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas (Faculty)</label>
-              <input v-model="form.faculty" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi jika role 'user'"/>
+              <input v-model="form.faculty" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi"/>
             </div>
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Tahun Ajaran (Academic Year)</label>
-              <input v-model="form.academic_year" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi jika role 'user'"/>
+              <input v-model="form.academic_year" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi"/>
             </div>
           </template>
 
@@ -158,7 +165,7 @@
               <select v-model="form.role" required class="w-full p-2 border rounded-md bg-white">
                 <option value="user">Mahasiswa (user)</option>
                 <option value="lecturer">Dosen (lecturer)</option>
-                </select>
+              </select>
             </div>
             
             <div v-if="form.role === 'user'">
@@ -172,9 +179,7 @@
                 />
               </div>
               <div class="mb-3">
-                <label class="block mb-1 text-sm font-medium text-gray-700"
-                  >Jurusan (Major)</label
-                >
+                <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
                 <input
                   v-model="form.major"
                   type="text"
@@ -182,9 +187,7 @@
                 />
               </div>
               <div class="mb-3">
-                <label class="block mb-1 text-sm font-medium text-gray-700"
-                  >Fakultas (Faculty)</label
-                >
+                <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas (Faculty)</label>
                 <input
                   v-model="form.faculty"
                   type="text"
@@ -192,9 +195,7 @@
                 />
               </div>
               <div class="mb-3">
-                <label class="block mb-1 text-sm font-medium text-gray-700"
-                  >Tahun Ajaran (Academic Year)</label
-                >
+                <label class="block mb-1 text-sm font-medium text-gray-700">Tahun Ajaran (Academic Year)</label>
                 <input
                   v-model="form.academic_year"
                   type="text"
@@ -208,16 +209,10 @@
                 <label class="block mb-1 text-sm font-medium text-gray-700">NIP</label>
                 <input v-model="form.nip" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk dosen"/>
               </div>
-              <div class="mb-3">
-                <label class="block mb-1 text-sm font-medium text-gray-700">NIDN</label>
-                <input v-model="form.nidn" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk dosen"/>
               </div>
-            </div>
 
             <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700"
-                >Password Baru (Opsional)</label
-              >
+              <label class="block mb-1 text-sm font-medium text-gray-700">Password Baru (Opsional)</label>
               <input
                 v-model="form.password"
                 type="password"
@@ -227,13 +222,6 @@
               />
             </div>
           </template>
-          <div class="mb-3" v-if="!editMode">
-             <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
-            <select v-model="form.role" required class="w-full p-2 border rounded-md bg-white">
-              <option value="user" selected>Mahasiswa (user)</option>
-              <option value="lecturer">Dosen (lecturer)</option>
-              </select>
-          </div>
 
           <div class="flex justify-end gap-2 mt-4">
             <button type="button" @click="closeModal" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition">
@@ -359,10 +347,11 @@ const error = ref(null);
 const showModal = ref(false);
 const editMode = ref(false);
 
+// [PERBAIKAN] Menghapus nidn
 const initialFormState = {
   id: null, name: "", email: "", password: "",
   role: "user", nim: "", major: "", faculty: "", academic_year: "",
-  nip: "", nidn: ""
+  nip: "" 
 };
 
 const form = ref({ ...initialFormState });
@@ -378,7 +367,6 @@ const generateForm = ref({
   academic_year: "",
 });
 
-// State Paginasi
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
 const totalItems = ref(0);
@@ -468,8 +456,6 @@ const handleGenerate = async () => {
   try {
     const response = await generateUsers(prefix, start, end, academic_year);
     alert(`Sukses: ${response.message}\nFile disimpan di server sebagai: ${response.data.file}`);
-    console.log("Pengguna yang di-generate:", response.data.users);
-    
     closeGenerateModal();
     currentPage.value = 1; 
     fetchMahasiswa(); 
@@ -513,10 +499,8 @@ const simpanMahasiswa = async () => {
         dataToUpdate.faculty = form.value.faculty || null;
         dataToUpdate.academic_year = form.value.academic_year || null;
         dataToUpdate.nip = null;
-        dataToUpdate.nidn = null;
       } else if (form.value.role === 'lecturer') {
         dataToUpdate.nip = form.value.nip || null;
-        dataToUpdate.nidn = form.value.nidn || null;
         dataToUpdate.nim = null;
         dataToUpdate.major = null;
         dataToUpdate.faculty = null;
@@ -565,10 +549,8 @@ const simpanMahasiswa = async () => {
         dataToCreate.faculty = form.value.faculty || null;
         dataToCreate.academic_year = form.value.academic_year || null;
         dataToCreate.nip = null;
-        dataToCreate.nidn = null;
       } else if (form.value.role === 'lecturer') {
         dataToCreate.nip = form.value.nip || null;
-        dataToCreate.nidn = form.value.nidn || null;
         dataToCreate.nim = null;
         dataToCreate.major = null;
         dataToCreate.faculty = null;
@@ -587,8 +569,7 @@ const simpanMahasiswa = async () => {
         fetchMahasiswa(); 
       }
 
-    } catch (err)
- {
+    } catch (err) {
       console.error("Gagal menambah data:", err);
       const errorMsg = err.response?.data?.message || "Terjadi kesalahan saat menambah data.";
       alert(errorMsg);
@@ -608,7 +589,6 @@ const openEditModal = (mhs) => {
     faculty: mhs.faculty || "",
     academic_year: mhs.academic_year || "",
     nip: mhs.nip || "",
-    nidn: mhs.nidn || "",
     id: userId,
     password: "", 
   };
