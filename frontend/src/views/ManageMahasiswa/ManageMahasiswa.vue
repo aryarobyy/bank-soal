@@ -341,8 +341,7 @@
 </template>
 
 <script setup>
-// Bagian Script tidak perlu diubah, karena responsifitas diurus oleh CSS (Tailwind) di template.
-// Tapi pastikan import dan logic tetap sama.
+
 import { ref, onMounted, computed, watch } from "vue";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import {

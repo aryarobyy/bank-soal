@@ -239,11 +239,11 @@ const error = ref(null);
 const showModal = ref(false);
 const editMode = ref(false);
 
-// Hapus 'academic_year' dari initial state dosen
+
 const initialFormState = {
   id: null, name: "", email: "", password: "",
   role: "lecturer", nip: "", nidn: "", 
-  major: "", faculty: "", nim: "", academic_year: "" // (kita biarkan ini untuk role 'user')
+  major: "", faculty: "", nim: "", academic_year: "" 
 };
 const form = ref({ ...initialFormState });
 
@@ -307,7 +307,7 @@ const closeModal = () => {
   showModal.value = false;
 };
 
-// ## FUNGSI SIMPAN DIPERBARUI ##
+
 const simpanDosen = async () => {
   try {
     const userId = form.value.id;
@@ -319,7 +319,7 @@ const simpanDosen = async () => {
     }
 
     if (editMode.value) {
-      // --- MODE EDIT ---
+  
       if (!userId) {
         alert("Error: ID pengguna tidak ditemukan. Tidak dapat mengedit.");
         return;
@@ -340,7 +340,7 @@ const simpanDosen = async () => {
         dataToUpdate.nim = null;
         dataToUpdate.major = null;
         dataToUpdate.faculty = null;
-        // 'academic_year' tidak dikirim
+      
       } else if (form.value.role === 'user') {
         dataToUpdate.nim = form.value.nim || null;
         dataToUpdate.major = form.value.major || null;
@@ -350,10 +350,10 @@ const simpanDosen = async () => {
         dataToUpdate.nidn = null;
       }
       
-      // 1. Update data utama
+     
       await updateUser(dataToUpdate, userId);
       
-      // 2. Update password HANYA jika diisi
+ 
       if (form.value.password && form.value.password.trim() !== "") {
         try {
           await changePassword(userId, form.value.password, adminId);
@@ -364,7 +364,7 @@ const simpanDosen = async () => {
         }
       }
       
-      // 3. Tampilkan pesan sukses/error
+   
       if (passwordErrorMessage) {
         alert(`Data berhasil diperbarui, TAPI: ${passwordErrorMessage}`);
       } else if (passwordSuccess) {
@@ -374,7 +374,7 @@ const simpanDosen = async () => {
       }
 
     } else {
-      // --- MODE TAMBAH ---
+    
       const dataToCreate = {
         name: form.value.name,
         email: form.value.email,
@@ -388,7 +388,6 @@ const simpanDosen = async () => {
         dataToCreate.major = form.value.major || "N/A";
         dataToCreate.faculty = form.value.faculty || "N/A";
         dataToCreate.nim = null;
-        // 'academic_year' tidak dikirim
       } else if (form.value.role === 'user') {
         dataToCreate.nim = form.value.nim || null;
         dataToCreate.major = form.value.major || null;

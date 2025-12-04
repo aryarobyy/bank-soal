@@ -153,10 +153,10 @@ const toggleSidebar = () => {
 };
 
 const logout = async () => {
-  // 1. Panggil Backend
+
   await logoutUser();
 
-  // 2. Clear Local
+
   const { removeValue: removeToken } = useLocalStorage('token');
   const { removeValue: removeId } = useLocalStorage('id');
   removeToken();

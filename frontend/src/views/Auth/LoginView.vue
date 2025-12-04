@@ -4,16 +4,19 @@
   >
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
       <div class="text-center mb-8">
-        <div
-          class="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full mb-4"
-        >
-          <GraduationCap class="w-8 h-8 text-white" />
-        </div>
+        
+        <img 
+          :src="logoImage" 
+          alt="Logo Latih.in" 
+          class="w-24 h-auto mb-4 mx-auto object-contain"
+        />
+
         <h1 class="text-3xl font-bold text-gray-800 mb-2">Login</h1>
         <p class="text-gray-600">Masuk ke akun Anda</p>
       </div>
 
       <form @submit.prevent="handleSubmit" class="space-y-5">
+        
         <div v-for="field in fields" :key="field.name">
           <label class="block text-sm font-medium text-gray-700 mb-2">{{
             field.label
@@ -23,15 +26,12 @@
               v-model="formData[field.name]"
               :title="field.title"
               :place-holder="field.placeholder"
-              :required="true"
+              :required="false" 
               :id="field.id"
               :icon="field.icon"
               :type="field.type"
             />
           </div>
-          <p v-if="errors[field.name]" class="text-red-500 text-sm mt-1">
-            {{ errors[field.name] }}
-          </p>
         </div>
 
         <Button
@@ -52,8 +52,7 @@
 
 <script setup>
 import { ref } from "vue";
-// <-- PERUBAHAN: Impor 'User' menggantikan 'Mail'
-import { User, Lock, GraduationCap } from "lucide-vue-next";
+import { User, Lock } from "lucide-vue-next"; 
 import Input from '../../components/ui/Input.vue'
 import Button from "../../components/ui/Button.vue";
 import { login } from "../../provider/user.provider";
@@ -61,36 +60,34 @@ import { useLocalStorage } from "../../hooks/useLocalStorage";
 import Toast from "../../components/utils/Toast.vue";
 import { useRouter } from 'vue-router'
 import { useUser } from "../../hooks/useGetCurrentUser";
+import logoImage from '../../assets/login-illustration.webp';
 
 const { setValue: setToken } = useLocalStorage("token");
 const { setValue: setId } = useLocalStorage("id");
 const { setUser: setGlobalUser } = useUser();
 
 const toastRef = ref(null);
-// <-- PERUBAHAN: 'email' diubah menjadi 'login_id'
+const router = useRouter()
+
 const formData = ref({
   login_id: "",
   password: "",
 });
-const errors = ref({});
-const isSubmitting = ref(false);
-const router = useRouter()
 
-// <-- PERUBAHAN: Field email diganti dengan login_id
+const isSubmitting = ref(false);
+
 const fields = [
   { 
     id: 1, 
     name: "login_id", 
-    
     title: "Login ID", 
     type: "text", 
     placeholder: "NIM / NIDN / Username", 
-    icon: User, // <-- Ikon diubah
+    icon: User, 
   },
   { 
     id: 2, 
     name: "password", 
-    
     title: "Password", 
     type: "password", 
     placeholder: "Minimal 6 karakter", 
@@ -98,13 +95,38 @@ const fields = [
   },
 ];
 
+
+const validateForm = () => {
+  const { login_id, password } = formData.value;
+
+  if (!login_id && !password) {
+    toastRef.value.showToast("error", "Validasi Gagal", "Harap isi Login ID dan Password");
+    return false;
+  }
+ 
+  if (!login_id) {
+    toastRef.value.showToast("error", "Validasi Gagal", "Login ID belum diisi");
+    return false;
+  }
+
+  if (!password) {
+    toastRef.value.showToast("error", "Validasi Gagal", "Password belum diisi");
+    return false;
+  }
+
+  return true;
+};
+
 const handleSubmit = async () => {
+
+  if (!validateForm()) {
+    return; 
+  }
+
   try {
     isSubmitting.value = true;
-    // Panggilan 'login' tidak perlu diubah,
-    // karena 'formData.value' sekarang sudah berisi { login_id: "...", password: "..." }
-    const data = await login(formData.value);
     
+    const data = await login(formData.value);
     const userData = data.data.data;
 
     if (data.data.token && userData) {
@@ -130,16 +152,17 @@ const handleSubmit = async () => {
       "Selamat datang kembali!"
     );
 
-    isSubmitting.value = false;
     router.push(redirectPath);
 
   } catch (error) {
-    console.log("Something error", error.response?.data);
+    console.log("Login error", error.response?.data);
+    
     toastRef.value.showToast(
       "error",
       "Login Gagal",
-      "Login ID atau password salah." // <-- Pesan error diperbarui
+      "Login ID atau Password yang Anda masukkan salah" 
     );
+  } finally {
     isSubmitting.value = false;
   }
 };

@@ -24,8 +24,7 @@
 export default {
   name: 'CreateSoal',
   
-  // ## 1. TAMBAHKAN COMPUTED PROPERTY INI ##
-  // Ini untuk mendeteksi apakah kita di layout Admin atau Dosen
+ 
   computed: {
     isAdminRoute() {
       return this.$route.path.startsWith('/admin/soal');
@@ -33,16 +32,16 @@ export default {
   },
 
   methods: {
-    // ## 2. PERBAIKI METODE INI (MENGGUNAKAN NAMED ROUTE) ##
+
     uploadJson() {
-      // Menggunakan nama rute yang unik dari index.js
+   
       const routeName = this.isAdminRoute ? 'AdminSoalUploadJson' : 'DosenSoalUploadJson';
       this.$router.push({ name: routeName });
     },
     
-    // ## 3. PERBAIKI METODE INI (MENGGUNAKAN NAMED ROUTE) ##
+
     createManual() {
-      // Menggunakan nama rute yang unik dari index.js
+  
       const routeName = this.isAdminRoute ? 'AdminSoalCreateManual' : 'DosenSoalCreateManual';
       this.$router.push({ name: routeName });
     }

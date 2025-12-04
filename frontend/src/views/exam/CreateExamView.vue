@@ -90,17 +90,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue"; // Impor computed
-import { useRoute, useRouter } from "vue-router"; // Impor useRoute
-// Pastikan path provider Anda sudah benar
+import { ref, computed } from "vue"; 
+import { useRoute, useRouter } from "vue-router"; 
 import { createExam } from "../../provider/exam.provider.js";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser.js";
 
 const router = useRouter();
-const route = useRoute(); // Tambahkan route
+const route = useRoute(); 
 const { user } = useGetCurrentUser();
 
-// Tambahkan computed isAdminRoute
+
 const isAdminRoute = computed(() => route.path.startsWith('/admin'));
 
 const form = ref({
@@ -139,7 +138,7 @@ const handleSubmit = async () => {
     popupMessage.value = "✅ Ujian berhasil dibuat!";
     showPopup.value = true;
 
-    // Navigasi dinamis
+  
     const returnRouteName = isAdminRoute.value ? 'AdminManageExam' : 'DosenManageExam';
     
     setTimeout(() => {

@@ -118,12 +118,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from "vue"; // Tambahkan onUnmounted
-import { useRoute, useRouter } from "vue-router";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue"; 
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import { API_BASE_URL } from "../../core/constant"; 
+import { useRoute, useRouter } from "vue-router";
 
-// Providers
 import { getExamById } from "../../provider/exam.provider";
 import { getQuestionsByExam } from "../../provider/question.provider"; 
 import { submitUserAnswer, getUserAnswersBySession } from "../../provider/useranswer.provider";
@@ -133,7 +132,7 @@ const route = useRoute();
 const router = useRouter();
 const { user } = useGetCurrentUser();
 
-// State
+
 const loading = ref(true);
 const error = ref("");
 const exam = ref(null);
@@ -141,10 +140,10 @@ const questions = ref([]);
 const currentNo = ref(1);
 const answers = ref([]); 
 
-// Timer & Interval State
+
 const timeLeft = ref(0);
 let timer = null;
-let statusCheckInterval = null; // Variable untuk Polling Interval
+let statusCheckInterval = null; 
 
 const currentQuestion = computed(() => {
   return questions.value[currentNo.value - 1] || null;
@@ -193,7 +192,7 @@ const startTimer = (seconds) => {
       timeLeft.value--;
     } else {
       clearInterval(timer);
-      // Panggil finishExam dengan mode Auto (true) saat waktu habis
+ 
       finishExam(true); 
     }
   }, 1000);
@@ -254,12 +253,12 @@ onMounted(async () => {
         console.warn("Gagal merestore jawaban:", err);
     }
 
-    // 2. Restore Posisi Soal
+
     if (sessionData && sessionData.current_no && sessionData.current_no > 0) {
         currentNo.value = sessionData.current_no;
     }
 
-    // 3. Restore Timer Logic
+ 
     if (sessionData && sessionData.started_at) {
         const durationMinutes = exam.value?.long_time || 120;
         const startTime = new Date(sessionData.started_at).getTime();
@@ -270,7 +269,7 @@ onMounted(async () => {
         if (remainingSeconds > 0) {
             startTimer(remainingSeconds);
         } else {
-            // Jika saat dimuat waktu sudah habis, langsung finish auto
+        
             finishExam(true);
         }
     } else {
@@ -282,8 +281,7 @@ onMounted(async () => {
             const res = await getExamSessionById(sessionId);
             const currentSession = res.data || res;
 
-            // Jika Backend bilang status sudah 'finished' (karena waktu server habis/admin close)
-            // TAPI di frontend kita masih mengerjakan
+          
             if (currentSession.status === 'finished' || currentSession.status === 'submitted') {
                 clearInterval(statusCheckInterval);
                 clearInterval(timer);
@@ -293,7 +291,7 @@ onMounted(async () => {
         } catch (err) {
             console.warn("Gagal cek status berkala:", err);
         }
-    }, 60000); // Cek setiap 60 detik (1 menit)
+    }, 60000); 
     
   } catch (e) {
     console.error(e);
@@ -313,7 +311,6 @@ onMounted(async () => {
   }
 });
 
-// CLEANUP SAAT KELUAR HALAMAN
 onUnmounted(() => {
   if (timer) clearInterval(timer);
   if (statusCheckInterval) clearInterval(statusCheckInterval);
@@ -333,12 +330,12 @@ watch(currentNo, async (newNo) => {
 
 
 const finishExam = async (isAuto = false) => {
-  // 1. Konfirmasi manual (skip jika waktu habis/auto)
+ 
   if (!isAuto && timeLeft.value > 0) {
      if (!confirm("Apakah Anda yakin ingin menyelesaikan ujian?")) return;
   }
 
-  // Set loading agar user tahu proses sedang berjalan
+  
   loading.value = true;
 
   try {
@@ -352,7 +349,7 @@ const finishExam = async (isAuto = false) => {
         if (selectedId) {
             const selectedOption = q.options.find((opt) => opt.id === selectedId);
             if (selectedOption) {
-              // Return promise
+             
                 return submitUserAnswer({
                     exam_session_id: sessionId,
                     user_id: userId,
@@ -365,12 +362,10 @@ const finishExam = async (isAuto = false) => {
         return Promise.resolve();
     });
 
-    // Tunggu semua proses simpan selesai
+    
     await Promise.allSettled(savePromises);
 
-    // ===============================================
-    // EKSEKUSI FINISH
-    // ===============================================
+ 
     const payload = {
       session_id: sessionId,
       exam_id: examId,
@@ -379,25 +374,25 @@ const finishExam = async (isAuto = false) => {
     
     await finishExamSession(payload);
 
-    // Feedback User
+ 
     if (isAuto) {
         alert("Waktu Habis! Jawaban Anda telah disimpan otomatis.");
     } else {
         alert("Ujian selesai! Nilai Anda telah disimpan.");
     }
 
-    // Redirect Keluar (Replace agar tidak bisa Back)
+   
     router.replace("/ujian");
 
   } catch (err) {
     console.error("FinishExam Error:", err);
     const backendMsg = err.response?.data?.message;
     
-    // Handle error khusus
+  
     if (backendMsg && (backendMsg.includes("not found") || backendMsg.includes("record not found"))) {
         router.replace("/ujian");
     } else {
-        // Jika mode Auto (waktu habis), tetap paksa keluar walau error
+   
         if (isAuto) {
              router.replace("/ujian");
         } else {
