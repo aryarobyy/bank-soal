@@ -133,7 +133,7 @@ const totalItems = ref(0);
 
 const { user } = useGetCurrentUser();
 
-// --- LOAD DATA ---
+
 const loadExams = async () => {
   if (!user.value) return;
 
@@ -141,7 +141,7 @@ const loadExams = async () => {
     const offset = (page.value - 1) * limit;
     const creatorId = isAdminRoute.value ? null : user.value.id;
     
-    // Panggil Provider
+  
     const result = await getAllExam(limit, offset, creatorId);
 
     if (result && Array.isArray(result.data)) {
@@ -171,7 +171,7 @@ watch([page, user], loadExams, { immediate: true });
 const filteredExams = computed(() => {
   let data = [...exams.value];
 
-  // 1. Search
+
   if (search.value) {
     data = data.filter((e) =>
       e.title.toLowerCase().includes(search.value.toLowerCase())
@@ -195,7 +195,7 @@ const filteredExams = computed(() => {
   return data;
 });
 
-// --- PAGINATION ---
+
 const totalPages = computed(() => {
   if (totalItems.value === 0) return 1;
   return Math.ceil(totalItems.value / limit);
@@ -218,7 +218,7 @@ const prevPage = () => {
   }
 };
 
-// --- UTILS ---
+
 const formatDate = (dateString) => {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleDateString("id-ID", {
@@ -236,7 +236,7 @@ const removeExam = async (id) => {
     
     alert("✅ Ujian berhasil dihapus!");
     
-    // Jika halaman saat ini kosong setelah hapus, mundur 1 halaman
+
     if (exams.value.length === 1 && page.value > 1) {
       page.value--;
     } else {

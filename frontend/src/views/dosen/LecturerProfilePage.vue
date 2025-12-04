@@ -16,7 +16,7 @@
 </template>
 
 <script>
-// Path ini sudah benar jika file ini ada di 'src/views/dosen/'
+
 import UserProfileForm from '../../components/UserProfileForm.vue';
 
 export default {
@@ -29,11 +29,11 @@ export default {
   },
   methods: {
     fetchLecturerData() {
-      // Simulasi mengambil data dosen dari backend
+     
       this.lecturerData = {
         fullName: 'Dr. Budi Santoso',
         email: 'budi.s@latih.in',
-        idNumber: '198503152010011005', // Ini adalah NIDN
+        idNumber: '198503152010011005', 
         gender: 'Male',
         history: 'Spesialisasi Machine Learning',
         imageUrl: null,
@@ -41,7 +41,7 @@ export default {
     },
     handleProfileSave(updatedData) {
       console.log('Menyimpan data dosen:', updatedData);
-      // Panggil API yang berbeda untuk menyimpan data dosen
+     
     }
   },
   created() {

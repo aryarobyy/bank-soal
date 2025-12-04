@@ -45,6 +45,7 @@
         </div>
         
         <button 
+          v-if="isOwnProfile"
           @click="goToEditProfile" 
           class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-medium px-6 py-2.5 rounded-lg transition shadow-sm hover:shadow-md"
         >
@@ -122,19 +123,9 @@
               </div>
             </div>
           </template>
-          </div>
-
-        <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 mb-3">
-            My email Address
-          </label>
-          <div class="flex items-start gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <div>
-              <p class="text-sm font-medium text-gray-800">{{ user?.email || '-' }}</p>
-            </div>
-          </div>
         </div>
-      </div>
+        
+        </div>
     </div>
   </div>
 </template>
@@ -155,16 +146,14 @@ const user = ref(null)
 const isOwnProfile = ref(false)
 const isLoading = ref(true)
 const isError = ref(false)
-const imageKey = ref(Date.now()) // Key untuk force re-render gambar
+const imageKey = ref(Date.now()) 
 
-// Function untuk mendapatkan URL gambar dengan cache busting
 const getImageUrl = () => {
   if (!user.value) {
     return 'https://ui-avatars.com/api/?name=U&background=random';
   }
   
   if (user.value.img_url) {
-    // Tambahkan timestamp untuk menghindari cache browser
     const url = user.value.img_url;
     const separator = url.includes('?') ? '&' : '?';
     return `${url}${separator}t=${imageKey.value}`;
@@ -173,51 +162,38 @@ const getImageUrl = () => {
   return 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.value.name || 'U') + '&background=random';
 };
 
-// Handle error saat gambar gagal load
 const handleImageError = (event) => {
   console.error('Image failed to load:', event.target.src);
   event.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.value?.name || 'U') + '&background=random';
 };
 
-// Watch untuk perubahan userLocal
 watch(userLocal, (newUser) => {
   if (newUser && newUser.id == userId) {
     console.log('User local updated:', newUser);
     user.value = newUser;
     isOwnProfile.value = true;
-    imageKey.value = Date.now(); // Update image key
+    imageKey.value = Date.now(); 
   }
 }, { immediate: true });
 
-// Hook yang dipanggil setiap kali komponen menjadi aktif (termasuk setelah back dari edit)
 onActivated(() => {
-  console.log('Component activated - refreshing data');
   fetchUser();
 });
 
 onMounted(() => {
-  console.log('Component mounted');
   fetchUser();
 });
 
 const fetchUser = async () => {
   try {
     isLoading.value = true;
-    console.log('Fetching user with ID:', userId);
-    
-    // Selalu fetch dari server untuk mendapatkan data terbaru
     const res = await getUserById(userId);
     const fetchedUser = res.data;
     
-    console.log('Fetched user data:', fetchedUser);
-    console.log('Image URL:', fetchedUser.img_url);
-    
     user.value = fetchedUser;
-    isOwnProfile.value = userLocal.value && userLocal.value.id == userId;
-    
-    // Update image key untuk force reload gambar
+    isOwnProfile.value = userLocal.value && (userLocal.value.id == userId);
+
     imageKey.value = Date.now();
-    
     isError.value = false;
   } catch (err) {
     console.error('Failed to fetch user:', err);

@@ -117,7 +117,7 @@
 
 <script>
 import { createQuestionWithOptions, getQuestionById, updateQuestion } from '../../provider/question.provider';
-// Import createSubject juga
+
 import { getPaginatedSubjects, createSubject } from '../../provider/subject.provider';
 import { useGetCurrentUser } from '../../hooks/useGetCurrentUser';
 import { API_BASE_URL } from '../../core/constant'; 
@@ -158,7 +158,7 @@ export default {
       answerColors: ['bg-red-500', 'bg-blue-500', 'bg-yellow-500', 'bg-green-500'],
       isLoadingData: false,
       
-      // State Modal Subject
+    
       showSubjectModal: false,
       isCreatingSubject: false,
       newSubject: {
@@ -180,7 +180,7 @@ export default {
   methods: {
     async fetchSubjects() {
       try {
-        // Ambil banyak subjek (100)
+       
         const response = await getPaginatedSubjects(100, 0);
         
         if (response && response.data && Array.isArray(response.data.data)) {
@@ -191,7 +191,7 @@ export default {
             this.subjects = [];
         }
        
-        // Default select ke item pertama jika bukan edit mode
+       
         if (!this.isEditMode && this.subjects.length > 0 && !this.currentSoal.subject_id) {
            this.currentSoal.subject_id = this.subjects[0].id;
         }
@@ -201,18 +201,18 @@ export default {
       }
     },
 
-    // Deteksi jika user memilih "Buat Subjek Baru"
+    
     handleSubjectChange() {
       if (this.currentSoal.subject_id === 'NEW_SUBJECT') {
         this.newSubject = { title: '', code: '' };
         this.showSubjectModal = true;
-        this.currentSoal.subject_id = null; // Reset dulu agar dropdown tidak nyangkut di value 'NEW_SUBJECT'
+        this.currentSoal.subject_id = null; 
       }
     },
 
     closeSubjectModal() {
       this.showSubjectModal = false;
-      // Kembalikan ke null atau subject pertama jika batal
+    
       if (!this.currentSoal.subject_id && this.subjects.length > 0) {
         this.currentSoal.subject_id = this.subjects[0].id;
       }
@@ -228,15 +228,15 @@ export default {
       try {
         const res = await createSubject(this.newSubject);
         
-        // Output dari backend: { data: { id: ..., title: ..., code: ... } }
+      
         const createdSubject = res.data; 
         
         alert("Subjek berhasil dibuat!");
         
-        // Tambahkan ke list dropdown
+     
         this.subjects.push(createdSubject);
         
-        // Langsung pilih subjek baru tersebut
+    
         this.currentSoal.subject_id = createdSubject.id;
         
         this.closeSubjectModal();
@@ -248,7 +248,7 @@ export default {
       }
     },
 
-    // ... (Sisa method tidak berubah) ...
+   
     constructImageUrl(serverPath) {
       if (!serverPath) return null;
       if (serverPath.startsWith('http')) return serverPath;

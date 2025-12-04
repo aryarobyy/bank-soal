@@ -116,7 +116,7 @@ const selectedExamId = ref(null);
 const loading = ref(false);
 const error = ref("");
 
-// Pagination Config
+
 const currentPage = ref(1);
 const limit = 10;
 const totalItems = ref(0);
@@ -126,7 +126,7 @@ const totalPages = computed(() => {
     return Math.ceil(totalItems.value / limit);
 });
 
-// Load Exam List
+
 const fetchExamList = async () => {
     try {
         const res = await getAllExam(100, 0);
@@ -141,7 +141,7 @@ const getExamTitle = (examId) => {
     return exam ? exam.title : `Exam ID: ${examId}`;
 };
 
-// FETCH REPORTS (UPDATED)
+
 const fetchReports = async () => {
   if (!selectedExamId.value) return;
 
@@ -151,15 +151,14 @@ const fetchReports = async () => {
     
     const offset = (currentPage.value - 1) * limit;
 
-    // Panggil API (Sudah tidak perlu filter manual karena backend sudah memfilter by exam_id)
+    
     const result = await getExamSessions(limit, offset, selectedExamId.value);
     
-    // Format Data dari Backend: { data: [...], total: 4 }
     if (result && Array.isArray(result.data)) {
         reports.value = result.data;
         totalItems.value = result.total || 0;
     } else if (Array.isArray(result)) {
-        // Fallback jika backend lupa kirim total object
+        
         reports.value = result;
         totalItems.value = result.length;
     } else {
@@ -167,7 +166,7 @@ const fetchReports = async () => {
         totalItems.value = 0;
     }
     
-    // Fetch User Names
+
     if (reports.value.length > 0) {
         await fetchUserNames(reports.value);
     }

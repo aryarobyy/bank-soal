@@ -58,13 +58,13 @@ export default {
       currentPage: 1,
       itemsPerPage: 10,
       searchQuery: '',
-      // sortBy DIHAPUS
+    
     };
   },
   watch: {
     searchQuery() {
       this.currentPage = 1;
-      // Kita tidak perlu memanggil API, filter dilakukan di frontend
+      
     },
   },
   computed: {
@@ -72,41 +72,41 @@ export default {
       return this.$route.path.startsWith('/admin/soal');
     },
     
-    // ## 2. Logika filter diperbarui untuk membaca 'subject.title' ##
+ 
     filteredSubjects() {
       if (!this.searchQuery) {
-        return this.allSubjects; // Kembalikan semua jika tidak ada search
+        return this.allSubjects; 
       }
       const searchLower = this.searchQuery.toLowerCase();
       return this.allSubjects.filter(subject => 
-        subject.title.toLowerCase().includes(searchLower) // Ganti 'name' ke 'title'
+        subject.title.toLowerCase().includes(searchLower) 
       );
     },
 
     totalPages() {
-      // Paginasi berdasarkan data yang sudah difilter
+     
       return Math.ceil(this.filteredSubjects.length / this.itemsPerPage);
     },
     
-    // Paginasi
+ 
     paginatedSubjects() {
-      // Slice dari data yang sudah difilter
+    
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
       return this.filteredSubjects.slice(start, end);
     }
   },
   methods: {
-    // ## 3. 'fetchSoalData' diperbarui sesuai info backend ##
+  
     async fetchSoalData() {
       this.loading = true;
       try {
-        // Panggil provider (minta semua data, karena API belum dukung search/pagination)
+      
         const response = await getPaginatedSubjects(0, 0, ''); 
         
-        // Sesuai info backend: "Data.data.data" dan "response.data.total"
-        this.allSubjects = response.data.data || []; // <-- PERBAIKAN BUG
-        this.totalSubjects = response.total || 0; // <-- PERBAIKAN BUG
+       
+        this.allSubjects = response.data.data || []; 
+        this.totalSubjects = response.total || 0; 
 
       } catch (error) {
         console.error("Gagal mengambil data subjek:", error);
@@ -126,17 +126,17 @@ export default {
       this.$router.push({ name: routeName, query: { subject_id: subject.id } });
     },
 
-    // ## 4. 'handleDeleteSubject' diperbarui untuk membaca 'subject.title' ##
+   
     async handleDeleteSubject(subject) {
-      // Ganti '.name' menjadi '.title'
+     
       if (!confirm(`Anda yakin ingin menghapus mata kuliah "${subject.title}"?`)) {
         return;
       }
       
       try {
-        await deleteSubject(subject.id); // Panggil API
+        await deleteSubject(subject.id); 
         alert(`Mata kuliah "${subject.title}" berhasil dihapus.`);
-        this.fetchSoalData(); // Ambil ulang data
+        this.fetchSoalData(); 
         
       } catch (error) {
         console.error("Gagal menghapus subjek:", error);

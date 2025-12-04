@@ -108,46 +108,46 @@ const route = useRoute();
 const { user } = useGetCurrentUser();
 
 const exam = ref(null);
-const userSession = ref(null); // Menyimpan sesi user (jika ada)
+const userSession = ref(null); 
 const loading = ref(true);
 const error = ref("");
 
-// --- Logic Waktu & Status ---
 
-// 1. Apakah ujian sudah lewat deadline server?
+
+
 const isExamClosed = computed(() => {
     if (!exam.value?.finished_at) return false;
     return new Date() > new Date(exam.value.finished_at);
 });
 
-// 2. Apakah waktu mulai ujian sudah tiba?
+
 const isExamStarted = computed(() => {
     if (!exam.value?.started_at) return false;
     return new Date() >= new Date(exam.value.started_at);
 });
 
-// 3. Apakah User SUDAH SELESAI mengerjakan? [LOGIC BARU]
+
 const isExamFinishedByUser = computed(() => {
     return userSession.value?.status === 'finished'; 
 });
 
-// 4. Apakah tombol harus disable?
+
 const isButtonDisabled = computed(() => {
-    // Disabled jika: Closed ATAU Belum Mulai ATAU Sudah Selesai
+    
     return isExamClosed.value || !isExamStarted.value || isExamFinishedByUser.value;
 });
 
-// 5. Text Tombol Dinamis
+
 const buttonText = computed(() => {
     if (isExamFinishedByUser.value) return "Anda Sudah Mengerjakan";
     if (isExamClosed.value) return "Ujian Telah Ditutup";
     if (!isExamStarted.value) return "Ujian Belum Dimulai";
-    // Jika ada sesi tapi statusnya masih 'in_progress', tawarkan Resume
+   
     if (userSession.value && userSession.value.status === 'in_progress') return "Lanjutkan Ujian"; 
     return "Mulai Ujian";
 });
 
-// Format tanggal tampilan
+
 const formattedDate = computed(() => {
   if (!exam.value?.started_at || !exam.value?.finished_at) return "";
   const s = new Date(exam.value.started_at);
@@ -166,16 +166,15 @@ const formattedDate = computed(() => {
   })} WIB`;
 });
 
-// Fungsi untuk mengecek status pengerjaan user
+
 const checkUserSession = async () => {
     if (!user.value || !exam.value) return;
     
     try {
-        // Ambil list sesi user (limit 100 untuk safety)
+    
         const sessionsRes = await getExamSessionByUser(user.value.id, 100, 0);
         const sessions = Array.isArray(sessionsRes) ? sessionsRes : (sessionsRes.data || []);
         
-        // Cari apakah ada sesi untuk ujian ini
         const mySession = sessions.find(s => s.exam_id === Number(exam.value.id));
         
         if (mySession) {
@@ -186,21 +185,20 @@ const checkUserSession = async () => {
     }
 };
 
-// ON MOUNTED
 onMounted(async () => {
   try {
     const id = route.query.id; 
     if(!id) throw new Error("ID Ujian tidak ditemukan");
 
-    // 1. Get Exam Detail
+
     const data = await getExamById(id);
     exam.value = data?.data || data; 
 
-    // 2. Check Session User
+  
     if (user.value) {
         await checkUserSession();
     } else {
-        // Jika user belum load (karena async), tunggu sampai ada
+       
         const unwatch = watch(user, async (val) => {
             if (val) {
                 await checkUserSession();
@@ -217,9 +215,9 @@ onMounted(async () => {
   }
 });
 
-// Mulai Ujian
+
 const startExam = async () => {
-  // Validasi Client Side Terakhir
+
   if (isExamFinishedByUser.value) {
       alert("Anda sudah menyelesaikan ujian ini.");
       return;
@@ -234,10 +232,10 @@ const startExam = async () => {
   }
 
   try {
-    // 1️⃣ Buat session baru atau dapatkan yang existing (Resume)
+  
     const sessionRes = await createExamSession(exam.value.id);
     
-    // Handle struktur response createExamSession
+    
     const sessionData = sessionRes?.data || sessionRes;
     const sessionId = sessionData?.id;
 
@@ -245,7 +243,6 @@ const startExam = async () => {
       throw new Error("Gagal mendapatkan ID Sesi Ujian.");
     }
 
-    // 2️⃣ Redirect ke halaman pengerjaan
     router.push(`/exam/start?id=${exam.value.id}&session_id=${sessionId}`);
 
   } catch (err) {
@@ -253,7 +250,7 @@ const startExam = async () => {
     
     const msg = err.response?.data?.message || "";
     
-    // Handle error message spesifik dari backend
+
     if (msg.includes("exam is already closed")) {
         alert("Gagal: Ujian ini sudah ditutup oleh sistem.");
     } else if (msg.includes("exam has not started")) {
