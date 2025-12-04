@@ -192,7 +192,7 @@ func (r *questionRepository) CreateWithOptions(ctx context.Context, question mod
 func (r *questionRepository) CreateBatch(ctx context.Context, q []model.Question) error {
 	if err := r.db.
 		WithContext(ctx).
-		Create(&q).
+		CreateInBatches(&q, 100).
 		Error; err != nil {
 		return err
 	}

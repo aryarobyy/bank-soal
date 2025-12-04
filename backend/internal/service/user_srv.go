@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -31,6 +33,7 @@ type UserService interface {
 	ChangeRole(ctx context.Context, id int, role model.Role, userRole model.Role) error
 	RefreshToken(ctx context.Context, refreshToken string) (string, error)
 	BulkInsert(ctx context.Context, batchUser model.BulkUserCredential, prefix string, start int, end int) ([]model.BulkUserOutput, error)
+	JsonInput(ctx context.Context, file *multipart.FileHeader) error
 }
 
 type userService struct {
@@ -504,4 +507,38 @@ func (s *userService) BulkInsert(ctx context.Context, batchUser model.BulkUserCr
 	}
 
 	return credentials, nil
+}
+
+func (s *userService) JsonInput(ctx context.Context, file *multipart.FileHeader) error {
+	fileContent, err := file.Open()
+	if err != nil {
+		return fmt.Errorf("failed opening file %w", err)
+	}
+	defer fileContent.Close()
+
+	users := []model.User{}
+	decoder := json.NewDecoder(fileContent)
+	if err := decoder.Decode(&users); err != nil {
+		return fmt.Errorf("invalid format file: %w", err)
+	}
+
+	if len(users) == 0 {
+		return fmt.Errorf("file is empty")
+	}
+
+	for i, u := range users {
+		if u.Nim == nil {
+			return fmt.Errorf("nim cannot be empty at index %d", i)
+		}
+		if u.Password == "" {
+			return fmt.Errorf("password cannot be empty at index %d", i)
+		}
+	}
+
+	_, err = s.repo.BulkInsert(ctx, users)
+	if err != nil {
+		return fmt.Errorf("failed to save users: %w", err)
+	}
+
+	return nil
 }

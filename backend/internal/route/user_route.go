@@ -32,6 +32,7 @@ func UserRoutes(r *gin.Engine, user *controller.UserController) {
 			usersAuth.PUT("/role", middleware.RoleGuard(model.RoleAdmin, model.RoleSuperAdmin), middleware.InputValidateJson([]string{"role"}), user.ChangeRole)
 			usersAuth.POST("/generate", middleware.RoleGuard(model.RoleAdmin), middleware.InputValidateJson([]string{"academic_year"}), user.BulkInsert)
 			usersAuth.POST("/logout", user.Logout)
+			usersAuth.POST("/json", middleware.RoleGuard(model.RoleAdmin), user.JsonInput)
 		}
 	}
 }

@@ -721,3 +721,29 @@ func (h *UserController) Logout(c *gin.Context) {
 
 	helper.Success(c, http.StatusOK, "Logout successful")
 }
+
+func (h *UserController) JsonInput(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "File not found. Use key 'file' untuk upload")
+		return
+	}
+
+	if file.Size > 10*1024*1024 {
+		helper.Error(c, http.StatusBadRequest, "File is too big. Max 10MB")
+		return
+	}
+
+	if file.Header.Get("Content-Type") != "application/json" && !strings.HasSuffix(strings.ToLower(file.Filename), ".json") {
+		helper.Error(c, http.StatusBadRequest, "File must be json")
+		return
+	}
+
+	if err := h.service.JsonInput(ctx, file); err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	helper.Success(c, nil, "users created successfully")
+}

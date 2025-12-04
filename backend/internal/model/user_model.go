@@ -77,7 +77,8 @@ type BulkUserCredential struct {
 }
 
 type BulkUserOutput struct {
-	Nim      string `json:"nim"`
+	Nim string `json:"nim"`
+	// Name     *string `json:"name"`
 	Password string `json:"password"`
 }
 

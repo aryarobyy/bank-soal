@@ -113,7 +113,7 @@ func IsValidName(s string) bool {
 			return false
 		}
 	}
-	return false
+	return true
 }
 
 func BindAndConvertToPtr(value string) *string {
