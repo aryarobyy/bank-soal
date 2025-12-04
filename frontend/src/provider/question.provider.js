@@ -152,3 +152,45 @@ export const createWithJson = async () => {
   )
   return res.data.data
 }
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+
+export const getAllQuestionsForExamDo = async (examId) => {
+  let allData = [];
+  let offset = 0;
+  const BATCH_LIMIT = 20;
+  let keepFetching = true;
+
+  try {
+    while (keepFetching) {
+      const res = await ApiHandler.get(
+        `${QUESTION}/exam?exam_id=${examId}&limit=${BATCH_LIMIT}&offset=${offset}`
+      );
+      let chunk = [];
+      const responseBody = res.data;
+      if (responseBody.data && Array.isArray(responseBody.data.data)) {
+          chunk = responseBody.data.data;
+      } else if (Array.isArray(responseBody.data)) {
+          chunk = responseBody.data;
+      }
+
+      if (chunk.length > 0) {
+        allData.push(...chunk);
+        offset += BATCH_LIMIT;
+      }
+
+      if (chunk.length < BATCH_LIMIT) {
+        keepFetching = false;
+      } else {
+        await delay(1500); 
+      }
+    }
+    
+    return allData; 
+
+  } catch (error) {
+    console.error("Gagal mengambil full soal:", error);
+    return allData; 
+  }
+};
