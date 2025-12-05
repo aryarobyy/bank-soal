@@ -230,12 +230,14 @@ onMounted(async () => {
 
       
         const qRes = await getAllQuestionsForExamDo(examId);
-      
+        if (qRes && Array.isArray(qRes)) {
+            qRes.sort((a, b) => a.id - b.id);
+        }
         questions.value = qRes || [];
 
         answers.value = Array(questions.value.length).fill(null);
 
-    // 1. Restore Jawaban
+
     try {
         const savedAnswers = await getUserAnswersBySession(sessionId);
         if (savedAnswers && savedAnswers.length > 0) {
@@ -333,12 +335,15 @@ watch(currentNo, async (newNo) => {
 
 
 const finishExam = async (isAuto = false) => {
- 
+
   if (!isAuto && timeLeft.value > 0) {
      if (!confirm("Apakah Anda yakin ingin menyelesaikan ujian?")) return;
   }
 
-  
+
+  if (statusCheckInterval) clearInterval(statusCheckInterval);
+  if (timer) clearInterval(timer);
+
   loading.value = true;
 
   try {
@@ -346,29 +351,23 @@ const finishExam = async (isAuto = false) => {
     const examId = Number(route.query.id); 
     let userId = user.value?.id || Number(localStorage.getItem("id"));
 
-   
-    const savePromises = questions.value.map((q, index) => {
-        const selectedId = answers.value[index];
-        if (selectedId) {
-            const selectedOption = q.options.find((opt) => opt.id === selectedId);
-            if (selectedOption) {
-             
-                return submitUserAnswer({
-                    exam_session_id: sessionId,
-                    user_id: userId,
-                    question_id: q.id,
-                    answer: selectedOption.option_label || selectedOption.label, 
-                    exam_id: Number(examId) 
-                }).catch(e => console.warn(`Gagal save soal ${q.id}:`, e)); 
-            }
-        }
-        return Promise.resolve();
-    });
-
+    const currentQ = questions.value[currentNo.value - 1];
+    const currentAnsId = answers.value[currentNo.value - 1];
     
-    await Promise.allSettled(savePromises);
-
+    if (currentQ && currentAnsId) {
+        const selectedOption = currentQ.options.find((opt) => opt.id === currentAnsId);
+        if (selectedOption) {
  
+            await submitUserAnswer({
+                exam_session_id: sessionId,
+                user_id: userId,
+                question_id: currentQ.id,
+                answer: selectedOption.option_label || selectedOption.label, 
+                exam_id: Number(examId) 
+            }).catch(e => console.warn("Gagal simpan jawaban terakhir:", e));
+        }
+    }
+
     const payload = {
       session_id: sessionId,
       exam_id: examId,
@@ -377,29 +376,33 @@ const finishExam = async (isAuto = false) => {
     
     await finishExamSession(payload);
 
- 
+
     if (isAuto) {
-        alert("Waktu Habis! Jawaban Anda telah disimpan otomatis.");
+        alert("Waktu Habis! Ujian otomatis diselesaikan.");
     } else {
-        alert("Ujian selesai! Nilai Anda telah disimpan.");
+        alert("Ujian selesai! Terima kasih.");
     }
 
-   
     router.replace("/ujian");
 
   } catch (err) {
     console.error("FinishExam Error:", err);
     const backendMsg = err.response?.data?.message;
     
-  
-    if (backendMsg && (backendMsg.includes("not found") || backendMsg.includes("record not found"))) {
+ 
+    if (backendMsg && (backendMsg.includes("finished") || backendMsg.includes("not found"))) {
+        router.replace("/ujian");
+    } else if (err.code === 'ECONNABORTED') {
+ 
+        alert("Koneksi lambat, namun sistem sedang memproses penyelesaian ujian Anda. Anda akan dialihkan.");
         router.replace("/ujian");
     } else {
-   
         if (isAuto) {
              router.replace("/ujian");
         } else {
-            alert(`Gagal menyelesaikan ujian: ${backendMsg || "Terjadi kesalahan server."}`);
+            alert(`Gagal menyelesaikan ujian: ${backendMsg || "Terjadi kesalahan."}`);
+  
+            window.location.reload();
         }
     }
   } finally {
