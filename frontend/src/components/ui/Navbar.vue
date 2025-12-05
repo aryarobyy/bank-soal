@@ -9,13 +9,12 @@
       <ul class="hidden md:flex items-center space-x-6">
         <template v-if="user">
           <li>
-            <RouterLink to="/" :class="linkClass('/')">Home</RouterLink>
+            <RouterLink to="/" :class="linkClass('/')">Dashboard</RouterLink>
           </li>
           <li v-if="user.role === 'user'">
             <RouterLink to="/ujian" :class="linkClass('/ujian')">Ujian</RouterLink>
           </li>
    
-
           <div class="relative" ref="dropdownRef">
             <button @click="toggleDropdown" class="flex items-center space-x-2 focus:outline-none">
               <User class="w-6 h-6 text-gray-700" />
@@ -65,7 +64,7 @@
           <template v-if="user">
             <li>
               <RouterLink to="/" :class="mobileLinkClass('/')" @click="closeMobileMenu">
-                Home
+                Dashboard
               </RouterLink>
             </li>
             <li v-if="user.role === 'user'">
@@ -112,7 +111,6 @@ import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useGetCurrentUser } from '../../hooks/useGetCurrentUser'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 import { User, ChevronDown, Menu, X } from 'lucide-vue-next'
-// IMPORT PROVIDER LOGOUT
 import { logoutUser } from '../../provider/user.provider'
 
 const { user } = useGetCurrentUser()
@@ -149,20 +147,15 @@ const toggleMobileMenu = () => { isMobileMenuOpen.value = !isMobileMenuOpen.valu
 const closeMobileMenu = () => { isMobileMenuOpen.value = false; };
 
 const handleLogout = async () => {
-  // 1. Panggil Backend Logout
   await logoutUser();
-
-  // 2. Bersihkan Data Lokal
   removeToken();
   removeUser();
   removeId();
   localStorage.removeItem('user_id');
-  localStorage.clear(); // Bersihkan semuanya agar aman
+  localStorage.clear(); 
 
-  // 3. Reset UI & Redirect
   closeDropdown();
   closeMobileMenu();
-  // Reset state user (jika menggunakan reactive global state)
   user.value = null; 
   
   window.location.href = '/'; 
