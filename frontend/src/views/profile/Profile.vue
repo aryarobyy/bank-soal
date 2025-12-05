@@ -84,6 +84,22 @@
                 {{ user?.nim || '-' }}
               </div>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Jurusan (Major)
+              </label>
+              <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
+                {{ user?.major || '-' }}
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Fakultas (Faculty)
+              </label>
+              <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
+                {{ user?.faculty || '-' }}
+              </div>
+            </div>
           </template>
           
           <template v-if="user?.role === 'lecturer'">
@@ -93,14 +109,6 @@
               </label>
               <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
                 {{ user?.nip || '-' }}
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                NIDN
-              </label>
-              <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
-                {{ user?.nidn || '-' }}
               </div>
             </div>
           </template>
@@ -124,8 +132,7 @@
             </div>
           </template>
         </div>
-        
-        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -169,7 +176,6 @@ const handleImageError = (event) => {
 
 watch(userLocal, (newUser) => {
   if (newUser && newUser.id == userId) {
-    console.log('User local updated:', newUser);
     user.value = newUser;
     isOwnProfile.value = true;
     imageKey.value = Date.now(); 

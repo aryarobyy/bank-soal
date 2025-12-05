@@ -103,7 +103,6 @@ const formData = ref({
   nim: '',
   email: '',
   nip: '',
-  nidn: '',
   major: '',
   faculty: '',
 });
@@ -118,7 +117,6 @@ onMounted(() => {
       email: user.value.email || '',
       nim: user.value.nim || '',
       nip: user.value.nip || '',
-      nidn: user.value.nidn || '',
       major: user.value.major || '',
       faculty: user.value.faculty || '',
     };
@@ -140,19 +138,25 @@ onMounted(() => {
     
     fields.value = [...baseFields];
 
+
     if (user.value.role === 'user') {
       fields.value.push({
         name: 'nim', title: 'NIM',
         placeholder: 'Enter your NIM', icon: CreditCard, type: 'text'
       });
+
+      fields.value.push({
+        name: 'major', title: 'Jurusan (Major)',
+        placeholder: 'Enter your major', icon: BookText, type: 'text'
+      });
+      fields.value.push({
+        name: 'faculty', title: 'Fakultas (Faculty)',
+        placeholder: 'Enter your faculty', icon: BookText, type: 'text'
+      });
     } else if (user.value.role === 'lecturer') {
       fields.value.push({
         name: 'nip', title: 'NIP',
         placeholder: 'Enter your NIP', icon: Clipboard, type: 'text'
-      });
-      fields.value.push({
-        name: 'nidn', title: 'NIDN',
-        placeholder: 'Enter your NIDN', icon: Clipboard, type: 'text'
       });
     } else if (user.value.role === 'admin') {
       fields.value.push({
@@ -199,29 +203,24 @@ const handleSubmit = async () => {
   errors.value = {};
   let isValid = true;
   
-
   if (!formData.value.name.trim()) {
     errors.value.name = 'Nama lengkap wajib diisi'; 
     isValid = false;
   } else if (!/^[a-zA-Z\s]+$/.test(formData.value.name)) {
-    // Regex: Hanya a-z, A-Z, dan spasi
     errors.value.name = 'Nama hanya boleh berisi huruf'; 
     isValid = false;
   }
 
- 
   if (user.value && user.value.role === 'user' && !formData.value.nim.trim()) {
      errors.value.nim = 'NIM wajib diisi'; 
      isValid = false;
   }
 
-
   if (!formData.value.email.trim()) {
     errors.value.email = 'Email wajib diisi'; 
     isValid = false;
   } else if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.value.email)) {
-   
-    errors.value.email = 'Format email tidak valid (dilarang menggunakan simbol khusus selain @, titik, underscore)'; 
+    errors.value.email = 'Format email tidak valid'; 
     isValid = false;
   }
   
@@ -238,11 +237,13 @@ const handleSubmit = async () => {
       email: formData.value.email,
     };
 
+
     if (user.value.role === 'user') {
       dataToUpdate.nim = formData.value.nim;
+      dataToUpdate.major = formData.value.major;
+      dataToUpdate.faculty = formData.value.faculty;
     } else if (user.value.role === 'lecturer') {
       dataToUpdate.nip = formData.value.nip;
-      dataToUpdate.nidn = formData.value.nidn;
     } else if (user.value.role === 'admin') {
       dataToUpdate.major = formData.value.major;
       dataToUpdate.faculty = formData.value.faculty;
@@ -252,7 +253,7 @@ const handleSubmit = async () => {
       dataToUpdate.image = avatarFile.value; 
     }
     
-    const response = await updateUser(dataToUpdate, user.value.id);
+    await updateUser(dataToUpdate, user.value.id);
     
     const freshUserResponse = await getUserById(user.value.id);
     const freshUserData = freshUserResponse.data;
