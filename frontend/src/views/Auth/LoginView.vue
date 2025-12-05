@@ -82,7 +82,7 @@ const fields = [
     name: "login_id", 
     title: "Login ID", 
     type: "text", 
-    placeholder: "NIM / NIDN / Username", 
+    placeholder: "NIM / NIP / Username", 
     icon: User, 
   },
   { 

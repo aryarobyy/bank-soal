@@ -87,7 +87,7 @@
             @click="handleCancel"
             class="w-full text-center text-gray-600 hover:text-gray-900 hover:underline transition"
           >
-            🔙 Kembali ke Daftar Ujian
+            Batal & Kembali
           </button>
         </div>
       </form>
@@ -117,7 +117,6 @@ const form = ref({
   long_time: 0,
 });
 
-
 const formatForInput = (dateStr) => {
   if (!dateStr) return "";
   try {
@@ -131,11 +130,9 @@ const formatForInput = (dateStr) => {
     
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   } catch (e) {
-    console.error("Invalid date format from backend:", dateStr);
     return "";
   }
 };
-
 
 onMounted(async () => {
   try {
@@ -163,15 +160,30 @@ onMounted(async () => {
   }
 });
 
-const handleCancel = () => {
-  goBack();
+
+const goToDetail = () => {
+
+
+  const routeName = isAdminRoute.value ? 'AdminExamDetail' : 'DosenExamDetail';
+  
+  router.push({ 
+    name: routeName, 
+    params: { id: id } 
+  });
 };
 
 const goBack = () => {
-  router.push({ name: isAdminRoute.value ? 'AdminManageExam' : 'DosenManageExam' });
+  const routeName = isAdminRoute.value ? 'AdminManageExam' : 'DosenManageExam';
+  router.push({ name: routeName });
 };
 
-// 2. Submit Data
+const handleCancel = () => {
+
+  goToDetail();
+};
+
+
+
 const handleSubmit = async () => {
   saving.value = true;
   try {
@@ -180,7 +192,6 @@ const handleSubmit = async () => {
       saving.value = false;
       return;
     }
-
 
     const payload = {
       title: form.value.title,
@@ -194,7 +205,8 @@ const handleSubmit = async () => {
     await updateExam(Number(id), payload);
     
     alert("✅ Ujian berhasil diperbarui!");
-    goBack();
+    
+    goToDetail();
 
   } catch (err) {
     console.error("Gagal update ujian:", err);

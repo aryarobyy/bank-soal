@@ -83,7 +83,11 @@
         </div>
 
         <div v-else class="space-y-4">
-          <div v-for="session in historyList" :key="session.id" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:shadow-md transition">
+          <div 
+            v-for="session in historyList" 
+            :key="session.id" 
+            class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:shadow-md transition"
+          >
             <div>
               <h3 class="text-lg font-bold text-gray-800">{{ getExamTitle(session.exam_id) }}</h3>
               <div class="text-sm text-gray-500 mt-1 space-y-1">
@@ -91,17 +95,44 @@
                 <p><i class="fas fa-hashtag mr-2"></i> Sesi ID: #{{ session.id }}</p>
               </div>
             </div>
+            
             <div class="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
-              <div class="text-right">
-                <p class="text-xs text-gray-400 uppercase font-semibold">Nilai</p>
-                <p class="text-2xl font-bold text-blue-600">{{ session.score }}</p>
-              </div>
-              <div class="text-right">
-                <p class="text-xs text-gray-400 uppercase font-semibold">Status</p>
-                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide" :class="session.is_passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                  {{ session.is_passed ? 'Lulus' : 'Tidak Lulus' }}
-                </span>
-              </div>
+              
+              <template v-if="session.status === 'finished' || session.status === 'submitted'">
+                <div class="text-right">
+                  <p class="text-xs text-gray-400 uppercase font-semibold">Nilai</p>
+                  <p class="text-2xl font-bold text-blue-600">{{ session.score }}</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-xs text-gray-400 uppercase font-semibold">Status</p>
+                  <span 
+                    class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide" 
+                    :class="session.is_passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                  >
+                    {{ session.is_passed ? 'Lulus' : 'Tidak Lulus' }}
+                  </span>
+                </div>
+              </template>
+
+              <template v-else>
+                <div class="text-right">
+                  <p class="text-xs text-gray-400 uppercase font-semibold">Nilai</p>
+                  <p class="text-lg font-bold text-gray-400">-</p>
+                </div>
+                <div class="text-right flex flex-col gap-2 items-end">
+                  <p class="text-xs text-gray-400 uppercase font-semibold">Status</p>
+                  <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-yellow-100 text-yellow-700">
+                    Sedang Dikerjakan
+                  </span>
+                  <button 
+                    @click="goToDetail(session.exam_id)"
+                    class="text-xs text-blue-600 font-semibold hover:underline"
+                  >
+                    Lanjutkan Ujian →
+                  </button>
+                </div>
+              </template>
+
             </div>
           </div>
         </div>
@@ -121,19 +152,15 @@ import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 const router = useRouter();
 const { user } = useGetCurrentUser();
 
-
 const activeTab = ref('available'); 
-
 
 const exams = ref([]);
 const historyList = ref([]);
 const loading = ref(true);
 const loadingHistory = ref(false);
 
-
 const searchQuery = ref("");
 const selectedDifficulty = ref("");
-
 
 const fetchExams = async () => {
   try {
@@ -157,7 +184,7 @@ const fetchHistory = async () => {
   try {
     loadingHistory.value = true;
     
- 
+
     const res = await getExamSessionByUser(user.value.id, 50, 0); 
     
     if (Array.isArray(res)) {
@@ -174,7 +201,8 @@ const fetchHistory = async () => {
     loadingHistory.value = false;
   }
 };
-// 3. Computed & Helpers
+
+
 const filteredExams = computed(() => {
   return exams.value.filter(exam => {
     const matchesSearch = exam.title.toLowerCase().includes(searchQuery.value.toLowerCase());
@@ -199,9 +227,12 @@ const difficultyBadge = (diff) => {
 };
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString("id-ID", { day: 'numeric', month: 'short' }) : "-";
-const formatDateFull = (d) => d ? new Date(d).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "Belum Selesai";
+const formatDateFull = (d) => {
+  if (!d || d.startsWith("0001")) return "Sedang Berjalan";
+  return new Date(d).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
 
-// 4. Init Data
+
 onMounted(() => {
   fetchExams();
   

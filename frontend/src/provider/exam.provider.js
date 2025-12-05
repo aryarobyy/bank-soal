@@ -83,7 +83,9 @@ export const replaceQuestions = async (id, data) => {
   return res.data.data
 }
 
-export const removeQuestions = async (id, data) => {
-  const res = await ApiHandler.delete(`/${EXAM}/q/${id}`, data)
-  return res.data.data
-}
+export const removeQuestions = async (examId, payload) => {
+  const res = await ApiHandler.delete(`/${EXAM}/q/${examId}`, {
+    data: payload 
+  });
+  return res.data;
+};

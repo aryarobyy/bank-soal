@@ -80,11 +80,36 @@ export const createQuestionFromJson = async (data) => {
   return res.data;
 };
 
-export const getQuestionsByExam = async (examId) => {
 
-  const res = await ApiHandler.get(`${QUESTION}/exam?exam_id=${examId}`); 
-  return res.data.data;
+export const getQuestionsByExam = async (examId, limit = 10, offset = 0) => {
+  try {
+    const res = await ApiHandler.get(
+      `${QUESTION}/exam?exam_id=${examId}&limit=${limit}&offset=${offset}`
+    );
+    const responseBody = res.data;
+    if (responseBody.data && Array.isArray(responseBody.data.data)) {
+        return { 
+            data: responseBody.data.data, 
+            total: responseBody.data.total || 0 
+        };
+    }
+    if (Array.isArray(responseBody.data)) {
+        return { 
+            data: responseBody.data, 
+            total: responseBody.total || responseBody.data.length 
+        };
+    }
+    if (Array.isArray(responseBody)) {
+        return { data: responseBody, total: responseBody.length };
+    }
+    return { data: [], total: 0 };
+  } catch (error) {
+    console.error("Gagal load questions:", error);
+    return { data: [], total: 0 };
+  }
 };
+
+
 export const getQuestionsByDiff = async (difficulty) => {
   const res = await ApiHandler.get(`${QUESTION}/diff?diff=${difficulty}`);
   return res.data.data;
@@ -127,3 +152,45 @@ export const createWithJson = async () => {
   )
   return res.data.data
 }
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+
+export const getAllQuestionsForExamDo = async (examId) => {
+  let allData = [];
+  let offset = 0;
+  const BATCH_LIMIT = 20;
+  let keepFetching = true;
+
+  try {
+    while (keepFetching) {
+      const res = await ApiHandler.get(
+        `${QUESTION}/exam?exam_id=${examId}&limit=${BATCH_LIMIT}&offset=${offset}`
+      );
+      let chunk = [];
+      const responseBody = res.data;
+      if (responseBody.data && Array.isArray(responseBody.data.data)) {
+          chunk = responseBody.data.data;
+      } else if (Array.isArray(responseBody.data)) {
+          chunk = responseBody.data;
+      }
+
+      if (chunk.length > 0) {
+        allData.push(...chunk);
+        offset += BATCH_LIMIT;
+      }
+
+      if (chunk.length < BATCH_LIMIT) {
+        keepFetching = false;
+      } else {
+        await delay(1500); 
+      }
+    }
+    
+    return allData; 
+
+  } catch (error) {
+    console.error("Gagal mengambil full soal:", error);
+    return allData; 
+  }
+};
