@@ -50,7 +50,7 @@ func NewApp(db *gorm.DB) *App {
 	examRepo := repository.NewExamRepository(db)
 	questionRepo := repository.NewQuestionRepository(db)
 	optionRepo := repository.NewOptionRepository(db)
-	examScoreRepo := repository.NewExamScoreRepository(db)
+	// examScoreRepo := repository.NewExamScoreRepository(db)
 	examSessionRepo := repository.NewExamSessionRepository(db)
 	subjectRepo := repository.NewSubjectRepository(db)
 	xlsPathRepo := repository.NewXlsPathRepository(db)
@@ -59,19 +59,19 @@ func NewApp(db *gorm.DB) *App {
 	userService := service.NewUserService(userRepo)
 	examService := service.NewExamService(examRepo, userRepo, questionRepo)
 	questionService := service.NewQuestionService(questionRepo, userRepo, optionRepo)
-	optionService := service.NewOptionService(optionRepo)
-	examScoreService := service.NewExamScoreService(examScoreRepo)
+	// optionService := service.NewOptionService(optionRepo)
+	// examScoreService := service.NewExamScoreService(examScoreRepo)
 	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo, userAnswerRepo, questionRepo)
 	subjectService := service.NewSubjectService(subjectRepo)
 	xlsPathService := service.NewXlsPathService(xlsPathRepo)
 	userAnswerService := service.NewUserAnswerService(userAnswerRepo, optionRepo, examRepo)
 
 	controllers := &Controllers{
-		User:        controller.NewUserController(userService, xlsPathService),
-		Exam:        controller.NewExamController(examService),
-		Question:    controller.NewQuestionController(questionService),
-		Option:      controller.NewOptionController(optionService),
-		ExamScore:   controller.NewExamScoreController(examScoreService),
+		User:     controller.NewUserController(userService, xlsPathService),
+		Exam:     controller.NewExamController(examService),
+		Question: controller.NewQuestionController(questionService),
+		// Option:      controller.NewOptionController(optionService), //gk kepake
+		// ExamScore:   controller.NewExamScoreController(examScoreService),
 		ExamSession: controller.NewExamSessionController(examSessionService),
 		Subject:     controller.NewSubjectController(subjectService),
 		XlsPath:     controller.NewXlsPathController(xlsPathService),
@@ -79,7 +79,7 @@ func NewApp(db *gorm.DB) *App {
 	}
 
 	store := middleware.InMemoryStore(&middleware.InMemoryOptions{
-		Rate:  10 * time.Second, // 10s
+		Rate:  30 * time.Second, // 10s
 		Limit: 8,                // maks 5 request
 		// Skip: func(c *gin.Context) bool { //skip rate limit
 		// 	return c.FullPath() == "/"
@@ -98,13 +98,17 @@ func NewApp(db *gorm.DB) *App {
 
 func setupRoutes(r *gin.Engine, ctrl *Controllers) {
 	r.Static("/storages/images/user", "./storages/images/user")
-	r.Static("/storages/images/question", "./storages/images/question")
-	r.Static("/storages/files", "./storages/files")
+	protectedStorage := r.Group("/storages")
+	protectedStorage.Use(middleware.AuthMiddleware())
+	{
+		protectedStorage.Static("/images/question", "./storages/images/question")
+		protectedStorage.Static("/files", "./storages/files")
+	}
 	route.UserRoutes(r, ctrl.User)
 	route.ExamRoutes(r, ctrl.Exam)
 	route.QuestionRoutes(r, ctrl.Question)
-	route.OptionRoutes(r, ctrl.Option)
-	route.ExamScoreRoutes(r, ctrl.ExamScore)
+	// route.OptionRoutes(r, ctrl.Option)
+	// route.ExamScoreRoutes(r, ctrl.ExamScore)
 	route.ExamSessionRoutes(r, ctrl.ExamSession)
 	route.SubjectRoutes(r, ctrl.Subject)
 	route.XlsPathRoutes(r, ctrl.XlsPath)

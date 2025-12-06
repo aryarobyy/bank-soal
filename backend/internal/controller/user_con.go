@@ -68,12 +68,11 @@ func (h *UserController) Register(c *gin.Context) {
 
 	role := model.Role(roleStr)
 
-	allowedRoles := map[string]bool{
-		"admin":    true,
-		"user":     true,
-		"lecturer": true,
+	allowedRoles := map[model.Role]bool{
+		model.RoleAdmin:      true,
+		model.RoleSuperAdmin: true,
 	}
-	if !allowedRoles[string(role)] {
+	if !allowedRoles[model.Role(role)] {
 		helper.Error(c, http.StatusBadRequest, "invalid role")
 		return
 	}

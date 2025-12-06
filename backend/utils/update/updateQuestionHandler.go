@@ -95,15 +95,24 @@ func OptionValidation(ctx context.Context,
 		minLen = len(existingOptions)
 	}
 
+	correctCount := 0
 	for i := 0; i < minLen; i++ {
 		optToUpdate := question.Options[i]
 		optToUpdate.Id = existingOptions[i].Id
 		optToUpdate.QuestionId = id
 
+		if optToUpdate.IsCorrect {
+			correctCount++
+		}
+
 		_, err := s.Update(ctx, optToUpdate, existingOptions[i].Id)
 		if err != nil {
 			return fmt.Errorf("failed to update option at index %d: %w", i, err)
 		}
+	}
+	fmt.Println("skdsksalsal", correctCount)
+	if correctCount != 1 {
+		return fmt.Errorf("exactly one option must be correct")
 	}
 
 	if len(question.Options) > len(existingOptions) {

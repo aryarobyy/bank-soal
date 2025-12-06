@@ -230,15 +230,14 @@ func (s *questionService) CreateWithOptions(ctx context.Context, data model.Ques
 		return fmt.Errorf("invalid difficulty")
 	}
 
-	valid := false
+	correctCount := 0
 	for _, opt := range data.Options {
 		if opt.IsCorrect {
-			valid = true
-			break
+			correctCount++
 		}
 	}
-	if !valid {
-		return fmt.Errorf("at least one option must be correct")
+	if correctCount != 1 {
+		return fmt.Errorf("exactly one option must be correct")
 	}
 
 	if err := s.repo.CreateWithOptions(ctx, data); err != nil {
@@ -266,6 +265,16 @@ func (s *questionService) CreateFromJson(ctx context.Context, file *multipart.Fi
 	}
 
 	for i, q := range questions {
+		correctCount := 0
+		for _, opt := range q.Options {
+			if opt.IsCorrect {
+				correctCount++
+			}
+		}
+		if correctCount != 1 {
+			return fmt.Errorf("exactly one option must be correct")
+		}
+
 		if q.QuestionText == "" {
 			return fmt.Errorf("question cannot be empty at index %d", i)
 		}

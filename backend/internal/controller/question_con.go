@@ -100,12 +100,15 @@ func (h *QuestionController) Update(c *gin.Context) {
 	}
 
 	if optionsJson != "" {
-		if err := json.Unmarshal([]byte(optionsJson), &data.Options); err != nil {
+		dec := json.NewDecoder(strings.NewReader(optionsJson))
+		dec.DisallowUnknownFields()
+
+		if err := dec.Decode(&data.Options); err != nil {
 			helper.Error(c, http.StatusBadRequest, "invalid options format")
 			return
 		}
 
-		if len(data.Options) > 20 {
+		if len(data.Options) > 4 {
 			helper.Error(c, http.StatusBadRequest, "too many options")
 			return
 		}
