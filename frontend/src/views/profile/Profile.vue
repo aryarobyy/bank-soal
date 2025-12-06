@@ -1,5 +1,6 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
+    
     <div v-if="loading || isLoading" class="w-full max-w-2xl bg-white rounded-3xl shadow-xl p-8">
       <div class="flex flex-col items-center justify-center py-12">
         <div class="relative w-16 h-16 mb-4">
@@ -26,10 +27,12 @@
       </div>
     </div>
 
-    <div v-else class="w-full max-w-2xl bg-white rounded-3xl shadow-xl p-8">
-      <div class="flex items-center justify-between mb-8">
+    <div v-else class="w-full max-w-2xl bg-white rounded-3xl shadow-xl p-6 sm:p-8">
+      
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        
         <div class="flex items-center gap-4">
-          <div class="relative">
+          <div class="relative flex-shrink-0">
             <img
               :key="imageKey"
               :src="getImageUrl()"
@@ -38,16 +41,18 @@
               @error="handleImageError"
             />
           </div>
-          <div>
-            <h2 class="text-xl font-semibold text-gray-800">{{ user?.name || 'User' }}</h2>
-            <p class="text-sm text-gray-500">{{ user?.email || '-' }}</p>
+          <div class="overflow-hidden">
+            <h2 class="text-xl font-semibold text-gray-800 break-words leading-tight">
+              {{ user?.name || 'User' }}
+            </h2>
+            <p class="text-sm text-gray-500 truncate">{{ user?.email || '-' }}</p>
           </div>
         </div>
         
         <button 
           v-if="isOwnProfile"
           @click="goToEditProfile" 
-          class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-medium px-6 py-2.5 rounded-lg transition shadow-sm hover:shadow-md"
+          class="w-full md:w-auto flex justify-center items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-medium px-6 py-2.5 rounded-lg transition shadow-sm hover:shadow-md mt-2 md:mt-0"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
@@ -57,7 +62,7 @@
       </div>
 
       <div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Nama
@@ -70,7 +75,7 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Email
             </label>
-            <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
+            <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 overflow-hidden text-ellipsis">
               {{ user?.email || '-' }}
             </div>
           </div>
@@ -84,6 +89,22 @@
                 {{ user?.nim || '-' }}
               </div>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Jurusan (Major)
+              </label>
+              <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
+                {{ user?.major || '-' }}
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Fakultas (Faculty)
+              </label>
+              <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
+                {{ user?.faculty || '-' }}
+              </div>
+            </div>
           </template>
           
           <template v-if="user?.role === 'lecturer'">
@@ -93,14 +114,6 @@
               </label>
               <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
                 {{ user?.nip || '-' }}
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                NIDN
-              </label>
-              <div class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800">
-                {{ user?.nidn || '-' }}
               </div>
             </div>
           </template>
@@ -124,8 +137,7 @@
             </div>
           </template>
         </div>
-        
-        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -169,7 +181,6 @@ const handleImageError = (event) => {
 
 watch(userLocal, (newUser) => {
   if (newUser && newUser.id == userId) {
-    console.log('User local updated:', newUser);
     user.value = newUser;
     isOwnProfile.value = true;
     imageKey.value = Date.now(); 

@@ -17,7 +17,7 @@ import UpdateProfile from '../views/profile/UpdateProfile.vue'
 import UserExamList from '../views/exam/UserExamList.vue' 
 import ExamView from '../views/exam/ExamView.vue'        
 import ExamDo from '../views/exam/ExamDo.vue'            
-
+import UserDashboard from '../views/home/UserDashboard.vue'
 
 // Halaman Dosen
 import LecturerDashboard from '../views/dosen/LecturerDashboard.vue'
@@ -81,7 +81,7 @@ const routes = [
     path: '/',
     component: UserLayout,
     children: [
-      { path: '', name: 'HomePage', component: HomePage },
+      { path: 'landing', name: 'LandingPage', component: HomePage },
       
      
       { path: 'ujian', name: 'UserExamList', component: UserExamList },
@@ -96,7 +96,11 @@ const routes = [
 
       { path: 'profile/:id', name: 'Profile', component: Profile },
       { path: 'update-profile', name: 'UpdateProfile', component: UpdateProfile },
-      
+      { 
+        path: '', 
+        name: 'Dashboard', 
+        component: UserDashboard 
+      },
     ]
   },
 
