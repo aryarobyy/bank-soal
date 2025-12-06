@@ -24,7 +24,7 @@
       <p v-if="selectedFileName" class="text-lg font-semibold text-green-600">File Selected:</p>
       <p v-if="selectedFileName" class="mb-4 text-medium-text">{{ selectedFileName }}</p>
 
-      <button @click="triggerFileInput" class="px-8 py-3 font-bold text-white transition-opacity rounded-lg bg-teal-400 hover:opacity-９0">
+      <button @click="triggerFileInput" class="px-8 py-3 font-bold text-white transition-opacity rounded-lg bg-teal-400 hover:opacity-90">
         Select file
       </button>
       <input 
@@ -43,8 +43,13 @@ import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { createQuestionFromJson } from '../../provider/question.provider';
 
+import { usePopup } from '../../hooks/usePopup';
+
 const route = useRoute();
 const router = useRouter();
+
+
+const { showSuccess, showError } = usePopup();
 
 const isDragging = ref(false);
 const selectedFile = ref(null);
@@ -78,7 +83,8 @@ const processFile = (file) =>  {
     selectedFile.value = file;
     selectedFileName.value = file.name;
   } else {
-    alert('Hanya file dengan format .json yang diperbolehkan!');
+    
+    showError('Format Tidak Sesuai', 'Hanya file dengan format .json yang diperbolehkan!');
     selectedFile.value = null;
     selectedFileName.value = null;
   }
@@ -86,7 +92,8 @@ const processFile = (file) =>  {
 
 const saveFile = async () => {
   if (!selectedFile.value) {
-    alert('Silakan pilih file terlebih dahulu.');
+    
+    showError('File Belum Dipilih', 'Silakan pilih file JSON terlebih dahulu.');
     return;
   }
 
@@ -95,13 +102,24 @@ const saveFile = async () => {
 
   try {
     await createQuestionFromJson(formData);
-    alert(`File ${selectedFileName.value} berhasil diunggah dan soal telah dibuat!`);
+    
+    
+    await showSuccess('Berhasil', `File ${selectedFileName.value} berhasil diunggah dan soal telah dibuat!`);
 
-    router.push({ name: listRouteName.value });
+  
+    router.push({ 
+      name: listRouteName.value,
+      query: { show_last_page: 'true' }
+    });
+
   } catch (error) {
     console.error("Gagal mengunggah file JSON:", error);
-    alert('Terjadi kesalahan saat menyimpan file. Silakan periksa format JSON Anda.');
+ 
+    showError(
+      'Gagal Upload', 
+      'Terjadi kesalahan saat menyimpan file.', 
+      'Silakan periksa format JSON Anda atau koneksi internet.'
+    );
   }
 };
-
 </script>

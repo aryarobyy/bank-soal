@@ -21,9 +21,8 @@
         <thead class="bg-gray-100 text-gray-700 text-sm">
           <tr>
             <th class="px-4 py-3 text-left">No</th>
-            <th class="px-4 py-3 text-left">Nama</th>
-            <th class="px-4 py-3 text-left">Email</th>
-            <th class="px-4 py-3 text-left">NIP</th>
+            <th class="px-4 py-3 text-left">Nama & Email</th> <th class="px-4 py-3 text-left">NIP</th>
+            <th class="px-4 py-3 text-left">Unit (Jurusan/Fakultas)</th>
             <th class="px-4 py-3 text-left">Role</th>
             <th class="px-4 py-3 text-left">Tanggal Dibuat</th>
             <th class="px-4 py-3 text-left">Aksi</th>
@@ -36,9 +35,19 @@
             class="border-t hover:bg-gray-50 transition"
           >
             <td class="px-4 py-3">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-            <td class="px-4 py-3 font-medium">{{ dosen.name }}</td>
-            <td class="px-4 py-3">{{ dosen.email }}</td>
-            <td class="px-4 py-3">{{ dosen.nip || '-' }}</td>
+            
+            <td class="px-4 py-3">
+              <div class="font-medium text-gray-900">{{ dosen.name }}</div>
+              <div class="text-xs text-gray-500">{{ dosen.email }}</div>
+            </td>
+
+            <td class="px-4 py-3 font-mono text-gray-600">{{ dosen.nip || '-' }}</td>
+
+            <td class="px-4 py-3">
+              <div class="text-gray-900">{{ dosen.major || '-' }}</div>
+              <div class="text-xs text-gray-500">{{ dosen.faculty || '-' }}</div>
+            </td>
+
             <td class="px-4 py-3">
               <span 
                 :class="roleClass(dosen.role)" 
@@ -48,7 +57,7 @@
               </span>
             </td>
             <td class="px-4 py-3">{{ new Date(dosen.created_at).toLocaleDateString("id-ID") }}</td>
-            <td class="px-4 py-3">
+            <td class="px-4 py-3 whitespace-nowrap">
               <button
                 @click="editDosen(dosen)"
                 class="px-3 py-1 bg-yellow-400 text-white rounded-md hover:bg-yellow-500 mr-2 transition"
@@ -96,112 +105,151 @@
 
     <div
       v-if="showModal"
-      class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50"
+      class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-4"
     >
-      <div class="bg-white rounded-lg shadow-lg p-6 w-11/12 md:w-full max-w-md">
-        <h3 class="text-lg font-semibold mb-4">
+      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 sm:w-full max-w-md transform transition-all max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">
           {{ editMode ? "Edit Akun" : "Tambah Dosen" }}
         </h3>
 
-        <form @submit.prevent="simpanDosen">
-          <div class="mb-3">
+        <form @submit.prevent="simpanDosen" class="space-y-4">
+          <div>
             <label class="block mb-1 text-sm font-medium text-gray-700">Nama</label>
-            <input v-model="form.name" type="text" required class="w-full p-2 border rounded-md"/>
+            <input v-model="form.name" type="text" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"/>
           </div>
-          <div class="mb-3">
+          <div>
             <label class="block mb-1 text-sm font-medium text-gray-700">Email</label>
-            <input v-model="form.email" type="email" required class="w-full p-2 border rounded-md"/>
+            <input v-model="form.email" type="email" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"/>
           </div>
 
           <template v-if="!editMode">
-            <div class="mb-3">
+            <div>
               <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
-              <div class="w-full p-2 border rounded-md bg-gray-100 text-gray-600 font-medium">
+              <div class="w-full p-2.5 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 font-medium">
                 Dosen (Lecturer)
               </div>
             </div>
 
-            <div class="mb-3">
+            <div>
               <label class="block mb-1 text-sm font-medium text-gray-700">Password</label>
               <input 
                 v-model="form.password" 
                 type="password" 
                 autocomplete="new-password"
                 required 
-                class="w-full p-2 border rounded-md"
+                class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
               />
             </div>
-            <div class="mb-3">
+            
+            <div>
               <label class="block mb-1 text-sm font-medium text-gray-700">NIP</label>
-              <input v-model="form.nip" type="text" required class="w-full p-2 border rounded-md"/>
+              <input 
+                v-model="form.nip" 
+                type="text" 
+                required 
+                maxlength="18"
+                class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" 
+                placeholder="Masukkan 18 digit NIP"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+              />
+              <p class="text-xs text-gray-500 mt-1">Harus angka, tepat 18 digit.</p>
             </div>
-            <div class="mb-3">
+
+            <div>
               <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
-              <input v-model="form.major" type="text" class="w-full p-2 border rounded-md" placeholder="Opsional (Isi N/A jika tidak ada)"/>
+              <input v-model="form.major" type="text" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Opsional"/>
             </div>
-            <div class="mb-3">
+            <div>
               <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas (Faculty)</label>
-              <input v-model="form.faculty" type="text" class="w-full p-2 border rounded-md" placeholder="Opsional (Isi N/A jika tidak ada)"/>
+              <input v-model="form.faculty" type="text" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Opsional"/>
             </div>
           </template>
           
           <template v-else>
-            <div class="mb-3">
+            <div>
               <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
-              <select v-model="form.role" required class="w-full p-2 border rounded-md bg-white">
-                <option value="user">Mahasiswa (user)</option>
-                <option value="lecturer">Dosen (lecturer)</option>
-              </select>
+              <div class="relative">
+                <select 
+                  v-model="form.role" 
+                  required 
+                  class="w-full p-2.5 border border-gray-300 rounded-lg bg-white appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                >
+                  <option value="user">Mahasiswa (user)</option>
+                  <option value="lecturer">Dosen (lecturer)</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                </div>
+              </div>
             </div>
 
             <div v-if="form.role === 'lecturer'">
-              <div class="mb-3">
-                <label class="block mb-1 text-sm font-medium text-gray-700">NIP</label>
-                <input v-model="form.nip" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk dosen"/>
+              <div class="space-y-4">
+                <div>
+                  <label class="block mb-1 text-sm font-medium text-gray-700">NIP</label>
+                  <input 
+                    v-model="form.nip" 
+                    type="text" 
+                    maxlength="18"
+                    class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" 
+                    placeholder="Masukkan 18 digit NIP"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                  />
+                </div>
+                <div>
+                  <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
+                  <input v-model="form.major" type="text" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Opsional"/>
+                </div>
+                <div>
+                  <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas (Faculty)</label>
+                  <input v-model="form.faculty" type="text" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Opsional"/>
+                </div>
               </div>
             </div>
 
             <div v-if="form.role === 'user'">
-              <div class="mb-3">
-                <label class="block mb-1 text-sm font-medium text-gray-700">NIM</label>
-                <input v-model="form.nim" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk mahasiswa"/>
-              </div>
-              <div class="mb-3">
-                <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
-                <input v-model="form.major" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk mahasiswa"/>
-              </div>
-              <div class="mb-3">
-                <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas (Faculty)</label>
-                <input v-model="form.faculty" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk mahasiswa"/>
-              </div>
-              <div class="mb-3">
-                <label class="block mb-1 text-sm font-medium text-gray-700">Tahun Ajaran (Academic Year)</label>
-                <input v-model="form.academic_year" type="text" class="w-full p-2 border rounded-md" placeholder="Wajib diisi untuk mahasiswa"/>
+              <div class="space-y-4">
+                <div>
+                  <label class="block mb-1 text-sm font-medium text-gray-700">NIM</label>
+                  <input v-model="form.nim" type="text" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Wajib diisi"/>
+                </div>
+                <div>
+                  <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
+                  <input v-model="form.major" type="text" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Wajib diisi"/>
+                </div>
+                <div>
+                  <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas (Faculty)</label>
+                  <input v-model="form.faculty" type="text" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Wajib diisi"/>
+                </div>
+                <div>
+                  <label class="block mb-1 text-sm font-medium text-gray-700">Tahun Ajaran</label>
+                  <input v-model="form.academic_year" type="text" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Wajib diisi"/>
+                </div>
               </div>
             </div>
             
-            <div class="mb-3">
+            <div class="mt-4">
               <label class="block mb-1 text-sm font-medium text-gray-700">Password Baru (Opsional)</label>
               <input
                 v-model="form.password"
                 type="password"
                 autocomplete="new-password"
-                class="w-full p-2 border rounded-md"
+                class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
                 placeholder="Kosongkan jika tidak ingin diubah"
               />
             </div>
           </template>
 
-          <div class="flex justify-end gap-2 mt-4">
+          <div class="flex justify-end gap-3 pt-2">
             <button
               type="button" @click="closeModal"
-              class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition"
+              class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
             >
               Batal
             </button>
             <button
               type="submit"
-              class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition"
+              class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm"
             >
               {{ editMode ? "Simpan" : "Tambah" }}
             </button>
@@ -222,6 +270,10 @@ import {
   changePassword,
 } from "../../provider/user.provider.js";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
+
+import { usePopup } from "../../hooks/usePopup";
+
+const { showSuccess, showError, showConfirm } = usePopup();
 
 const dosenList = ref([]);
 const loading = ref(true);
@@ -302,13 +354,25 @@ const simpanDosen = async () => {
     const adminId = storedUser.value?.id || storedUser.value?.ID;
 
     if (!adminId) {
-      alert("Error: Sesi Admin tidak ditemukan. Silakan login ulang.");
+      showError("Akses Ditolak", "Sesi Admin tidak ditemukan. Silakan login ulang.");
       return;
     }
 
+    
+    if (form.value.role === 'lecturer') {
+      const nip = form.value.nip ? String(form.value.nip).trim() : "";
+      const nipRegex = /^\d{18}$/;
+      
+      if (!nipRegex.test(nip)) {
+        showError("Validasi Gagal", "NIP wajib diisi 18 digit angka.");
+        return; 
+      }
+    }
+    
+
     if (editMode.value) {
       if (!userId) {
-        alert("Error: ID pengguna tidak ditemukan. Tidak dapat mengedit.");
+        showError("Data Invalid", "ID pengguna tidak ditemukan. Tidak dapat mengedit.");
         return;
       }
       
@@ -323,9 +387,9 @@ const simpanDosen = async () => {
 
       if (form.value.role === 'lecturer') {
         dataToUpdate.nip = form.value.nip || null;
+        dataToUpdate.major = form.value.major || null;
+        dataToUpdate.faculty = form.value.faculty || null;
         dataToUpdate.nim = null;
-        dataToUpdate.major = null;
-        dataToUpdate.faculty = null;
       
       } else if (form.value.role === 'user') {
         dataToUpdate.nim = form.value.nim || null;
@@ -348,15 +412,12 @@ const simpanDosen = async () => {
       }
       
       if (passwordErrorMessage) {
-        alert(`Data berhasil diperbarui, TAPI: ${passwordErrorMessage}`);
-      } else if (passwordSuccess) {
-         alert("Data dan password berhasil diperbarui!");
+        showError("Berhasil Sebagian", `Data berhasil diperbarui, TAPI: ${passwordErrorMessage}`);
       } else {
-         alert("Data berhasil diperbarui!");
+         showSuccess("Berhasil", "Data dosen berhasil diperbarui!");
       }
 
     } else {
-      // Create Mode (Selalu Lecturer)
       const dataToCreate = {
         name: form.value.name,
         email: form.value.email,
@@ -378,7 +439,7 @@ const simpanDosen = async () => {
       }
 
       await register(dataToCreate);
-      alert("Akun baru berhasil ditambahkan!");
+      showSuccess("Berhasil", "Akun dosen baru berhasil ditambahkan!");
     }
 
     closeModal();
@@ -398,7 +459,7 @@ const simpanDosen = async () => {
   } catch (err) {
     console.error("Gagal menyimpan data:", err);
     const errorMsg = err.response?.data?.message || "Terjadi kesalahan saat menyimpan data.";
-    alert(errorMsg);
+    showError("Gagal Menyimpan", errorMsg);
   }
 };
 
@@ -420,28 +481,43 @@ const editDosen = (dosen) => {
   showModal.value = true;
 };
 
+
 const hapusDosen = async (dosen) => {
   const userId = dosen.id || dosen.ID || dosen._id;
   if (!userId) {
-    alert("Error: ID pengguna tidak ditemukan. Tidak dapat menghapus.");
+    showError("Error Data", "ID pengguna tidak ditemukan. Tidak dapat menghapus.");
     return;
   }
   
-  if (confirm("Yakin ingin menghapus dosen ini?")) {
+  
+  const isConfirmed = await showConfirm(
+      "Hapus Dosen?",
+      `Apakah Anda yakin ingin menghapus data dosen "${dosen.name}"? Tindakan ini tidak dapat dibatalkan.`
+  );
+  
+  if (isConfirmed) {
     try {
       await deleteUser(userId);
-      alert("Dosen berhasil dihapus.");
       
-      if (dosenList.value.length === 1 && currentPage.value > 1) {
+      const oldLength = dosenList.value.length;
+      dosenList.value = dosenList.value.filter(a => (a.id || a.ID || a._id) !== userId);
+      
+      if (dosenList.value.length < oldLength) {
+         totalItems.value--;
+      }
+
+      showSuccess("Terhapus", "Data dosen berhasil dihapus.");
+      
+      if (dosenList.value.length === 0 && currentPage.value > 1) {
         currentPage.value--;
       } else {
-        fetchDosen();
+        if(dosenList.value.length === 0) fetchDosen();
       }
 
     } catch (err) {
       console.error("Gagal menghapus dosen:", err);
       const errorMsg = err.response?.data?.message || err.response?.data || "Gagal menghapus data.";
-      alert(`Gagal menghapus: ${errorMsg}.`);
+      showError("Gagal Menghapus", errorMsg);
     }
   }
 };

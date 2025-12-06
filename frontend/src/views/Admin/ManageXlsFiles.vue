@@ -29,7 +29,7 @@
           >
             <td class="px-4 py-3">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
             <td class="px-4 py-3 font-medium">{{ getFileName(file.file_path) }}</td>
-            <td class="px-4 py-3">{{ new Date(file.CreatedAt).toLocaleString("id-ID") }}</td>
+            <td class="px-4 py-3">{{ new Date(file.created_at).toLocaleString("id-ID") }}</td>
             <td class="px-4 py-3">
               <button
                 @click="handleDownload(file)"
@@ -83,13 +83,16 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
-
 import { getAllXlsPaths, deleteXlsPath, downloadXlsFile } from "../../provider/xlspath.provider.js"; 
+// Import hook usePopup
+import { usePopup } from "../../hooks/usePopup";
+
+// Setup Popup
+const { showSuccess, showError, showConfirm } = usePopup();
 
 const fileList = ref([]);
 const loading = ref(true);
 const error = ref(null);
-
 
 const isDownloading = ref({});
 
@@ -107,6 +110,7 @@ const fetchFiles = async () => {
     const offset = (currentPage.value - 1) * itemsPerPage.value;
     const responsePayload = await getAllXlsPaths(itemsPerPage.value, offset);
     
+    // Validasi struktur data dari backend
     if (Array.isArray(responsePayload)) {
       fileList.value = responsePayload;
       totalItems.value = responsePayload.length; 
@@ -156,21 +160,17 @@ const getFileName = (path) => {
   return parts[parts.length - 1];
 };
 
-
 const handleDownload = async (file) => {
   const fileId = file.id;
   isDownloading.value[fileId] = true;
 
   try {
-
     const response = await downloadXlsFile(fileId);
 
- 
     const blob = new Blob([response.data], { 
       type: response.headers['content-type'] 
     });
 
- 
     let filename = getFileName(file.file_path); 
     const contentDisposition = response.headers['content-disposition'];
     if (contentDisposition) {
@@ -179,7 +179,6 @@ const handleDownload = async (file) => {
         filename = filenameMatch[1];
       }
     }
-
   
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -187,7 +186,6 @@ const handleDownload = async (file) => {
     link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
-
 
     window.URL.revokeObjectURL(url);
     document.body.removeChild(link);
@@ -199,12 +197,12 @@ const handleDownload = async (file) => {
       try {
         const errorText = await error.response.data.text();
         const errorJson = JSON.parse(errorText);
-        alert(`Gagal: ${errorJson.message || 'Error tidak diketahui'}`);
+        showError("Gagal", `Gagal: ${errorJson.message || 'Error tidak diketahui'}`);
       } catch (e) {
-        alert('Gagal memproses file error dari server.');
+        showError("Gagal", 'Gagal memproses file error dari server.');
       }
     } else {
-      alert(`Gagal download: ${error.response?.data?.message || 'Terjadi kesalahan.'}`);
+      showError("Gagal", `Gagal download: ${error.response?.data?.message || 'Terjadi kesalahan.'}`);
     }
   } finally {
     isDownloading.value[fileId] = false;
@@ -214,20 +212,40 @@ const handleDownload = async (file) => {
 const handleDelete = async (file) => {
   const fileName = getFileName(file.file_path);
   
-  if (confirm(`Yakin ingin menghapus file "${fileName}"?`)) {
+ 
+  const isConfirmed = await showConfirm(
+    "Konfirmasi Hapus", 
+    `Yakin ingin menghapus file "${fileName}"?`,
+    "Ya, Hapus"
+  );
+  
+  if (isConfirmed) {
     try {
+
       await deleteXlsPath(file.id);
-      alert("File berhasil dihapus.");
+
+     
+      const oldLength = fileList.value.length;
+      fileList.value = fileList.value.filter(f => f.id !== file.id);
+
+      if (fileList.value.length < oldLength) {
+        totalItems.value--;
+      }
+
+  
+      await showSuccess("Berhasil", "File berhasil dihapus.");
       
-      if (fileList.value.length === 1 && currentPage.value > 1) {
+      
+      if (fileList.value.length === 0 && currentPage.value > 1) {
         currentPage.value--; 
       } else {
+     
         fetchFiles(); 
       }
 
     } catch (err) {
       console.error("Gagal menghapus file:", err);
-      alert(`Gagal menghapus: ${err.response?.data?.message || 'Error tidak diketahui'}`);
+      showError("Gagal", `Gagal menghapus: ${err.response?.data?.message || 'Error tidak diketahui'}`);
     }
   }
 };

@@ -100,6 +100,10 @@ import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getExamById, updateExam } from "../../provider/exam.provider";
 
+import { usePopup } from "../../hooks/usePopup";
+
+const { showSuccess, showError } = usePopup();
+
 const route = useRoute();
 const router = useRouter();
 const isAdminRoute = computed(() => route.path.startsWith('/admin'));
@@ -127,7 +131,6 @@ const formatForInput = (dateStr) => {
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     
-    
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   } catch (e) {
     return "";
@@ -141,19 +144,18 @@ onMounted(async () => {
     
     if (!exam) throw new Error("Data ujian tidak ditemukan!");
 
-   
     form.value = {
       title: exam.title,
       description: exam.description || "",
       difficulty: exam.difficulty || "easy",
-    
       started_at: formatForInput(exam.started_at),
       finished_at: formatForInput(exam.finished_at),
       long_time: exam.long_time || 0,
     };
   } catch (err) {
     console.error(err);
-    alert("❌ Gagal memuat data ujian!");
+   
+    await showError("Gagal", "Gagal memuat data ujian!");
     goBack();
   } finally {
     loading.value = false;
@@ -161,11 +163,9 @@ onMounted(async () => {
 });
 
 
+
 const goToDetail = () => {
-
-
   const routeName = isAdminRoute.value ? 'AdminExamDetail' : 'DosenExamDetail';
-  
   router.push({ 
     name: routeName, 
     params: { id: id } 
@@ -178,7 +178,6 @@ const goBack = () => {
 };
 
 const handleCancel = () => {
-
   goToDetail();
 };
 
@@ -188,7 +187,8 @@ const handleSubmit = async () => {
   saving.value = true;
   try {
     if (!form.value.started_at || !form.value.finished_at) {
-      alert("Tanggal mulai dan selesai harus diisi!");
+  
+      showError("Validasi", "Tanggal mulai dan selesai harus diisi!");
       saving.value = false;
       return;
     }
@@ -204,14 +204,17 @@ const handleSubmit = async () => {
 
     await updateExam(Number(id), payload);
     
-    alert("✅ Ujian berhasil diperbarui!");
     
+    await showSuccess("Berhasil", "Ujian berhasil diperbarui!");
+    
+
     goToDetail();
 
   } catch (err) {
     console.error("Gagal update ujian:", err);
     const msg = err.response?.data?.message || "Gagal menyimpan perubahan.";
-    alert(`❌ ${msg}`);
+  
+    showError("Gagal", msg);
   } finally {
     saving.value = false;
   }

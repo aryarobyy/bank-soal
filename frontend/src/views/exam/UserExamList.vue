@@ -149,6 +149,11 @@ import { getAllExam } from "../../provider/exam.provider";
 import { getExamSessionByUser } from "../../provider/examsession.provider";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 
+import { usePopup } from "../../hooks/usePopup";
+
+
+const { showError } = usePopup();
+
 const router = useRouter();
 const { user } = useGetCurrentUser();
 
@@ -173,6 +178,8 @@ const fetchExams = async () => {
     
   } catch (err) {
     console.error("Gagal memuat ujian:", err);
+    
+    showError("Gagal", "Gagal memuat daftar ujian. Coba lagi nanti.");
   } finally {
     loading.value = false;
   }
@@ -184,7 +191,6 @@ const fetchHistory = async () => {
   try {
     loadingHistory.value = true;
     
-
     const res = await getExamSessionByUser(user.value.id, 50, 0); 
     
     if (Array.isArray(res)) {
@@ -197,6 +203,8 @@ const fetchHistory = async () => {
 
   } catch (err) {
     console.error("Gagal memuat riwayat:", err);
+    
+    showError("Gagal", "Gagal memuat riwayat ujian.");
   } finally {
     loadingHistory.value = false;
   }

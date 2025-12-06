@@ -4,6 +4,7 @@
       class="w-full max-w-5xl bg-white rounded-3xl shadow-lg p-6 sm:p-8 border border-gray-200"
     >
       <div v-if="loading" class="text-center text-gray-500 py-10">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4"></div>
         Memuat ujian...
       </div>
 
@@ -127,12 +128,15 @@ import { getExamById } from "../../provider/exam.provider";
 import { getQuestionsByExam } from "../../provider/question.provider"; 
 import { submitUserAnswer, getUserAnswersBySession } from "../../provider/useranswer.provider";
 import { finishExamSession, updateCurrentNo, getExamSessionById } from "../../provider/examsession.provider";
-
 import { getAllQuestionsForExamDo } from "../../provider/question.provider";
+
+import { usePopup } from "../../hooks/usePopup";
+
+const { showSuccess, showError, showConfirm } = usePopup();
+
 const route = useRoute();
 const router = useRouter();
 const { user } = useGetCurrentUser();
-
 
 const loading = ref(true);
 const error = ref("");
@@ -140,7 +144,6 @@ const exam = ref(null);
 const questions = ref([]);
 const currentNo = ref(1);
 const answers = ref([]); 
-
 
 const timeLeft = ref(0);
 let timer = null;
@@ -183,7 +186,6 @@ const constructImageUrl = (path) => {
   return `${API_BASE_URL}/${cleanPath}`;
 };
 
-
 const startTimer = (seconds) => {
   timeLeft.value = seconds;
   if (timer) clearInterval(timer);
@@ -193,7 +195,6 @@ const startTimer = (seconds) => {
       timeLeft.value--;
     } else {
       clearInterval(timer);
- 
       finishExam(true); 
     }
   }, 1000);
@@ -209,7 +210,6 @@ const formattedTime = computed(() => {
   }
   return `${m}:${s < 10 ? "0" + s : s}`;
 });
-
 
 onMounted(async () => {
   const examId = Number(route.query.id);
@@ -228,7 +228,14 @@ onMounted(async () => {
         const sessionRes = await getExamSessionById(sessionId);
         const sessionData = sessionRes.data || sessionRes; 
 
-      
+        // PERBAIKAN 1: Cek status sesi di awal. Jika selesai, redirect keluar.
+        if (sessionData.status === 'finished' || sessionData.status === 'submitted') {
+            loading.value = false;
+            await showError("Ujian Selesai", "Anda sudah menyelesaikan ujian ini.");
+            router.replace("/ujian");
+            return;
+        }
+
         const qRes = await getAllQuestionsForExamDo(examId);
         if (qRes && Array.isArray(qRes)) {
             qRes.sort((a, b) => a.id - b.id);
@@ -236,7 +243,6 @@ onMounted(async () => {
         questions.value = qRes || [];
 
         answers.value = Array(questions.value.length).fill(null);
-
 
     try {
         const savedAnswers = await getUserAnswersBySession(sessionId);
@@ -258,12 +264,10 @@ onMounted(async () => {
         console.warn("Gagal merestore jawaban:", err);
     }
 
-
     if (sessionData && sessionData.current_no && sessionData.current_no > 0) {
         currentNo.value = sessionData.current_no;
     }
 
- 
     if (sessionData && sessionData.started_at) {
         const durationMinutes = exam.value?.long_time || 120;
         const startTime = new Date(sessionData.started_at).getTime();
@@ -274,7 +278,6 @@ onMounted(async () => {
         if (remainingSeconds > 0) {
             startTimer(remainingSeconds);
         } else {
-        
             finishExam(true);
         }
     } else {
@@ -286,11 +289,10 @@ onMounted(async () => {
             const res = await getExamSessionById(sessionId);
             const currentSession = res.data || res;
 
-          
             if (currentSession.status === 'finished' || currentSession.status === 'submitted') {
                 clearInterval(statusCheckInterval);
                 clearInterval(timer);
-                alert("Sesi ujian telah berakhir menurut Server (Waktu Habis/Ditutup Admin).");
+                await showError("Waktu Habis", "Sesi ujian telah berakhir menurut Server.");
                 router.replace("/ujian");
             }
         } catch (err) {
@@ -332,42 +334,47 @@ watch(currentNo, async (newNo) => {
   }
 });
 
-
-
 const finishExam = async (isAuto = false) => {
 
+  
   if (!isAuto && timeLeft.value > 0) {
-     if (!confirm("Apakah Anda yakin ingin menyelesaikan ujian?")) return;
+     const isConfirmed = await showConfirm(
+       "Selesaikan Ujian", 
+       "Apakah Anda yakin ingin menyelesaikan ujian sekarang?",
+       "Ya, Selesaikan"
+     );
+     if (!isConfirmed) return;
   }
 
-
+  
   if (statusCheckInterval) clearInterval(statusCheckInterval);
   if (timer) clearInterval(timer);
 
-  loading.value = true;
+  loading.value = true; 
 
   try {
     const sessionId = Number(route.query.session_id);
     const examId = Number(route.query.id); 
     let userId = user.value?.id || Number(localStorage.getItem("id"));
 
+   
     const currentQ = questions.value[currentNo.value - 1];
     const currentAnsId = answers.value[currentNo.value - 1];
     
     if (currentQ && currentAnsId) {
         const selectedOption = currentQ.options.find((opt) => opt.id === currentAnsId);
         if (selectedOption) {
- 
-            await submitUserAnswer({
+            submitUserAnswer({
                 exam_session_id: sessionId,
                 user_id: userId,
                 question_id: currentQ.id,
                 answer: selectedOption.option_label || selectedOption.label, 
                 exam_id: Number(examId) 
-            }).catch(e => console.warn("Gagal simpan jawaban terakhir:", e));
+            }).catch(e => console.warn("Background save answer failed:", e));
         }
     }
 
+    
     const payload = {
       session_id: sessionId,
       exam_id: examId,
@@ -376,37 +383,43 @@ const finishExam = async (isAuto = false) => {
     
     await finishExamSession(payload);
 
+  
+    loading.value = false;
 
+    
     if (isAuto) {
-        alert("Waktu Habis! Ujian otomatis diselesaikan.");
+       
+        router.replace("/ujian");
+        showError("Waktu Habis", "Waktu ujian telah habis! Jawaban otomatis disimpan.");
     } else {
-        alert("Ujian selesai! Terima kasih.");
+        
+        router.replace("/ujian");
+        
+      
+        showSuccess("Ujian Selesai", "Terima kasih telah mengerjakan ujian.");
     }
-
-    router.replace("/ujian");
 
   } catch (err) {
     console.error("FinishExam Error:", err);
+    loading.value = false;
+
     const backendMsg = err.response?.data?.message;
     
  
     if (backendMsg && (backendMsg.includes("finished") || backendMsg.includes("not found"))) {
         router.replace("/ujian");
     } else if (err.code === 'ECONNABORTED') {
- 
-        alert("Koneksi lambat, namun sistem sedang memproses penyelesaian ujian Anda. Anda akan dialihkan.");
         router.replace("/ujian");
+        showError("Koneksi Lambat", "Koneksi lambat. Anda dialihkan ke dashboard.");
     } else {
         if (isAuto) {
              router.replace("/ujian");
         } else {
-            alert(`Gagal menyelesaikan ujian: ${backendMsg || "Terjadi kesalahan."}`);
-  
-            window.location.reload();
+            
+            await showError("Gagal", `Proses finish terganggu: ${backendMsg || "Server Error"}.`);
+            router.replace("/ujian");
         }
     }
-  } finally {
-    loading.value = false;
   }
 };
 </script>

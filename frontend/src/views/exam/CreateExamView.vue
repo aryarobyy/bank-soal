@@ -78,13 +78,6 @@
           {{ loading ? "Menyimpan..." : "Simpan Ujian" }}
         </button>
       </form>
-
-      <div
-        v-if="showPopup"
-        class="mt-6 text-center bg-green-100 text-green-800 border border-green-300 rounded-lg p-3"
-      >
-        {{ popupMessage }}
-      </div>
     </div>
   </div>
 </template>
@@ -95,10 +88,13 @@ import { useRoute, useRouter } from "vue-router";
 import { createExam } from "../../provider/exam.provider.js";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser.js";
 
+import { usePopup } from "../../hooks/usePopup";
+
+const { showSuccess, showError } = usePopup();
+
 const router = useRouter();
 const route = useRoute(); 
 const { user } = useGetCurrentUser();
-
 
 const isAdminRoute = computed(() => route.path.startsWith('/admin'));
 
@@ -112,12 +108,11 @@ const form = ref({
 });
 
 const loading = ref(false);
-const showPopup = ref(false);
-const popupMessage = ref("");
 
 const handleSubmit = async () => {
   if (!user?.value) {
-    alert("User belum login!");
+   
+    showError("Akses Ditolak", "User belum login!");
     return;
   }
 
@@ -135,21 +130,18 @@ const handleSubmit = async () => {
 
   try {
     await createExam(payload);
-    popupMessage.value = "✅ Ujian berhasil dibuat!";
-    showPopup.value = true;
 
-  
+    await showSuccess("Berhasil", "Ujian berhasil dibuat!");
+
     const returnRouteName = isAdminRoute.value ? 'AdminManageExam' : 'DosenManageExam';
-    
-    setTimeout(() => {
-      router.push({ name: returnRouteName });
-    }, 800);
+    router.push({ name: returnRouteName });
+
   } catch (err) {
     console.error(err);
-    // Coba akses pesan error yang lebih spesifik jika ada
     const errorMsg = err.response?.data?.message || "Terjadi kesalahan";
-    popupMessage.value = `❌ Gagal membuat ujian. ${errorMsg} `;
-    showPopup.value = true;
+    
+  
+    showError("Gagal", `Gagal membuat ujian. ${errorMsg}`);
   } finally {
     loading.value = false;
   }

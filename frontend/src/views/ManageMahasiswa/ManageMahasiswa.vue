@@ -340,6 +340,9 @@ import {
   changePassword,
   generateUsers,
 } from "../../provider/user.provider.js";
+import { usePopup } from "../../hooks/usePopup";
+
+const { showSuccess, showError, showConfirm } = usePopup();
 
 const mahasiswaList = ref([]);
 const loading = ref(true);
@@ -347,7 +350,7 @@ const error = ref(null);
 const showModal = ref(false);
 const editMode = ref(false);
 
-// [PERBAIKAN] Menghapus nidn
+
 const initialFormState = {
   id: null, name: "", email: "", password: "",
   role: "user", nim: "", major: "", faculty: "", academic_year: "",
@@ -439,15 +442,15 @@ const handleGenerate = async () => {
   const { prefix, start, end, academic_year } = generateForm.value;
 
   if (!prefix || !start || !end || !academic_year) {
-    alert("Harap isi semua field (Prefix, Start, End, dan Tahun Ajaran).");
+    showError("Harap isi semua field (Prefix, Start, End, dan Tahun Ajaran).");
     return;
   }
   if (prefix.length !== 2) {
-    alert("Prefix harus 2 karakter.");
+    showError("Prefix harus 2 karakter.");
     return;
   }
   if (Number(end) < Number(start)) {
-    alert("Angka Akhir tidak boleh lebih kecil dari Angka Mulai.");
+    showError("Angka Akhir tidak boleh lebih kecil dari Angka Mulai.");
     return;
   }
 
@@ -455,14 +458,14 @@ const handleGenerate = async () => {
 
   try {
     const response = await generateUsers(prefix, start, end, academic_year);
-    alert(`Sukses: ${response.message}\nFile disimpan di server sebagai: ${response.data.file}`);
+    showSuccess(`Sukses: ${response.message}\nFile disimpan di server sebagai: ${response.data.file}`);
     closeGenerateModal();
     currentPage.value = 1; 
     fetchMahasiswa(); 
 
   } catch (error) {
     console.error('Gagal generate user:', error);
-    alert(`Gagal: ${error.response?.data?.message || 'Terjadi kesalahan.'}`);
+    showError(`Gagal: ${error.response?.data?.message || 'Terjadi kesalahan.'}`);
 
   } finally {
     isLoadingGenerate.value = false;
@@ -474,13 +477,13 @@ const simpanMahasiswa = async () => {
   const adminId = storedUser.value?.id || storedUser.value?.ID;
 
   if (!adminId) {
-    alert("Error: Tidak dapat menemukan ID admin. Silakan login ulang.");
+    showError("Error: Tidak dapat menemukan ID admin. Silakan login ulang.");
     return;
   }
 
   if (editMode.value) {
     if (!userId) {
-      alert("Error: ID pengguna tidak ditemukan. Tidak dapat mengedit.");
+      showError("Error: ID pengguna tidak ditemukan. Tidak dapat mengedit.");
       return;
     }
 
@@ -519,9 +522,9 @@ const simpanMahasiswa = async () => {
       }
 
       if (passwordErrorMessage) {
-        alert(`Data berhasil diperbarui.\n\nInfo: ${passwordErrorMessage}`);
+        showError(`Data berhasil diperbarui.\n\nInfo: ${passwordErrorMessage}`);
       } else {
-        alert("Data berhasil diperbarui!");
+        showSuccess("Data berhasil diperbarui!");
       }
       
       closeModal();
@@ -529,7 +532,7 @@ const simpanMahasiswa = async () => {
 
     } catch (err) {
       console.error("Gagal menyimpan data (Update):", err);
-      const errorMsg = err.response?.data?.message || "Terjadi kesalahan saat menyimpan data.";
+      showError = err.response?.data?.message || "Terjadi kesalahan saat menyimpan data.";
       alert(errorMsg);
       fetchMahasiswa();
     }
@@ -558,7 +561,7 @@ const simpanMahasiswa = async () => {
       }
 
       await register(dataToCreate);
-      alert("Akun baru berhasil ditambahkan!");
+      showSuccess("Akun baru berhasil ditambahkan!");
       closeModal();
       
       try {
@@ -571,7 +574,7 @@ const simpanMahasiswa = async () => {
 
     } catch (err) {
       console.error("Gagal menambah data:", err);
-      const errorMsg = err.response?.data?.message || "Terjadi kesalahan saat menambah data.";
+      showError = err.response?.data?.message || "Terjadi kesalahan saat menambah data.";
       alert(errorMsg);
     }
   }
@@ -598,14 +601,19 @@ const openEditModal = (mhs) => {
 const hapusMahasiswa = async (mhs) => {
   const userId = mhs.id || mhs.ID || mhs._id;
   if (!userId) {
-    alert("Error: ID pengguna tidak ditemukan. Tidak dapat menghapus.");
+    showError("Error: ID pengguna tidak ditemukan. Tidak dapat menghapus.");
     return;
   }
 
-  if (confirm("Apakah Anda yakin ingin menghapus mahasiswa ini?")) {
+  const isConfirmed = await showConfirm(
+      "Hapus Akun?", 
+      `Apakah Anda yakin ingin menghapus akun mahasiswa "${mhs.name}"?`
+  );
+
+  if (isConfirmed) {
     try {
       await deleteUser(userId);
-      alert("Mahasiswa berhasil dihapus.");
+      showSuccess("Terhapus", "Akun mahasiswa berhasil dihapus.");
       
       if (mahasiswaList.value.length === 1 && currentPage.value > 1) {
         currentPage.value--;
@@ -615,8 +623,8 @@ const hapusMahasiswa = async (mhs) => {
 
     } catch (err) {
       console.error("Gagal menghapus mahasiswa:", err);
-      const errorMsg = err.response?.data?.message || err.response?.data || "Terjadi kesalahan saat menghapus data.";
-      alert(`Gagal menghapus: ${errorMsg}.`);
+      const errorMsg = err.response?.data?.message || "Terjadi kesalahan saat menghapus data.";
+      showError("Gagal Menghapus", errorMsg);
     }
   }
 };

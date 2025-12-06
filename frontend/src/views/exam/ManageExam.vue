@@ -120,9 +120,13 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { getAllExam, deleteExam } from "../../provider/exam.provider";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
+import { usePopup } from "../../hooks/usePopup";
 
 const route = useRoute();
 const isAdminRoute = computed(() => route.path.startsWith('/admin'));
+
+
+const { showConfirm, showSuccess, showError } = usePopup();
 
 const exams = ref([]);
 const search = ref("");
@@ -133,7 +137,6 @@ const totalItems = ref(0);
 
 const { user } = useGetCurrentUser();
 
-
 const loadExams = async () => {
   if (!user.value) return;
 
@@ -141,7 +144,6 @@ const loadExams = async () => {
     const offset = (page.value - 1) * limit;
     const creatorId = isAdminRoute.value ? null : user.value.id;
     
-  
     const result = await getAllExam(limit, offset, creatorId);
 
     if (result && Array.isArray(result.data)) {
@@ -164,27 +166,22 @@ const loadExams = async () => {
 
 onMounted(loadExams);
 
-
 watch([page, user], loadExams, { immediate: true });
-
 
 const filteredExams = computed(() => {
   let data = [...exams.value];
-
 
   if (search.value) {
     data = data.filter((e) =>
       e.title.toLowerCase().includes(search.value.toLowerCase())
     );
   }
-
   
   if (sortBy.value === "A-Z") {
     data.sort((a, b) => a.title.localeCompare(b.title));
   } else if (sortBy.value === "Z-A") {
     data.sort((a, b) => b.title.localeCompare(a.title));
   } else if (sortBy.value === "Last Modified") {
-    
     data.sort((a, b) => {
       const dateA = new Date(a.updated_at || a.created_at).getTime();
       const dateB = new Date(b.updated_at || b.created_at).getTime();
@@ -195,14 +192,12 @@ const filteredExams = computed(() => {
   return data;
 });
 
-
 const totalPages = computed(() => {
   if (totalItems.value === 0) return 1;
   return Math.ceil(totalItems.value / limit);
 });
 
 const paginatedExams = computed(() => {
-
   return filteredExams.value; 
 });
 
@@ -218,7 +213,6 @@ const prevPage = () => {
   }
 };
 
-
 const formatDate = (dateString) => {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleDateString("id-ID", {
@@ -228,24 +222,40 @@ const formatDate = (dateString) => {
 };
 
 const removeExam = async (id) => {
-  if (!confirm("Apakah kamu yakin ingin menghapus ujian ini? Data soal dan nilai terkait juga akan terhapus.")) return;
+  
+  const isConfirmed = await showConfirm(
+    "Konfirmasi Hapus",
+    "Apakah kamu yakin ingin menghapus ujian ini? Data soal dan nilai terkait juga akan terhapus.",
+    "Ya, Hapus"
+  );
+
+  if (!isConfirmed) return;
   
   try {
 
     await deleteExam(Number(id));
     
-    alert("✅ Ujian berhasil dihapus!");
-    
 
-    if (exams.value.length === 1 && page.value > 1) {
-      page.value--;
+    const oldLength = exams.value.length;
+    exams.value = exams.value.filter(e => e.id !== id);
+
+    if (exams.value.length < oldLength) {
+        totalItems.value--;
+    }
+
+  
+    await showSuccess("Berhasil", "Ujian berhasil dihapus!");
+    
+ 
+    if (exams.value.length === 0 && page.value > 1) {
+      page.value--; 
     } else {
-      loadExams();
+      loadExams(); 
     }
   } catch (error) {
     console.error("Gagal menghapus ujian:", error);
     const msg = error.response?.data?.message || "Gagal menghapus ujian.";
-    alert(`❌ ${msg}`);
+    showError("Gagal", msg);
   }
 };
 </script>
