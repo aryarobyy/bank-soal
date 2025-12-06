@@ -533,10 +533,22 @@ func (s *userService) JsonInput(ctx context.Context, file *multipart.FileHeader)
 		if u.Password == "" {
 			return fmt.Errorf("password cannot be empty at index %d", i)
 		}
+
+		hashed, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("failed to hash password at index %d: %w", i, err)
+		}
+		users[i].Password = string(hashed)
+		users[i].Role = model.RoleUser
+		users[i].Faculty = "Teknik"
+		users[i].Major = "Informatika"
 	}
 
 	_, err = s.repo.BulkInsert(ctx, users)
 	if err != nil {
+		if strings.Contains(err.Error(), "1062") {
+			return fmt.Errorf("failed to insert: some data has been registered (duplicate)")
+		}
 		return fmt.Errorf("failed to save users: %w", err)
 	}
 
