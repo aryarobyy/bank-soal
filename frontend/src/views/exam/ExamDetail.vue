@@ -296,7 +296,7 @@
             class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition flex items-center gap-2"
           >
             <span v-if="saveLoading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-            {{ saveLoading ? 'Menyimpan...' : 'Simpan Pilihan' }}
+            {{ saveLoading ? savingText : 'Simpan Pilihan' }}
           </button>
         </div>
       </div>
@@ -312,7 +312,6 @@ import { getPaginatedSubjects } from "../../provider/subject.provider";
 import { getQuestionsBySubject, getQuestionsByExam } from "../../provider/question.provider";
 
 import { usePopup } from "../../hooks/usePopup";
-
 
 const { showSuccess, showError, showConfirm } = usePopup();
 
@@ -376,7 +375,6 @@ watch(mainPage, () => {
 });
 
 const removeExam = async (id) => {
-
   const isConfirmed = await showConfirm('Konfirmasi Hapus', "Hapus ujian ini permanen?");
   if (!isConfirmed) return;
 
@@ -390,13 +388,11 @@ const removeExam = async (id) => {
 };
 
 const handleDeleteQuestion = async (question) => {
-
   const isConfirmed = await showConfirm('Konfirmasi Hapus', "Hapus soal ini dari ujian?");
   if (!isConfirmed) return;
   
   try {
     await removeQuestions(exam.value.id, { "question_ids": [question.id] }); 
-  
     await showSuccess('Berhasil', "✅ Soal berhasil dihapus dari ujian!");
     
     if (examQuestions.value.length === 1 && mainPage.value > 1) {
@@ -412,6 +408,7 @@ const handleDeleteQuestion = async (question) => {
 const showAddSoalModal = ref(false);
 const modalLoading = ref(false);
 const saveLoading = ref(false);
+const savingText = ref("Menyimpan...");
 const loadingAllSubject = ref(false);
 const availableSubjects = ref([]);
 const selectedSubject = ref(null);
@@ -521,7 +518,6 @@ const selectAllBySubject = async () => {
     }
 
     if (allFetchedIds.length === 0) {
-   
       showError('Kosong', "Tidak ada soal ditemukan di subjek ini.");
       loadingAllSubject.value = false;
       return;
@@ -540,10 +536,8 @@ const selectAllBySubject = async () => {
     });
 
     if (addedCount > 0) {
-       
        showSuccess('Berhasil', `Berhasil memilih ${addedCount} soal baru!`);
     } else {
-    
        showSuccess('Info', "Semua soal sudah terpilih.");
     }
   } catch (err) {
@@ -572,19 +566,35 @@ const handleAddSoal = async () => {
       showError('Validasi', "Pilih soal terlebih dahulu.");
       return;
   }
+  
   saveLoading.value = true;
-  try {
-    await addQuestions(exam.value.id, { "question_ids": selectedQuestions.value });
+  savingText.value = "Menyiapkan...";
 
-    await showSuccess('Berhasil', "Soal berhasil ditambahkan!");
+  try {
+    
+    const BATCH_SIZE = 50; 
+    const total = selectedQuestions.value.length;
+    let processed = 0;
+
+    for (let i = 0; i < total; i += BATCH_SIZE) {
+      const chunk = selectedQuestions.value.slice(i, i + BATCH_SIZE);
+      savingText.value = `Menyimpan ${Math.min(i + BATCH_SIZE, total)} / ${total}`;
+      
+      await addQuestions(exam.value.id, { "question_ids": chunk });
+      processed += chunk.length;
+    }
+    
+    await showSuccess('Berhasil', `${processed} soal berhasil ditambahkan!`);
     
     closeAddSoalModal();
     mainPage.value = 1;
     await loadExamQuestions();
   } catch (err) {
-    showError('Gagal', "Gagal menyimpan soal.");
+    console.error(err);
+    showError('Gagal', "Gagal menyimpan sebagian soal. Silakan cek koneksi dan coba lagi.");
   } finally {
     saveLoading.value = false;
+    savingText.value = "Simpan Pilihan";
   }
 };
 
