@@ -47,9 +47,17 @@
 import SoalManagement from './components/SoalManagement.vue';
 import { getPaginatedSubjects, deleteSubject } from '../../provider/subject.provider';
 
+import { usePopup } from '../../hooks/usePopup'; 
+
 export default {
   name: 'LecturerSoal',
   components: { SoalManagement },
+
+  setup() {
+    const { showConfirm, showSuccess, showError } = usePopup();
+    return { showConfirm, showSuccess, showError };
+  },
+
   data() {
     return {
       allSubjects: [], 
@@ -58,13 +66,11 @@ export default {
       currentPage: 1,
       itemsPerPage: 10,
       searchQuery: '',
-    
     };
   },
   watch: {
     searchQuery() {
       this.currentPage = 1;
-      
     },
   },
   computed: {
@@ -72,7 +78,6 @@ export default {
       return this.$route.path.startsWith('/admin/soal');
     },
     
- 
     filteredSubjects() {
       if (!this.searchQuery) {
         return this.allSubjects; 
@@ -84,33 +89,25 @@ export default {
     },
 
     totalPages() {
-     
       return Math.ceil(this.filteredSubjects.length / this.itemsPerPage);
     },
     
- 
     paginatedSubjects() {
-    
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
       return this.filteredSubjects.slice(start, end);
     }
   },
   methods: {
-  
     async fetchSoalData() {
       this.loading = true;
       try {
-      
         const response = await getPaginatedSubjects(0, 0, ''); 
-        
-       
         this.allSubjects = response.data.data || []; 
         this.totalSubjects = response.total || 0; 
-
       } catch (error) {
         console.error("Gagal mengambil data subjek:", error);
-        alert('Gagal memuat data bank soal.');
+        this.showError('Gagal Memuat', 'Gagal memuat data bank soal.', error.message);
       } finally {
         this.loading = false;
       }
@@ -126,21 +123,29 @@ export default {
       this.$router.push({ name: routeName, query: { subject_id: subject.id } });
     },
 
-   
     async handleDeleteSubject(subject) {
-     
-      if (!confirm(`Anda yakin ingin menghapus mata kuliah "${subject.title}"?`)) {
+  
+      const isConfirmed = await this.showConfirm(
+        'Konfirmasi Hapus',
+        `Anda yakin ingin menghapus mata kuliah "${subject.title}"?`,
+        'Ya, Hapus'
+      );
+
+      if (!isConfirmed) {
         return;
       }
       
       try {
         await deleteSubject(subject.id); 
-        alert(`Mata kuliah "${subject.title}" berhasil dihapus.`);
+
+        await this.showSuccess('Berhasil', `Mata kuliah "${subject.title}" berhasil dihapus.`);
+        
         this.fetchSoalData(); 
         
       } catch (error) {
         console.error("Gagal menghapus subjek:", error);
-        alert('Terjadi kesalahan saat proses penghapusan.');
+
+        this.showError('Gagal Menghapus', 'Terjadi kesalahan saat proses penghapusan.', error.message);
       }
     },
 

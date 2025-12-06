@@ -85,11 +85,17 @@
 </template>
 
 <script>
-
 import { getmanyQuestions, deleteQuestion, getQuestionsBySubject, getQuestionsByCreator } from '../../provider/question.provider';
+// Import hook usePopup
+import { usePopup } from '../../hooks/usePopup';
 
 export default {
   name: 'LecturerSoalList',
+ 
+  setup() {
+    const { showSuccess, showError, showConfirm } = usePopup();
+    return { showSuccess, showError, showConfirm };
+  },
   data() {
     return {
       soalList: [],
@@ -106,7 +112,6 @@ export default {
       return this.$route.path.startsWith('/admin/soal');
     },
     isFiltered() {
-      
       return !!this.$route.query.subject_id || !!this.$route.query.creator_id;
     },
     pageTitle() {
@@ -124,11 +129,9 @@ export default {
     async handleRouteChange(isFirstLoad = false) {
       const query = this.$route.query;
       
-     
       if (query.page) {
         this.loading = true;
         this.currentPage = parseInt(query.page, 10) || 1;
-        
         
         const newQuery = { ...query };
         delete newQuery.page;
@@ -140,7 +143,6 @@ export default {
         this.loading = true;
         this.$router.replace({ query: {} }); 
         try {
-          
           const response = await getmanyQuestions(1, 0);
           this.totalSoal = response.total || 0;
           this.currentPage = this.totalPages; 
@@ -151,18 +153,14 @@ export default {
           this.fetchSoalList();
         }
         
-
       } else {
-     
         if (!isFirstLoad) {
           this.currentPage = 1;
         }
-        
         this.fetchSoalList();
       }
     },
 
-   
     async fetchSoalList() {
       this.loading = true;
       this.subjectId = this.$route.query.subject_id;
@@ -185,7 +183,7 @@ export default {
 
       } catch (error) {
         console.error("Gagal mengambil daftar soal:", error);
-        alert('Gagal memuat daftar soal.');
+        this.showError('Gagal', 'Gagal memuat daftar soal.');
         this.soalList = [];
         this.totalSoal = 0;
       } finally {
@@ -193,7 +191,6 @@ export default {
       }
     },
     
-   
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
@@ -207,17 +204,14 @@ export default {
       }
     },
 
-
     editSoal(id) {
       const routeName = this.isAdminRoute ? 'AdminSoalEdit' : 'DosenSoalEdit';
       const query = {};
       
-   
       if (this.subjectId) {
         query.return_subject_id = this.subjectId;
       }
       
-  
       query.return_page = this.currentPage;
       
       this.$router.push({ 
@@ -227,49 +221,55 @@ export default {
       });
     },
 
-   async handleDeleteSoal(id) {
-  if (confirm(`Apakah Anda yakin ingin menghapus soal ID: ${id}?`)) {
-    try {
-      await deleteQuestion(id);
-      alert('✅ Soal berhasil dihapus dari database!');
+    async handleDeleteSoal(id) {
 
+      const isConfirmed = await this.showConfirm(
+        'Konfirmasi Hapus',
+        `Apakah Anda yakin ingin menghapus soal ID: ${id}?`,
+        'Ya, Hapus'
+      );
 
-      if (this.soalList.length === 1 && this.currentPage > 1) {
-        this.currentPage--;
-      }
-      
-      this.fetchSoalList(); 
-    } catch (error) {
-      console.error("Gagal menghapus soal:", error);
-    
-      const backendMsg = error.response?.data?.message || "";
-      
-      if (backendMsg.includes("foreign key constraint fails") || backendMsg.includes("Cannot delete or update")) {
-          alert("Soal ini tidak bisa dihapus karena sedang digunakan di dalam Ujian.\n\nSilakan hapus soal ini dari Ujian terlebih dahulu.");
-      } else {
-          alert(`❌ Gagal menghapus soal: ${backendMsg || "Terjadi kesalahan server"}`);
+      if (isConfirmed) {
+        try {
+          await deleteQuestion(id);
+          
+  
+          this.showSuccess('Berhasil', 'Soal berhasil dihapus dari database!');
+
+          if (this.soalList.length === 1 && this.currentPage > 1) {
+            this.currentPage--;
+          }
+          
+          this.fetchSoalList(); 
+        } catch (error) {
+          console.error("Gagal menghapus soal:", error);
+        
+          const backendMsg = error.response?.data?.message || "";
+          
+          if (backendMsg.includes("foreign key constraint fails") || backendMsg.includes("Cannot delete or update")) {
+              this.showError(
+                "Gagal Menghapus",
+                "Soal ini tidak bisa dihapus karena sedang digunakan di dalam Ujian.",
+                "Silakan hapus soal ini dari Ujian terlebih dahulu."
+              );
+          } else {
+              this.showError("Gagal Menghapus", backendMsg || "Terjadi kesalahan server");
+          }
+        }
       }
     }
-  }
-}
   },
-  
 
   created() {
-
     this.handleRouteChange(true);
   },
   
-  
   watch: {
     '$route.query'(newQuery, oldQuery) {
-   
       const isProgrammaticChange = (oldQuery.show_last_page && !newQuery.show_last_page) || 
                                    (oldQuery.page && !newQuery.page);
       
-   
       if (!isProgrammaticChange) {
-     
         this.handleRouteChange(false); 
       }
     }

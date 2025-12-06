@@ -109,6 +109,11 @@ import { getAllExam } from "../../provider/exam.provider";
 import { getUserById } from "../../provider/user.provider"; 
 import { getExamSessions } from "../../provider/examsession.provider"; 
 
+import { usePopup } from "../../hooks/usePopup";
+
+
+const { showSuccess, showError } = usePopup();
+
 const reports = ref([]);
 const examList = ref([]);
 const usersMap = ref({});
@@ -174,6 +179,8 @@ const fetchReports = async () => {
   } catch (err) {
     console.error(err);
     error.value = "Gagal memuat data laporan.";
+  
+    showError("Gagal", "Gagal memuat data laporan.");
     reports.value = [];
   } finally {
     loading.value = false;
@@ -204,20 +211,27 @@ const fetchUserNames = async (reportsData) => {
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "-";
 
-const downloadExcel = () => {
-  const dataToExport = reports.value.map((item, index) => ({
-    No: index + 1,
-    "Nama Mahasiswa": usersMap.value[item.user_id] || item.user_id,
-    "Judul Ujian": getExamTitle(item.exam_id),
-    "Nilai": item.score,
-    "Status": item.is_passed ? 'Lulus' : 'Tidak Lulus',
-    "Tanggal Selesai": formatDate(item.finished_at)
-  }));
+const downloadExcel = async () => {
+  try {
+    const dataToExport = reports.value.map((item, index) => ({
+      No: index + 1,
+      "Nama Mahasiswa": usersMap.value[item.user_id] || item.user_id,
+      "Judul Ujian": getExamTitle(item.exam_id),
+      "Nilai": item.score,
+      "Status": item.is_passed ? 'Lulus' : 'Tidak Lulus',
+      "Tanggal Selesai": formatDate(item.finished_at)
+    }));
 
-  const ws = XLSX.utils.json_to_sheet(dataToExport);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Laporan Nilai");
-  XLSX.writeFile(wb, `Laporan_Nilai_Page_${currentPage.value}.xlsx`);
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan Nilai");
+    XLSX.writeFile(wb, `Laporan_Nilai_Page_${currentPage.value}.xlsx`);
+    
+    await showSuccess("Berhasil", "File Excel berhasil diunduh.");
+  } catch (err) {
+    console.error(err);
+    showError("Gagal", "Terjadi kesalahan saat mengunduh Excel.");
+  }
 };
 
 onMounted(() => { fetchExamList(); });

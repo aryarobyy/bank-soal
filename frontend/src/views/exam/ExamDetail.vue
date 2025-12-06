@@ -311,6 +311,11 @@ import { deleteExam, addQuestions, removeQuestions, getExamById } from "../../pr
 import { getPaginatedSubjects } from "../../provider/subject.provider";
 import { getQuestionsBySubject, getQuestionsByExam } from "../../provider/question.provider";
 
+import { usePopup } from "../../hooks/usePopup";
+
+
+const { showSuccess, showError, showConfirm } = usePopup();
+
 const route = useRoute();
 const router = useRouter();
 const isAdminRoute = computed(() => route.path.startsWith('/admin'));
@@ -336,8 +341,6 @@ const visibleMainPages = computed(() => {
   }
   return [...new Set(pages)].sort((a,b)=>a-b);
 });
-
-
 
 const loadExamDetails = async () => {
   try {
@@ -373,27 +376,36 @@ watch(mainPage, () => {
 });
 
 const removeExam = async (id) => {
-  if (!confirm("Hapus ujian ini permanen?")) return;
+
+  const isConfirmed = await showConfirm('Konfirmasi Hapus', "Hapus ujian ini permanen?");
+  if (!isConfirmed) return;
+
   try {
     await deleteExam(id);
+    await showSuccess('Berhasil', 'Ujian berhasil dihapus');
     router.push({ name: isAdminRoute.value ? 'AdminManageExam' : 'DosenManageExam' });
   } catch (err) {
-    alert("Gagal menghapus.");
+    showError('Gagal', "Gagal menghapus.");
   }
 };
 
 const handleDeleteQuestion = async (question) => {
-  if (!confirm("Hapus soal ini dari ujian?")) return;
+
+  const isConfirmed = await showConfirm('Konfirmasi Hapus', "Hapus soal ini dari ujian?");
+  if (!isConfirmed) return;
+  
   try {
-   await removeQuestions(exam.value.id, { "question_ids": [question.id] }); 
-    alert("✅ Soal berhasil dihapus dari ujian!");
+    await removeQuestions(exam.value.id, { "question_ids": [question.id] }); 
+  
+    await showSuccess('Berhasil', "✅ Soal berhasil dihapus dari ujian!");
+    
     if (examQuestions.value.length === 1 && mainPage.value > 1) {
         mainPage.value--;
     } else {
         await loadExamQuestions();
     }
   } catch (err) {
-    alert("Gagal menghapus soal.");
+    showError('Gagal', "Gagal menghapus soal.");
   }
 };
 
@@ -509,7 +521,8 @@ const selectAllBySubject = async () => {
     }
 
     if (allFetchedIds.length === 0) {
-      alert("Tidak ada soal ditemukan di subjek ini.");
+   
+      showError('Kosong', "Tidak ada soal ditemukan di subjek ini.");
       loadingAllSubject.value = false;
       return;
     }
@@ -518,7 +531,6 @@ const selectAllBySubject = async () => {
     allFetchedIds.forEach(id => {
       const qId = Number(id);
       const alreadySelected = selectedQuestions.value.includes(qId);
-
       const existsInLoaded = examQuestions.value.some(eq => eq.id === qId); 
 
       if (!alreadySelected && !existsInLoaded) {
@@ -528,12 +540,14 @@ const selectAllBySubject = async () => {
     });
 
     if (addedCount > 0) {
-      alert(`Berhasil memilih ${addedCount} soal baru!`);
+       
+       showSuccess('Berhasil', `Berhasil memilih ${addedCount} soal baru!`);
     } else {
-      alert("Semua soal sudah terpilih.");
+    
+       showSuccess('Info', "Semua soal sudah terpilih.");
     }
   } catch (err) {
-    alert("Gagal mengambil semua soal.");
+    showError('Gagal', "Gagal mengambil semua soal.");
   } finally {
     loadingAllSubject.value = false;
   }
@@ -555,25 +569,26 @@ const prevModalPage = () => {
 
 const handleAddSoal = async () => {
   if (selectedQuestions.value.length === 0) {
-      alert("Pilih soal terlebih dahulu.");
+      showError('Validasi', "Pilih soal terlebih dahulu.");
       return;
   }
   saveLoading.value = true;
   try {
     await addQuestions(exam.value.id, { "question_ids": selectedQuestions.value });
-    alert("Soal berhasil ditambahkan!");
+
+    await showSuccess('Berhasil', "Soal berhasil ditambahkan!");
+    
     closeAddSoalModal();
     mainPage.value = 1;
     await loadExamQuestions();
   } catch (err) {
-    alert("Gagal menyimpan soal.");
+    showError('Gagal', "Gagal menyimpan soal.");
   } finally {
     saveLoading.value = false;
   }
 };
 
 const isQuestionAlreadyAdded = (qId) => {
-
   return examQuestions.value.some(eq => eq.id === qId);
 };
 

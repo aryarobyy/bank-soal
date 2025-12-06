@@ -87,22 +87,21 @@
         </div>
       </div>
     </main>
-
-    <Toast ref="toastRef" />
   </div>
 </template>
 
 <script setup>
-import Toast from "../../components/utils/Toast.vue";
 import { ref, onMounted, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
-// Providers
+
 import { getExamById } from "../../provider/exam.provider";
 import { createExamSession, getExamSessionByUser } from "../../provider/examsession.provider";
 
+import { usePopup } from "../../hooks/usePopup";
 
-const toastRef = ref(null);
+const { showError } = usePopup();
+
 const router = useRouter();
 const route = useRoute();
 const { user } = useGetCurrentUser();
@@ -112,31 +111,23 @@ const userSession = ref(null);
 const loading = ref(true);
 const error = ref("");
 
-
-
-
 const isExamClosed = computed(() => {
     if (!exam.value?.finished_at) return false;
     return new Date() > new Date(exam.value.finished_at);
 });
-
 
 const isExamStarted = computed(() => {
     if (!exam.value?.started_at) return false;
     return new Date() >= new Date(exam.value.started_at);
 });
 
-
 const isExamFinishedByUser = computed(() => {
     return userSession.value?.status === 'finished'; 
 });
 
-
 const isButtonDisabled = computed(() => {
-    
     return isExamClosed.value || !isExamStarted.value || isExamFinishedByUser.value;
 });
-
 
 const buttonText = computed(() => {
     if (isExamFinishedByUser.value) return "Anda Sudah Mengerjakan";
@@ -146,7 +137,6 @@ const buttonText = computed(() => {
     if (userSession.value && userSession.value.status === 'in_progress') return "Lanjutkan Ujian"; 
     return "Mulai Ujian";
 });
-
 
 const formattedDate = computed(() => {
   if (!exam.value?.started_at || !exam.value?.finished_at) return "";
@@ -166,12 +156,10 @@ const formattedDate = computed(() => {
   })} WIB`;
 });
 
-
 const checkUserSession = async () => {
     if (!user.value || !exam.value) return;
     
     try {
-    
         const sessionsRes = await getExamSessionByUser(user.value.id, 100, 0);
         const sessions = Array.isArray(sessionsRes) ? sessionsRes : (sessionsRes.data || []);
         
@@ -190,15 +178,12 @@ onMounted(async () => {
     const id = route.query.id; 
     if(!id) throw new Error("ID Ujian tidak ditemukan");
 
-
     const data = await getExamById(id);
     exam.value = data?.data || data; 
-
   
     if (user.value) {
         await checkUserSession();
     } else {
-       
         const unwatch = watch(user, async (val) => {
             if (val) {
                 await checkUserSession();
@@ -215,26 +200,25 @@ onMounted(async () => {
   }
 });
 
-
 const startExam = async () => {
-
   if (isExamFinishedByUser.value) {
-      alert("Anda sudah menyelesaikan ujian ini.");
+    
+      showError("Akses Ditolak", "Anda sudah menyelesaikan ujian ini.");
       return;
   }
   if (isExamClosed.value) {
-      alert("Maaf, waktu ujian sudah berakhir.");
+   
+      showError("Akses Ditolak", "Maaf, waktu ujian sudah berakhir.");
       return;
   }
   if (!isExamStarted.value) {
-      alert("Maaf, ujian belum dimulai.");
+      
+      showError("Belum Dimulai", "Maaf, ujian belum dimulai.");
       return;
   }
 
   try {
-  
     const sessionRes = await createExamSession(exam.value.id);
-    
     
     const sessionData = sessionRes?.data || sessionRes;
     const sessionId = sessionData?.id;
@@ -250,17 +234,16 @@ const startExam = async () => {
     
     const msg = err.response?.data?.message || "";
     
-
     if (msg.includes("exam is already closed")) {
-        alert("Gagal: Ujian ini sudah ditutup oleh sistem.");
+        showError("Gagal", "Ujian ini sudah ditutup oleh sistem.");
     } else if (msg.includes("exam has not started")) {
-        alert("Gagal: Ujian belum dimulai.");
+        showError("Gagal", "Ujian belum dimulai.");
     } else if (msg.includes("already finished") || msg.includes("session already finished")) {
-        alert("Gagal: Anda sudah menyelesaikan ujian ini.");
-        // Refresh status di UI
+        showError("Gagal", "Anda sudah menyelesaikan ujian ini.");
+       
         checkUserSession(); 
     } else {
-        alert(`Tidak dapat memulai ujian: ${msg || "Terjadi kesalahan sistem."}`);
+        showError("Gagal Memulai", `Tidak dapat memulai ujian: ${msg || "Terjadi kesalahan sistem."}`);
     }
   }
 };
