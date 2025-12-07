@@ -18,6 +18,7 @@ type UserAnswerRepository interface {
 	GetByQuestionId(ctx context.Context, questionId int, limit int, offset int) ([]model.UserAnswer, int64, error)
 	GetUserAnswer(ctx context.Context, userId int, examSessionId int, limit int, offset int) ([]model.UserAnswer, int64, error)
 	GetAllUserAnswers(ctx context.Context, userId int, examSessionId int) ([]model.UserAnswer, error)
+	CheckUserAnswer(ctx context.Context, userId int, sessionId int, questionId int) (*model.UserAnswer, error)
 }
 
 type userAnswerRepository struct {
@@ -90,6 +91,13 @@ func (r *userAnswerRepository) Update(ctx context.Context, id int, userAnswer *m
 	}
 
 	updateData["is_correct"] = userAnswer.IsCorrect
+
+	if err := r.db.WithContext(ctx).
+		Model(&model.UserAnswer{}).
+		Where("id = ?", id).
+		Updates(updateData).Error; err != nil {
+		return nil, err
+	}
 
 	var updated model.UserAnswer
 	if err := r.db.WithContext(ctx).
@@ -201,4 +209,15 @@ func (r *userAnswerRepository) GetAllUserAnswers(ctx context.Context, userId int
 	}
 
 	return userAnswers, nil
+}
+
+func (r *userAnswerRepository) CheckUserAnswer(ctx context.Context, userId int, sessionId int, questionId int) (*model.UserAnswer, error) {
+	answer := model.UserAnswer{}
+
+	if err := r.db.WithContext(ctx).
+		Where("user_id = ? AND exam_session_id = ? AND question_id = ?", userId, sessionId, questionId).
+		First(&answer).Error; err != nil {
+		return nil, err
+	}
+	return &answer, nil
 }

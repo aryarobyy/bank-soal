@@ -19,7 +19,7 @@ func UserAnswerRoutes(r *gin.Engine, userAnswer *controller.UserAnswerController
 			}), userAnswer.Create)
 			auth.GET("/", userAnswer.GetMany)
 			auth.GET("/id", userAnswer.GetById)
-			auth.PUT("/:id", userAnswer.Update)
+			// auth.PUT("/:id", userAnswer.Update) //Fokus di create aja
 			auth.DELETE("/:id", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), userAnswer.Delete)
 			auth.GET("/session", userAnswer.GetByExamSessionId)
 			auth.GET("/question", userAnswer.GetByQuestionId)

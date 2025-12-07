@@ -46,7 +46,7 @@ func (h *UserAnswerController) Create(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, data, "user answer created")
+	helper.Success(c, nil, "user answer created")
 }
 
 func (h *UserAnswerController) GetById(c *gin.Context) {

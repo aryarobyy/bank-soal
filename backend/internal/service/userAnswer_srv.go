@@ -38,8 +38,7 @@ func NewUserAnswerService(
 }
 
 func (s *userAnswerService) Create(ctx context.Context, userAnswer *model.UserAnswer) error {
-	_, err := s.examRepo.CheckQuestion(ctx, userAnswer.ExamId, userAnswer.QuestionId)
-	if err != nil {
+	if _, err := s.examRepo.CheckQuestion(ctx, userAnswer.ExamId, userAnswer.QuestionId); err != nil {
 		return fmt.Errorf("this question didnt include in exam")
 	}
 
@@ -47,13 +46,29 @@ func (s *userAnswerService) Create(ctx context.Context, userAnswer *model.UserAn
 	if err != nil {
 		return fmt.Errorf("failed to check correct answer: %w", err)
 	}
-
 	userAnswer.IsCorrect = checkAnswer
 
-	if err := s.repo.Create(ctx, userAnswer); err != nil {
-		return fmt.Errorf("failed to create user answer: %w", err)
+	existing, err := s.repo.CheckUserAnswer(ctx,
+		userAnswer.UserId,
+		userAnswer.ExamSessionId,
+		userAnswer.QuestionId,
+	)
+
+	if err != nil {
+		if err := s.repo.Create(ctx, userAnswer); err != nil {
+			return fmt.Errorf("failed to create user answer: %w", err)
+		}
+		return err
 	}
 
+	if existing != nil {
+		userAnswer.Id = existing.Id
+		_, err := s.repo.Update(ctx, existing.Id, userAnswer)
+		if err != nil {
+			return fmt.Errorf("failed to update user answer: %w", err)
+		}
+		return nil
+	}
 	return nil
 }
 
