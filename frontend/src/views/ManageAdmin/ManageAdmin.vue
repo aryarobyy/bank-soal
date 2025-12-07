@@ -17,7 +17,7 @@
       <p class="text-red-600">{{ error }}</p>
     </div>
 
-    <div velse class="bg-white shadow rounded-lg overflow-hidden">
+    <div v-else class="bg-white shadow rounded-lg overflow-hidden">
       <table class="min-w-full border-collapse">
         <thead class="bg-gray-100 text-gray-700 text-sm">
           <tr>
@@ -124,6 +124,15 @@
               <label class="block mb-1 text-sm font-medium text-gray-700">Password</label>
               <input v-model="form.password" type="password" required class="w-full p-2 border rounded-md"/>
             </div>
+
+            <div class="mb-3">
+              <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
+              <select v-model="form.role" class="w-full p-2 border rounded-md bg-white">
+                <option v-for="role in availableRoles" :key="role" :value="role">
+                  {{ role }}
+                </option>
+              </select>
+            </div>
             
             <div class="mb-3">
               <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
@@ -149,7 +158,7 @@
                 </option>
               </select>
             </div>
-            </template>
+          </template>
           
           <div class="flex justify-end gap-2 mt-4">
             <button
@@ -182,6 +191,11 @@ import {
   changeRole,
 } from "../../provider/user.provider.js";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
+
+import { usePopup } from "../../hooks/usePopup";
+
+
+const { showSuccess, showError, showConfirm } = usePopup();
 
 const adminList = ref([]);
 const loading = ref(true);
@@ -267,13 +281,13 @@ const simpanAdmin = async () => {
     const adminId = storedUser.value?.id || storedUser.value?.ID;
 
     if (!adminId) {
-      alert("Error: Sesi Super Admin tidak ditemukan. Silakan login ulang.");
+      showError("Akses Ditolak", "Error: Sesi Super Admin tidak ditemukan. Silakan login ulang.");
       return;
     }
 
     if (editMode.value) {
       if (!userId) {
-        alert("Error: ID admin tidak ditemukan."); return;
+        showError("Data Invalid", "Error: ID admin tidak ditemukan."); return;
       }
       
       const dataToUpdate = { 
@@ -300,17 +314,19 @@ const simpanAdmin = async () => {
           await changeRole(userId, adminId, newRole); 
         } catch (roleError) {
           console.warn("Gagal mengganti role:", roleError);
-          roleErrorMessage = roleError.response?.data?.message || ")";
+          roleErrorMessage = roleError.response?.data?.message || "";
         }
       }
-      let finalMessage = "Data admin berhasil diperbarui!";
+      
       let errors = [];
       if (passwordErrorMessage) errors.push(passwordErrorMessage);
       if (roleErrorMessage) errors.push(roleErrorMessage);
+      
       if (errors.length > 0) {
-        finalMessage = `Data admin diperbarui, TAPI: ${errors.join(', ')}`;
+        await showSuccess("Update Sebagian", `Data diperbarui, namun: ${errors.join(', ')}`);
+      } else {
+        await showSuccess("Berhasil", "Data admin berhasil diperbarui!");
       }
-      alert(finalMessage);
 
     } else {
       const dataToCreate = {
@@ -318,30 +334,22 @@ const simpanAdmin = async () => {
         email: form.value.email,
         username: form.value.username,
         password: form.value.password,
-        role: "admin", 
+        role: form.value.role,
         nim: null, 
         major: form.value.major.trim() || null, 
         faculty: form.value.faculty.trim() || null
       };
       await register(dataToCreate);
-      alert("Admin baru berhasil ditambahkan!");
+      await showSuccess("Berhasil", "Admin baru berhasil ditambahkan!");
     }
     closeModal();
     
-    if (!editMode.value) {
-      try {
-        const response = await getUsersByRole("admin", 1, 0);
-        totalItems.value = response.total || 0;
-        currentPage.value = totalPages.value; 
-      } catch (e) {
-        fetchAdmins(); 
-      }
-    } else {
-      fetchAdmins(); 
-    }
+  
+    fetchAdmins(); 
+
   } catch (err) {
     console.error("Gagal menyimpan data:", err);
-    alert(err.response?.data?.message || "Terjadi kesalahan.");
+    showError("Gagal", err.response?.data?.message || "Terjadi kesalahan.");
   }
 };
 
@@ -364,21 +372,38 @@ const editAdmin = (admin) => {
 const hapusAdmin = async (admin) => {
   const userId = admin.id || admin.ID || admin._id;
   if (!userId) {
-    alert("Error: ID admin tidak ditemukan."); return;
+    showError("Data Invalid", "Error: ID admin tidak ditemukan."); return;
   }
   
-  if (confirm("Yakin ingin menghapus admin ini?")) {
+  const isConfirmed = await showConfirm(
+    "Konfirmasi Hapus", 
+    "Yakin ingin menghapus admin ini?",
+    "Ya, Hapus"
+  );
+
+  if (isConfirmed) {
     try {
       await deleteUser(userId);
-      alert("Admin berhasil dihapus.");
-      if (adminList.value.length === 1 && currentPage.value > 1) {
+      
+      
+      const oldLength = adminList.value.length;
+      adminList.value = adminList.value.filter(a => (a.id || a.ID || a._id) !== userId);
+      
+      if (adminList.value.length < oldLength) {
+         totalItems.value--;
+      }
+
+      await showSuccess("Berhasil", "Admin berhasil dihapus.");
+
+    
+      if (adminList.value.length === 0 && currentPage.value > 1) {
         currentPage.value--;
       } else {
-        fetchAdmins();
+        if(adminList.value.length === 0) fetchAdmins();
       }
     } catch (err) {
       console.error("Gagal menghapus admin:", err);
-      alert(err.response?.data?.message || err.response?.data || "Gagal menghapus data.");
+      showError("Gagal", err.response?.data?.message || err.response?.data || "Gagal menghapus data.");
     }
   }
 };
