@@ -110,7 +110,6 @@ func OptionValidation(ctx context.Context,
 			return fmt.Errorf("failed to update option at index %d: %w", i, err)
 		}
 	}
-	fmt.Println("skdsksalsal", correctCount)
 	if correctCount != 1 {
 		return fmt.Errorf("exactly one option must be correct")
 	}

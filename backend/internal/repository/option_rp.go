@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 	"latih.in-be/internal/model"
@@ -61,13 +62,38 @@ func (r *optionRepository) GetMany(ctx context.Context, qId int, limit int, offs
 }
 
 func (r *optionRepository) Update(ctx context.Context, o model.Option, id int) (*model.Option, error) {
+	updateData := map[string]interface{}{}
+	if o.OptionLabel != "" {
+		updateData["option_label"] = o.OptionLabel
+	}
+	if o.OptionText != "" {
+		updateData["option_text"] = o.OptionText
+	}
+	if o.QuestionId != 0 {
+		updateData["question_id"] = o.QuestionId
+	}
+
+	if len(updateData) == 0 {
+		return nil, fmt.Errorf("no fields to update")
+	}
+	updateData["is_correct"] = o.IsCorrect
+
 	if err := r.db.WithContext(ctx).
-		Model(model.Option{}).
+		Model(&model.Option{}).
 		Where("id = ?", id).
-		Updates(o).Error; err != nil {
+		Updates(updateData).Error; err != nil {
 		return nil, err
 	}
-	return &o, nil
+
+	var updated model.Option
+	if err := r.db.
+		WithContext(ctx).
+		Model(model.Option{}).
+		First(&updated, id).
+		Error; err != nil {
+		return nil, err
+	}
+	return &updated, nil
 }
 
 func (r *optionRepository) Delete(ctx context.Context, id int) error {
