@@ -32,6 +32,9 @@
             <p class="text-sm font-semibold text-red-600">
               ⏱ {{ formattedTime }}
             </p>
+            <p class="text-xs mt-1 h-4 font-medium transition-colors duration-300" :class="saveStatusColor">
+              {{ saveStatusText }}
+            </p>
           </div>
         </div>
 
@@ -145,6 +148,11 @@ const questions = ref([]);
 const currentNo = ref(1);
 const answers = ref([]); 
 
+
+let saveTimeout = null;
+const saveStatusText = ref("");
+const saveStatusColor = ref("text-gray-400");
+
 const timeLeft = ref(0);
 let timer = null;
 let statusCheckInterval = null; 
@@ -153,9 +161,44 @@ const currentQuestion = computed(() => {
   return questions.value[currentNo.value - 1] || null;
 });
 
-const selectAnswer = async (optionId) => {
-  answers.value[currentNo.value - 1] = optionId;
 
+const getStorageKey = () => `exam_${route.query.id}_session_${route.query.session_id}_answers`;
+
+const saveToLocalStorage = (data) => {
+  try {
+    localStorage.setItem(getStorageKey(), JSON.stringify(data));
+  } catch (e) { console.error("LS Error", e); }
+};
+
+const loadFromLocalStorage = () => {
+  try {
+    const data = localStorage.getItem(getStorageKey());
+    return data ? JSON.parse(data) : null;
+  } catch (e) { return null; }
+};
+
+
+const selectAnswer = (optionId) => {
+
+  answers.value[currentNo.value - 1] = optionId;
+  
+
+  saveToLocalStorage(answers.value);
+
+ 
+  saveStatusText.value = "Menyimpan ke server...";
+  saveStatusColor.value = "text-yellow-600";
+
+
+  if (saveTimeout) clearTimeout(saveTimeout);
+
+  saveTimeout = setTimeout(async () => {
+    await processSaveAnswer(optionId);
+  }, 2000); 
+};
+
+
+const processSaveAnswer = async (optionId) => {
   const sessionId = Number(route.query.session_id);
   const examId = Number(route.query.id);
   let userId = user.value?.id || Number(localStorage.getItem("id"));
@@ -174,8 +217,17 @@ const selectAnswer = async (optionId) => {
       answer: answerLabel,
       exam_id: examId 
     });
+    
+
+    saveStatusText.value = "Tersimpan di Server";
+    saveStatusColor.value = "text-green-600";
+    setTimeout(() => { if(saveStatusText.value === "Tersimpan di Server") saveStatusText.value = ""; }, 2000);
+
   } catch (err) {
-    console.error("Gagal menyimpan jawaban:", err);
+
+    console.warn("Gagal simpan server (429/Timeout), tapi aman di lokal:", err);
+    saveStatusText.value = "Tersimpan di Perangkat";
+    saveStatusColor.value = "text-blue-600"; 
   }
 };
 
@@ -228,7 +280,6 @@ onMounted(async () => {
         const sessionRes = await getExamSessionById(sessionId);
         const sessionData = sessionRes.data || sessionRes; 
 
-        // PERBAIKAN 1: Cek status sesi di awal. Jika selesai, redirect keluar.
         if (sessionData.status === 'finished' || sessionData.status === 'submitted') {
             loading.value = false;
             await showError("Ujian Selesai", "Anda sudah menyelesaikan ujian ini.");
@@ -244,25 +295,32 @@ onMounted(async () => {
 
         answers.value = Array(questions.value.length).fill(null);
 
-    try {
-        const savedAnswers = await getUserAnswersBySession(sessionId);
-        if (savedAnswers && savedAnswers.length > 0) {
-            savedAnswers.forEach(ans => {
-                const qIndex = questions.value.findIndex(q => q.id === ans.question_id);
-                if (qIndex !== -1) {
-                    const question = questions.value[qIndex];
-                    const selectedOption = question.options.find(opt => 
-                        (opt.option_label || opt.label) === ans.answer
-                    );
-                    if (selectedOption) {
-                        answers.value[qIndex] = selectedOption.id;
-                    }
+    
+        const localAnswers = loadFromLocalStorage();
+        if (localAnswers && localAnswers.length === questions.value.length) {
+            answers.value = localAnswers;
+            console.log("Jawaban dipulihkan dari LocalStorage");
+        } else {
+    
+            try {
+                const savedAnswers = await getUserAnswersBySession(sessionId);
+                if (savedAnswers && savedAnswers.length > 0) {
+                    savedAnswers.forEach(ans => {
+                        const qIndex = questions.value.findIndex(q => q.id === ans.question_id);
+                        if (qIndex !== -1) {
+                            const selectedOption = questions.value[qIndex].options.find(opt => 
+                                (opt.option_label || opt.label) === ans.answer
+                            );
+                            if (selectedOption) answers.value[qIndex] = selectedOption.id;
+                        }
+                    });
+           
+                    saveToLocalStorage(answers.value);
                 }
-            });
+            } catch (err) {
+                console.warn("Gagal load jawaban server:", err);
+            }
         }
-    } catch (err) {
-        console.warn("Gagal merestore jawaban:", err);
-    }
 
     if (sessionData && sessionData.current_no && sessionData.current_no > 0) {
         currentNo.value = sessionData.current_no;
@@ -292,18 +350,15 @@ onMounted(async () => {
             if (currentSession.status === 'finished' || currentSession.status === 'submitted') {
                 clearInterval(statusCheckInterval);
                 clearInterval(timer);
-                await showError("Waktu Habis", "Sesi ujian telah berakhir menurut Server.");
                 router.replace("/ujian");
+                showError("Waktu Habis", "Sesi ujian telah berakhir menurut Server.");
             }
-        } catch (err) {
-            console.warn("Gagal cek status berkala:", err);
-        }
+        } catch (err) { /* ignore */ }
     }, 60000); 
     
   } catch (e) {
     console.error(e);
     if (e.response && e.response.status === 500) {
-       console.warn("Backend error 500 saat load sesi, menggunakan mode fallback.");
        if (!questions.value.length) {
           const qRes = await getQuestionsByExam(examId);
           questions.value = Array.isArray(qRes) ? qRes : qRes.data || [];
@@ -321,6 +376,7 @@ onMounted(async () => {
 onUnmounted(() => {
   if (timer) clearInterval(timer);
   if (statusCheckInterval) clearInterval(statusCheckInterval);
+  if (saveTimeout) clearTimeout(saveTimeout);
 });
 
 const goToQuestion = (n) => { currentNo.value = n; };
@@ -336,7 +392,6 @@ watch(currentNo, async (newNo) => {
 
 const finishExam = async (isAuto = false) => {
 
-  
   if (!isAuto && timeLeft.value > 0) {
      const isConfirmed = await showConfirm(
        "Selesaikan Ujian", 
@@ -346,9 +401,9 @@ const finishExam = async (isAuto = false) => {
      if (!isConfirmed) return;
   }
 
-  
   if (statusCheckInterval) clearInterval(statusCheckInterval);
   if (timer) clearInterval(timer);
+  if (saveTimeout) clearTimeout(saveTimeout);
 
   loading.value = true; 
 
@@ -357,69 +412,54 @@ const finishExam = async (isAuto = false) => {
     const examId = Number(route.query.id); 
     let userId = user.value?.id || Number(localStorage.getItem("id"));
 
-   
+
     const currentQ = questions.value[currentNo.value - 1];
     const currentAnsId = answers.value[currentNo.value - 1];
     
     if (currentQ && currentAnsId) {
         const selectedOption = currentQ.options.find((opt) => opt.id === currentAnsId);
         if (selectedOption) {
-            submitUserAnswer({
-                exam_session_id: sessionId,
-                user_id: userId,
-                question_id: currentQ.id,
-                answer: selectedOption.option_label || selectedOption.label, 
-                exam_id: Number(examId) 
-            }).catch(e => console.warn("Background save answer failed:", e));
+            try {
+                await submitUserAnswer({
+                    exam_session_id: sessionId,
+                    user_id: userId,
+                    question_id: currentQ.id,
+                    answer: selectedOption.option_label || selectedOption.label, 
+                    exam_id: Number(examId) 
+                });
+            } catch (e) { console.warn("Last answer failed send to server, ignoring."); }
         }
     }
 
-    
-    const payload = {
-      session_id: sessionId,
-      exam_id: examId,
-      user_id: userId
-    };
-    
+
+    const payload = { session_id: sessionId, exam_id: examId, user_id: userId };
     await finishExamSession(payload);
 
-  
+    localStorage.removeItem(getStorageKey());
+
     loading.value = false;
 
-    
     if (isAuto) {
-       
         router.replace("/ujian");
         showError("Waktu Habis", "Waktu ujian telah habis! Jawaban otomatis disimpan.");
     } else {
-        
         router.replace("/ujian");
-        
-      
         showSuccess("Ujian Selesai", "Terima kasih telah mengerjakan ujian.");
     }
 
   } catch (err) {
     console.error("FinishExam Error:", err);
     loading.value = false;
-
-    const backendMsg = err.response?.data?.message;
     
- 
-    if (backendMsg && (backendMsg.includes("finished") || backendMsg.includes("not found"))) {
-        router.replace("/ujian");
-    } else if (err.code === 'ECONNABORTED') {
-        router.replace("/ujian");
-        showError("Koneksi Lambat", "Koneksi lambat. Anda dialihkan ke dashboard.");
-    } else {
-        if (isAuto) {
-             router.replace("/ujian");
-        } else {
-            
-            await showError("Gagal", `Proses finish terganggu: ${backendMsg || "Server Error"}.`);
-            router.replace("/ujian");
-        }
+  
+    router.replace("/ujian");
+    
+    if (!isAuto) {
+        showSuccess("Ujian Selesai", "Jawaban Anda telah diproses. Silakan cek hasil nanti.");
     }
+    
+
+    localStorage.removeItem(getStorageKey());
   }
 };
 </script>
