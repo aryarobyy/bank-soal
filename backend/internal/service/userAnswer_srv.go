@@ -58,7 +58,6 @@ func (s *userAnswerService) Create(ctx context.Context, userAnswer *model.UserAn
 		if err := s.repo.Create(ctx, userAnswer); err != nil {
 			return fmt.Errorf("failed to create user answer: %w", err)
 		}
-		return err
 	}
 
 	if existing != nil {
