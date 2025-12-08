@@ -1,3 +1,8 @@
 .env
 .build.env
 /cert
+Dockerfile
+docker.compose.yaml
+optimize.md
+latih.in-be.exe
+.dockerignore
