@@ -134,7 +134,7 @@ func (h *UserController) GetByEmail(c *gin.Context) {
 
 	email := c.Query("email")
 	if email == "" {
-		helper.Error(c, http.StatusBadRequest, "invalid user email")
+		helper.Error(c, http.StatusBadRequest, "invalid email")
 		return
 	}
 	if len(email) > 512 {
@@ -254,18 +254,6 @@ func (h *UserController) Update(c *gin.Context) {
 	if academicYear != "" && len(academicYear) != 4 {
 		helper.Error(c, http.StatusBadRequest, "academic year must be 4 digits")
 		return
-	}
-
-	if roleForm != "" {
-		allowedRoles := map[string]bool{
-			"admin":    true,
-			"user":     true,
-			"lecturer": true,
-		}
-		if !allowedRoles[roleForm] {
-			helper.Error(c, http.StatusBadRequest, "invalid role")
-			return
-		}
 	}
 
 	if statusForm != "" {
@@ -393,7 +381,7 @@ func (h *UserController) GetByNip(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	nip := c.Query("nip")
-	if len(nip) != 18 {
+	if nip != "" && len(nip) != 18 {
 		helper.Error(c, http.StatusBadRequest, "invalid nip")
 		return
 	}
@@ -427,7 +415,7 @@ func (h *UserController) GetByUsn(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	username := c.Query("username")
-	if len(username) >= 10 {
+	if username != "" && len(username) >= 10 {
 		helper.Error(c, http.StatusBadRequest, "invalid username")
 		return
 	}
@@ -468,7 +456,7 @@ func (h *UserController) GetByName(c *gin.Context) {
 
 	name := c.Query("name")
 	users, total, err := h.service.GetByName(ctx, name, limit, offset)
-	if len(name) > 256 {
+	if name != "" && len(name) > 256 {
 		helper.Error(c, http.StatusBadRequest, "invalid name")
 		return
 	}
