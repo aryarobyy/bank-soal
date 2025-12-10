@@ -337,3 +337,23 @@ func (h *QuestionController) GetBySubject(c *gin.Context) {
 
 	helper.Success(c, gin.H{"data": questionsRes, "total": total}, "data found")
 }
+
+func (h *QuestionController) GetRandomQuestion(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	totalStr := c.Query("total")
+	subjectIdStr := c.Query("subject_id")
+
+	total := helper.BindToInt(totalStr)
+	subjectId := helper.BindToInt(subjectIdStr)
+
+	data, err := h.service.GetRandomQuestion(ctx, total, &subjectId)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	questionsRes := response.QuestionsResponse(data)
+
+	helper.Success(c, questionsRes, "data found")
+}

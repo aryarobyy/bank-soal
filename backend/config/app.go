@@ -58,7 +58,7 @@ func NewApp(db *gorm.DB) *App {
 
 	userService := service.NewUserService(userRepo)
 	examService := service.NewExamService(examRepo, userRepo, questionRepo)
-	questionService := service.NewQuestionService(questionRepo, userRepo, optionRepo)
+	questionService := service.NewQuestionService(questionRepo, userRepo, optionRepo, subjectRepo)
 	// optionService := service.NewOptionService(optionRepo)
 	// examScoreService := service.NewExamScoreService(examScoreRepo)
 	examSessionService := service.NewExamSessionService(examSessionRepo, examRepo, userAnswerRepo, questionRepo)

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"math/rand"
 
 	"gorm.io/gorm"
 	"latih.in-be/internal/model"
@@ -21,6 +22,8 @@ type QuestionRepository interface {
 	GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, int64, error)
 	GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, int64, error)
 	GetByExamId(ctx context.Context, examId int) ([]model.Question, error)
+	GetRandomQuestionBySubject(ctx context.Context, total int, subjectId int) ([]model.Question, error)
+	GetRandomQuestion(ctx context.Context, total int) ([]model.Question, error)
 }
 
 type questionRepository struct {
@@ -293,4 +296,74 @@ func (r *questionRepository) GetByExamId(ctx context.Context, examId int) ([]mod
 	}
 
 	return exam.Questions, nil
+}
+
+func (r *questionRepository) GetRandomQuestionBySubject(ctx context.Context, total int, subjectId int) ([]model.Question, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&model.Question{}).
+		Where("subject_id = ?", subjectId).
+		Count(&count).Error; err != nil {
+		return nil, err
+	}
+
+	if count == 0 {
+		return []model.Question{}, nil
+	}
+
+	if int64(total) > count {
+		total = int(count)
+	}
+
+	maxOffset := int(count) - total
+	offset := 0
+	if maxOffset > 0 {
+		offset = rand.Intn(maxOffset + 1)
+	}
+
+	questions := []model.Question{}
+	if err := r.db.WithContext(ctx).
+		Preload("Options").
+		Where("subject_id = ?", subjectId).
+		Offset(offset).
+		Limit(total).
+		Find(&questions).Error; err != nil {
+		return nil, err
+	}
+
+	return questions, nil
+}
+
+func (r *questionRepository) GetRandomQuestion(ctx context.Context, total int) ([]model.Question, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&model.Question{}).
+		Count(&count).Error; err != nil {
+		return nil, err
+	}
+
+	if count == 0 {
+		return []model.Question{}, nil
+	}
+
+	if int64(total) > count {
+		total = int(count)
+	}
+
+	maxOffset := int(count) - total
+	offset := 0
+	if maxOffset > 0 {
+		offset = rand.Intn(maxOffset + 1)
+	}
+
+	questions := []model.Question{}
+	if err := r.db.WithContext(ctx).
+		Preload("Options").
+		Offset(offset).
+		Limit(total).
+		Find(&questions).Error; err != nil {
+		return nil, err
+	}
+
+	return questions, nil
 }

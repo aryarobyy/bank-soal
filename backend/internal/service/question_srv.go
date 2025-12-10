@@ -27,12 +27,14 @@ type QuestionService interface {
 	GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, int64, error)
 	GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, int64, error)
 	GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, int64, error)
+	GetRandomQuestion(ctx context.Context, total int, subjectId *int) ([]model.Question, error)
 }
 
 type questionService struct {
-	repo     repository.QuestionRepository
-	userRepo repository.UserRepository
-	optRepo  repository.OptionRepository
+	repo        repository.QuestionRepository
+	userRepo    repository.UserRepository
+	optRepo     repository.OptionRepository
+	subjectRepo repository.SubjectRepository
 }
 
 type optionRepoAdapter struct {
@@ -55,11 +57,17 @@ func (a optionRepoAdapter) Update(ctx context.Context, opt model.Option, id int)
 	return res, nil
 }
 
-func NewQuestionService(repo repository.QuestionRepository, userRepo repository.UserRepository, optRepo repository.OptionRepository) QuestionService {
+func NewQuestionService(
+	repo repository.QuestionRepository,
+	userRepo repository.UserRepository,
+	optRepo repository.OptionRepository,
+	subjectRepo repository.SubjectRepository,
+) QuestionService {
 	return &questionService{
-		repo:     repo,
-		userRepo: userRepo,
-		optRepo:  optRepo,
+		repo:        repo,
+		userRepo:    userRepo,
+		optRepo:     optRepo,
+		subjectRepo: subjectRepo,
 	}
 }
 
@@ -349,4 +357,45 @@ func (s *questionService) GetBySubject(ctx context.Context, subjectId int, limit
 		return nil, 0, fmt.Errorf("data with subjectId %d not found: %w", subjectId, err)
 	}
 	return data, total, nil
+}
+
+func (s *questionService) GetRandomQuestion(ctx context.Context, total int, subjectId *int) ([]model.Question, error) {
+	if total <= 0 {
+		return nil, fmt.Errorf("total must be greater than zero")
+	}
+
+	if subjectId != nil {
+		if *subjectId <= 0 {
+			return nil, fmt.Errorf("invalid subject id")
+		}
+		_, err := s.subjectRepo.GetById(ctx, *subjectId)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return nil, fmt.Errorf("subject with id %d not found", *subjectId)
+			}
+			return nil, fmt.Errorf("failed to validate subject: %w", err)
+		}
+
+		questions, err := s.repo.GetRandomQuestionBySubject(ctx, total, *subjectId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch questions by subject: %w", err)
+		}
+
+		if len(questions) == 0 {
+			return nil, fmt.Errorf("no questions available for subject %d", *subjectId)
+		}
+
+		return questions, nil
+	}
+
+	questions, err := s.repo.GetRandomQuestion(ctx, total)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch random questions: %w", err)
+	}
+
+	if len(questions) == 0 {
+		return nil, fmt.Errorf("no questions available")
+	}
+
+	return questions, nil
 }

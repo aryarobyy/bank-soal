@@ -67,7 +67,7 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 
 	existingEmail, _ := s.repo.GetByEmail(ctx, data.Email)
 	if data.Email != "" && existingEmail != nil {
-		return fmt.Errorf("email %s already usedss", data.Email)
+		return fmt.Errorf("email %s already used", data.Email)
 	}
 
 	existingUsn, _ := s.repo.GetByUsn(ctx, data.Username)
