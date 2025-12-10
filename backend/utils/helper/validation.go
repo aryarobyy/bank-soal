@@ -87,18 +87,30 @@ func GetPaginationQuery(c *gin.Context, defaultLimit int, defaultOffset int) (in
 	return limit, offset, nil
 }
 
-func DetectLoginType(id string) string {
-	var (
-		nipRegex = regexp.MustCompile(`^(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])(19|20)\d{2}(0[1-9]|1[0-2])[12]\d{3}$`)
-		nimRegex = regexp.MustCompile(`^(G1A0\d{5}|Y1G0\d{5})$`)
-	)
+func IsNipValid(nip string) bool {
+	if len(nip) > 18 {
+		return false
+	}
+	nipRegex := regexp.MustCompile(`^(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])(19|20)\d{2}(0[1-9]|1[0-2])[12]\d{3}$`)
 
-	switch {
-	case nipRegex.MatchString(id):
+	return nipRegex.MatchString(nip)
+}
+
+func IsNimValid(nim string) bool {
+	if len(nim) > 9 {
+		return false
+	}
+	nimRegex := regexp.MustCompile(`^(G1A0\d{5}|Y1G0\d{5})$`)
+
+	return nimRegex.MatchString(nim)
+}
+
+func DetectLoginType(id string) string {
+	if len(id) == 18 && IsNipValid(id) {
 		return "nip"
-	case nimRegex.MatchString(id):
+	} else if len(id) == 9 && IsNimValid(id) {
 		return "nim"
-	default:
+	} else {
 		return "username"
 	}
 }

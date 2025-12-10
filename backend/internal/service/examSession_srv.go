@@ -192,7 +192,6 @@ func (s *examSessionService) calculateScore(ctx context.Context, userId, session
 
 	userScore := 0
 	for _, answer := range userAnswers {
-		fmt.Println("skaksdosak saksdk", answer.Id, answer.QuestionId, answer.IsCorrect)
 		if answer.IsCorrect {
 			question, err := s.questionRepo.GetById(ctx, answer.QuestionId)
 			if err != nil {
@@ -201,7 +200,6 @@ func (s *examSessionService) calculateScore(ctx context.Context, userId, session
 			userScore += question.Score
 		}
 	}
-	fmt.Print("tsaysadus saskas", userScore, maxScore)
 	return userScore, maxScore, nil
 }
 

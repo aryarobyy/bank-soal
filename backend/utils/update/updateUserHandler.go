@@ -9,48 +9,69 @@ import (
 	"latih.in-be/utils/helper"
 )
 
-func ValidateAuthorization(effectiveRole model.Role, oldUser *model.User, data model.UpdateUser, requesterRole model.Role, currentId int) error {
-	if requesterRole != model.RoleAdmin && requesterRole != model.RoleSuperAdmin {
-		if effectiveRole != "" && effectiveRole != oldUser.Role {
+func ValidateAuthorization(
+	effectiveRole model.Role,
+	oldUser *model.User,
+	data model.UpdateUser,
+	requesterRole model.Role,
+	currentId int,
+) error {
+
+	targetRole := oldUser.Role
+
+	if requesterRole == model.RoleUser || requesterRole == model.RoleLecturer {
+		if effectiveRole != "" && effectiveRole != targetRole {
 			return fmt.Errorf("you are not allowed to change role")
 		}
+		return nil
 	}
 
-	if data.Username != nil && *data.Username != "" {
-		if requesterRole != model.RoleAdmin && requesterRole != model.RoleSuperAdmin {
-			return fmt.Errorf("username only for admin")
+	if requesterRole == model.RoleSuperAdmin {
+		if targetRole == model.RoleSuperAdmin {
+			return fmt.Errorf("super admin cannot modify another super admin")
 		}
-	}
 
-	if data.Nim != nil && *data.Nim != "" {
-		if effectiveRole != model.RoleUser {
-			return fmt.Errorf("nim only for user role")
+		if effectiveRole != "" {
+			if effectiveRole != model.RoleAdmin &&
+				effectiveRole != model.RoleLecturer &&
+				effectiveRole != model.RoleUser {
+				return fmt.Errorf("invalid role assignment")
+			}
 		}
-	}
 
-	if data.Nip != nil && *data.Nip != "" {
-		if effectiveRole != model.RoleLecturer {
-			return fmt.Errorf("nip only for lecturer role")
+		if modifyingOtherFields(data) {
+			return fmt.Errorf("super admin cannot update fields other than role")
 		}
+
+		return nil
 	}
 
 	if requesterRole == model.RoleAdmin {
-		if oldUser.Role == model.RoleSuperAdmin {
-			return fmt.Errorf("admin cannot edit super admins")
-		} else if oldUser.Role == model.RoleAdmin && currentId != oldUser.Id {
-			return fmt.Errorf("admin cannot edit another admin")
+
+		if targetRole == model.RoleAdmin || targetRole == model.RoleSuperAdmin {
+			return fmt.Errorf("admin cannot modify %s", targetRole)
 		}
+
+		if effectiveRole != "" {
+			if effectiveRole == model.RoleAdmin || effectiveRole == model.RoleSuperAdmin {
+				return fmt.Errorf("admin cannot assign elevated roles")
+			}
+		}
+
+		return nil
 	}
 
-	if oldUser.Role == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
-		return fmt.Errorf("user not found")
-	}
+	return fmt.Errorf("invalid requester role")
+}
 
-	if effectiveRole != "" && effectiveRole == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
-		return fmt.Errorf("you cant access this role")
-	}
-
-	return nil
+func modifyingOtherFields(data model.UpdateUser) bool {
+	return data.Name != nil ||
+		data.AcademicYear != nil ||
+		data.Faculty != nil ||
+		data.Email != nil ||
+		data.ImgUrl != nil ||
+		data.ImgDelete != nil ||
+		data.Major != nil
 }
 
 func NormalizeRoleTransition(oldUser *model.User, data *model.UpdateUser, effectiveRole model.Role) {

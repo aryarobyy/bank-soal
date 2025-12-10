@@ -47,6 +47,10 @@ func NewUserService(repo repository.UserRepository) UserService {
 }
 
 func (s *userService) Register(ctx context.Context, data model.RegisterCredential, requesterRole model.Role) error {
+	if requesterRole == model.RoleSuperAdmin && data.Role != model.RoleAdmin {
+		return fmt.Errorf("super admin cannot create non admin")
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(data.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
@@ -97,6 +101,9 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 	case model.RoleUser:
 		if data.Nim == "" {
 			return fmt.Errorf("user must have NIM")
+		}
+		if !helper.IsNimValid(data.Nim) {
+			return fmt.Errorf("invalid nim format")
 		}
 	case model.RoleAdmin:
 	default:
@@ -215,6 +222,10 @@ func (s *userService) GetById(ctx context.Context, id int) (*model.User, error) 
 }
 
 func (s *userService) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+	if !helper.IsValidEmail(email) {
+		return nil, fmt.Errorf("invalid email format")
+	}
+
 	data, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
 		return nil, fmt.Errorf("user with email %s not found: %w", email, err)
@@ -231,10 +242,6 @@ func (s *userService) Update(ctx context.Context, c *gin.Context, data model.Upd
 	oldUser, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
-	}
-
-	if !helper.IsValidName(*data.Name) {
-		return nil, fmt.Errorf("invalid name format")
 	}
 
 	effectiveRole := oldUser.Role
@@ -313,8 +320,8 @@ func (s *userService) GetMany(ctx context.Context, limit int, offset int) ([]mod
 }
 
 func (s *userService) GetByNim(ctx context.Context, nim string, requesterRole model.Role) (*model.User, error) {
-	if len(nim) > 9 {
-		return nil, fmt.Errorf("nim cannot be more than 9 characters: %s", nim)
+	if !helper.IsNimValid(nim) {
+		return nil, fmt.Errorf("invalid nim format")
 	}
 
 	data, err := s.repo.GetByNim(ctx, nim)
@@ -330,8 +337,8 @@ func (s *userService) GetByNim(ctx context.Context, nim string, requesterRole mo
 }
 
 func (s *userService) GetByNip(ctx context.Context, nip string, requesterRole model.Role) (*model.User, error) {
-	if len(nip) != 18 {
-		return nil, fmt.Errorf("nip must be exactly 18 characters: %s", nip)
+	if !helper.IsNipValid(nip) {
+		return nil, fmt.Errorf("invalid nip format")
 	}
 
 	data, err := s.repo.GetByNip(ctx, nip)

@@ -226,16 +226,31 @@ func (s *questionService) Delete(ctx context.Context, id int, userId int) error 
 }
 
 func (s *questionService) CreateWithOptions(ctx context.Context, data model.Question) error {
+	if len(data.Options) > 4 {
+		return fmt.Errorf("option cannot more than 4")
+	}
+
 	if data.Difficulty != "easy" && data.Difficulty != "medium" && data.Difficulty != "hard" {
 		return fmt.Errorf("invalid difficulty")
 	}
 
 	correctCount := 0
+	seenLabels := make(map[string]bool)
 	for _, opt := range data.Options {
 		if opt.IsCorrect {
 			correctCount++
 		}
+		if opt.OptionLabel == "" {
+			return fmt.Errorf("option label cannot be empty")
+		}
+
+		if seenLabels[opt.OptionLabel] {
+			return fmt.Errorf("duplicate option label")
+		}
+
+		seenLabels[opt.OptionLabel] = true
 	}
+
 	if correctCount != 1 {
 		return fmt.Errorf("exactly one option must be correct")
 	}
