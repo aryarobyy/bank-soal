@@ -79,7 +79,10 @@ export const createQuestionFromJson = async (data) => {
   const res = await ApiHandler.post(`${QUESTION}/json`, data);
   return res.data;
 };
-
+export const getRandomQuestions = async (total, subjectId) => {
+  const res = await ApiHandler.get(`/${QUESTION}/random?total=${total}&subject_id=${subjectId}`);
+  return res.data.data;
+};
 
 export const getQuestionsByExam = async (examId, limit = 10, offset = 0) => {
   try {
