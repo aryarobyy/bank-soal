@@ -30,7 +30,7 @@ type UserService interface {
 	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error)
 	GetByRole(ctx context.Context, role string, limit int, offset int, requesterRole string) ([]model.User, int64, error)
 	ChangePassword(ctx context.Context, id int, newPassword string, role model.Role) error
-	ChangeRole(ctx context.Context, id int, role model.Role, userRole model.Role) error
+	ChangeRole(ctx context.Context, id int, user model.ChangeRoleCredential, userRole model.Role) error
 	RefreshToken(ctx context.Context, refreshToken string) (string, error)
 	BulkInsert(ctx context.Context, batchUser model.BulkUserCredential, prefix string, start int, end int) ([]model.BulkUserOutput, error)
 	JsonInput(ctx context.Context, file *multipart.FileHeader) error
@@ -450,14 +450,68 @@ func (s *userService) ChangePassword(ctx context.Context, id int, newPassword st
 	return nil
 }
 
-func (s *userService) ChangeRole(ctx context.Context, id int, role model.Role, requesterRole model.Role) error {
-	if role == model.RoleAdmin && model.Role(requesterRole) != model.RoleSuperAdmin {
+func (s *userService) ChangeRole(
+	ctx context.Context,
+	id int,
+	input model.ChangeRoleCredential,
+	requesterRole model.Role,
+) error {
+
+	if input.Role == model.RoleAdmin && requesterRole != model.RoleSuperAdmin {
 		return fmt.Errorf("you dont have permission to assign admin role")
 	}
 
-	if err := s.repo.ChangeRole(ctx, id, role); err != nil {
+	switch input.Role {
+
+	case model.RoleUser:
+		input.Username = nil
+		input.Nip = nil
+
+		if input.Nim == nil || input.AcademicYear == nil {
+			return fmt.Errorf("nim and academic year are required for user role")
+		}
+
+		if !helper.IsNimValid(*input.Nim) {
+			return fmt.Errorf("nim format invalid")
+		}
+
+		if len(*input.AcademicYear) != 4 {
+			return fmt.Errorf("academic year must be 4 digits")
+		}
+
+	case model.RoleLecturer:
+		input.Username = nil
+		input.Nim = nil
+
+		if input.Nip != nil && !helper.IsNipValid(*input.Nip) {
+			return fmt.Errorf("nip format invalid")
+		}
+
+	case model.RoleAdmin, model.RoleSuperAdmin:
+		input.Nim = nil
+		input.Nip = nil
+		input.Username = nil
+		input.AcademicYear = nil
+
+	default:
+		return fmt.Errorf("invalid role")
+	}
+
+	data := model.User{
+		Role:     input.Role,
+		Nim:      input.Nim,
+		Nip:      input.Nip,
+		Username: input.Username,
+	}
+
+	if input.AcademicYear != nil {
+		data.AcademicYear = *input.AcademicYear
+	}
+
+	if err := s.repo.ChangeRole(ctx, id, data); err != nil {
 		return fmt.Errorf("cannot change role: %w", err)
 	}
+
 	return nil
 }
 

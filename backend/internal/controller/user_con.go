@@ -559,44 +559,32 @@ func (h *UserController) ChangeRole(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.GetById(ctx, id)
-	if err != nil {
-		helper.Error(c, http.StatusNotFound, "user not found")
-		return
-	}
-
-	user.Role = input.Role
-	allowedRoles := map[string]bool{
-		"admin":    true,
-		"user":     true,
-		"lecturer": true,
-	}
-	if !allowedRoles[string(user.Role)] {
-		helper.Error(c, http.StatusBadRequest, "invalid role")
-		return
-	}
-
-	userRole, exists := c.Get("role")
+	roleCtx, exists := c.Get("role")
 	if !exists {
 		helper.Error(c, http.StatusUnauthorized, "role not found in context")
 		return
 	}
 
-	roleStr, ok := userRole.(string)
+	roleStr, ok := roleCtx.(string)
 	if !ok {
 		helper.Error(c, http.StatusBadRequest, "invalid role type")
 		return
 	}
 
-	roleValue := model.Role(roleStr)
+	requesterRole := model.Role(roleStr)
 
-	if err := h.service.ChangeRole(ctx, id, user.Role, roleValue); err != nil {
-		helper.Error(c, http.StatusInternalServerError, "failed to update user role")
+	if err := h.service.ChangeRole(ctx, id, input, requesterRole); err != nil {
+		helper.Error(c, http.StatusForbidden, err.Error())
+		return
+	}
+
+	user, err := h.service.GetById(ctx, id)
+	if err != nil {
+		helper.Error(c, http.StatusInternalServerError, "failed to fetch updated user")
 		return
 	}
 
 	userRes := response.UserResponse(*user)
-
 	helper.Success(c, userRes, "user role updated successfully")
 }
 
