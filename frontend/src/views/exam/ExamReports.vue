@@ -5,97 +5,101 @@
       
       <button
         @click="downloadExcel"
-        :disabled="reports.length === 0"
-        class="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+        :disabled="isDownloading || !selectedExamId"
+        class="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed shadow-sm"
       >
-        <i class="fas fa-file-excel"></i>
-        Unduh Excel
+        <i v-if="isDownloading" class="fas fa-spinner fa-spin"></i>
+        <i v-else class="fas fa-file-excel"></i>
+        {{ isDownloading ? 'Mengunduh...' : 'Unduh Excel (Semua Data)' }}
       </button>
     </div>
 
-    <div class="bg-white p-4 rounded-lg shadow-sm mb-6 border border-blue-100">
+    <div class="bg-white p-6 rounded-lg shadow-sm mb-6 border border-blue-100">
         <label class="block text-sm font-semibold text-gray-700 mb-2">Pilih Ujian:</label>
-        <select 
-            v-model="selectedExamId" 
-            class="w-full md:w-1/2 p-2 border rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-            <option :value="null" disabled>-- Pilih Ujian --</option>
-            <option v-for="exam in examList" :key="exam.id" :value="exam.id">
+        <div class="relative">
+          <select 
+              v-model="selectedExamId" 
+              class="w-full md:w-1/2 p-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+          >
+              <option :value="null" disabled>-- Pilih Ujian --</option>
+              <option v-for="exam in examList" :key="exam.id" :value="exam.id">
                 {{ exam.title }}
-            </option>
-        </select>
+              </option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 md:right-1/2 flex items-center px-3 text-gray-700">
+            <i class="fas fa-chevron-down text-xs"></i>
+          </div>
+        </div>
     </div>
 
-    <div v-if="loading" class="text-center py-10 text-gray-500">Memuat data laporan...</div>
-    <div v-else-if="error" class="text-center py-10 text-red-500">{{ error }}</div>
+    <div v-if="loading" class="text-center py-12">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p class="text-gray-500">Memuat data laporan...</p>
+    </div>
 
-    <div v-else class="bg-white p-6 rounded-xl shadow-md overflow-x-auto">
-      <div v-if="!selectedExamId" class="text-center py-10 text-gray-500">
-        Silakan pilih ujian terlebih dahulu.
-      </div>
-      
-      <div v-else>
-        <div class="mb-4 text-sm text-gray-600 flex justify-between items-center">
-            <span>Halaman <strong>{{ currentPage }}</strong> dari <strong>{{ totalPages }}</strong></span>
-            <span>Total Data: <strong>{{ totalItems }}</strong></span>
-        </div>
+    <div v-else-if="reports.length === 0 && selectedExamId" class="text-center py-12 bg-white rounded-lg shadow-sm border border-dashed border-gray-300">
+        <i class="fas fa-clipboard-list text-4xl text-gray-300 mb-3"></i>
+        <p class="text-gray-500">Belum ada data nilai untuk halaman ini.</p>
+    </div>
 
-        <table class="w-full border-collapse text-sm">
-            <thead>
-            <tr class="bg-[#f5f7ff] text-gray-600">
-                <th class="p-3 text-left">No</th>
-                <th class="p-3 text-left">Nama Mahasiswa</th> 
-                <th class="p-3 text-left">Judul Ujian</th>
-                <th class="p-3 text-left">Score</th>
-                <th class="p-3 text-left">Status</th>
-                <th class="p-3 text-left">Tanggal Selesai</th>
+    <div v-else-if="reports.length > 0" class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wider">
+            <tr>
+              <th class="p-4 border-b font-semibold text-center w-16">No</th>
+              <th class="p-4 border-b font-semibold">Nama Mahasiswa</th>
+              <th class="p-4 border-b font-semibold text-center">Nilai</th>
+              <th class="p-4 border-b font-semibold text-center">Status</th>
+              <th class="p-4 border-b font-semibold text-center">Waktu Selesai</th>
             </tr>
-            </thead>
-            <tbody>
-            <tr
-                v-for="(session, index) in reports"
-                :key="session.id"
-                class="border-t hover:bg-[#eef3ff]"
-            >
-                <td class="p-3">{{ (currentPage - 1) * limit + index + 1 }}</td>
-                
-                <td class="p-3 font-medium">
-                  {{ usersMap[session.user_id] || `Loading ID: ${session.user_id}...` }}
-                </td>
-                
-                <td class="p-3 text-gray-500">
-                  {{ getExamTitle(session.exam_id) }}
-                </td>
-                
-                <td class="p-3 font-bold text-blue-600">
-                  {{ session.score }}
-                </td>
-                
-                <td class="p-3">
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr v-for="(item, index) in reports" :key="item.id" class="hover:bg-blue-50 transition">
+              <td class="p-4 text-center text-gray-500">
+                {{ (currentPage - 1) * itemsPerPage + index + 1 }}
+              </td>
+              <td class="p-4 font-medium text-gray-800">
+                 {{ usersMap[item.user_id] || 'Memuat...' }}
+                 <span class="text-xs text-gray-400 block font-normal">ID: {{ item.user_id }}</span>
+              </td>
+              <td class="p-4 text-center font-bold text-blue-600 text-lg">
+                {{ item.score }}
+              </td>
+              <td class="p-4 text-center">
                 <span 
-                    class="px-2 py-1 rounded text-xs font-semibold"
-                    :class="session.is_passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                  class="px-3 py-1 rounded-full text-xs font-bold uppercase"
+                  :class="item.is_passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                 >
-                    {{ session.is_passed ? 'Lulus' : 'Tidak Lulus' }}
+                  {{ item.is_passed ? 'Lulus' : 'Tidak Lulus' }}
                 </span>
-                </td>
-
-                <td class="p-3">
-                {{ formatDate(session.finished_at || session.updated_at) }}
-                </td>
+              </td>
+              <td class="p-4 text-center text-gray-500 text-sm">
+                {{ formatDate(item.finished_at) }}
+              </td>
             </tr>
-            <tr v-if="reports.length === 0">
-                <td colspan="6" class="p-8 text-center text-gray-400">
-                Belum ada data untuk ujian ini.
-                </td>
-            </tr>
-            </tbody>
+          </tbody>
         </table>
+      </div>
 
-        <div v-if="totalPages > 1" class="flex justify-end items-center gap-2 mt-6">
-            <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 bg-gray-100 border rounded hover:bg-gray-200 disabled:opacity-50">Prev</button>
-            <span class="text-sm text-gray-600">{{ currentPage }} / {{ totalPages }}</span>
-            <button @click="nextPage" :disabled="currentPage >= totalPages" class="px-3 py-1 bg-gray-100 border rounded hover:bg-gray-200 disabled:opacity-50">Next</button>
+      <div class="flex justify-between items-center p-4 bg-gray-50 border-t">
+        <span class="text-sm text-gray-600">
+           Halaman {{ currentPage }} </span>
+        <div class="flex gap-2">
+            <button 
+                @click="prevPage" 
+                :disabled="currentPage === 1"
+                class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                Prev
+            </button>
+            <button 
+                @click="nextPage" 
+                :disabled="reports.length < itemsPerPage"
+                class="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                Next
+            </button>
         </div>
       </div>
     </div>
@@ -104,135 +108,206 @@
 
 <script setup>
 import { ref, onMounted, watch, computed } from "vue";
+import { useRoute } from "vue-router";
 import * as XLSX from "xlsx";
-import { getAllExam } from "../../provider/exam.provider"; 
-import { getUserById } from "../../provider/user.provider"; 
+
+import { getAllExam, getExamsByCreator } from "../../provider/exam.provider";
 import { getExamSessions } from "../../provider/examsession.provider"; 
+import { getUserById } from "../../provider/user.provider";
+import { useGetCurrentUser } from "../../hooks/useGetCurrentUser"; 
 
-import { usePopup } from "../../hooks/usePopup";
-
-
-const { showSuccess, showError } = usePopup();
-
-const reports = ref([]);
+// --- STATE ---
 const examList = ref([]);
-const usersMap = ref({});
 const selectedExamId = ref(null);
+const reports = ref([]);
+const usersMap = ref({});
 const loading = ref(false);
-const error = ref("");
+const isDownloading = ref(false);
 
 
 const currentPage = ref(1);
-const limit = 10;
-const totalItems = ref(0);
+const itemsPerPage = 10; 
 
-const totalPages = computed(() => {
-    if (totalItems.value === 0) return 1;
-    return Math.ceil(totalItems.value / limit);
-});
+
+const { user } = useGetCurrentUser();
+const route = useRoute();
+
+const isAdminRoute = computed(() => route.path.startsWith('/admin') );
 
 
 const fetchExamList = async () => {
     try {
-        const res = await getAllExam(100, 0);
-        if (Array.isArray(res)) examList.value = res;
-        else if (res.data) examList.value = res.data;
-        else examList.value = [];
-    } catch (e) { console.error(e); }
-};
-
-const getExamTitle = (examId) => {
-    const exam = examList.value.find(e => e.id === examId);
-    return exam ? exam.title : `Exam ID: ${examId}`;
+        let res;
+        if (isAdminRoute.value) {
+            const response = await getAllExam(100, 0); 
+            res = response.data || response;
+        } else {
+            if (!user.value?.id) return;
+            res = await getExamsByCreator(user.value.id, 100, 0);
+        }
+        
+        if (Array.isArray(res)) {
+            examList.value = res;
+        } else if (res && res.data) {
+            examList.value = res.data;
+        } else {
+            examList.value = [];
+        }
+    } catch (e) {
+        console.error("Gagal mengambil daftar ujian:", e);
+    }
 };
 
 
 const fetchReports = async () => {
-  if (!selectedExamId.value) return;
-
-  try {
+    if (!selectedExamId.value) return;
     loading.value = true;
-    error.value = "";
     
-    const offset = (currentPage.value - 1) * limit;
-
-    
-    const result = await getExamSessions(limit, offset, selectedExamId.value);
-    
-    if (result && Array.isArray(result.data)) {
-        reports.value = result.data;
-        totalItems.value = result.total || 0;
-    } else if (Array.isArray(result)) {
+    try {
+        const offset = (currentPage.value - 1) * itemsPerPage;
         
-        reports.value = result;
-        totalItems.value = result.length;
-    } else {
+      
+        const res = await getExamSessions(itemsPerPage, offset, selectedExamId.value);
+        
+        let data = [];
+        
+        if (Array.isArray(res)) {
+            data = res;
+        } else if (res && res.data && Array.isArray(res.data)) {
+            data = res.data; 
+        } else if (res && Array.isArray(res.data)) {
+            data = res.data;
+        }
+
+        reports.value = data;
+        
+     
+        if (data.length > 0) {
+            await fetchUserNames(data);
+        }
+
+    } catch (e) {
+        console.error("Gagal mengambil laporan:", e);
         reports.value = [];
-        totalItems.value = 0;
+    } finally {
+        loading.value = false;
     }
-    
-
-    if (reports.value.length > 0) {
-        await fetchUserNames(reports.value);
-    }
-
-  } catch (err) {
-    console.error(err);
-    error.value = "Gagal memuat data laporan.";
-  
-    showError("Gagal", "Gagal memuat data laporan.");
-    reports.value = [];
-  } finally {
-    loading.value = false;
-  }
 };
 
-const prevPage = () => { if (currentPage.value > 1) { currentPage.value--; fetchReports(); } };
-const nextPage = () => { if (currentPage.value < totalPages.value) { currentPage.value++; fetchReports(); } };
 
-watch(selectedExamId, () => {
-    currentPage.value = 1;
-    reports.value = [];
+const nextPage = () => {
+
+    if (reports.value.length < itemsPerPage) return;
+    currentPage.value++;
     fetchReports();
-});
+};
+
+const prevPage = () => {
+    if (currentPage.value > 1) {
+        currentPage.value--;
+        fetchReports();
+    }
+};
 
 const fetchUserNames = async (reportsData) => {
     const userIds = [...new Set(reportsData.map(r => r.user_id))];
     for (const id of userIds) {
-        if (!usersMap.value[id]) {
+        if (!usersMap.value[id]) { 
             try {
                 const userRes = await getUserById(id);
-                const userName = userRes.data?.name || userRes.name || "Unknown";
+                const userName = userRes.data?.name || userRes.name || "Unknown User";
                 usersMap.value[id] = userName;
-            } catch (e) { usersMap.value[id] = `User ${id}`; }
+            } catch (e) { 
+                usersMap.value[id] = `User ID ${id}`; 
+            }
         }
     }
 };
 
-const formatDate = (d) => d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "-";
+const getExamTitle = (examId) => {
+    const ex = examList.value.find(e => e.id === examId);
+    return ex ? ex.title : `Exam #${examId}`;
+};
+
+const formatDate = (d) => {
+    if (!d) return "-";
+    return new Date(d).toLocaleDateString("id-ID", { 
+        day: "numeric", month: "short", year: "numeric", 
+        hour: "2-digit", minute: "2-digit" 
+    });
+};
+
 
 const downloadExcel = async () => {
+  if (!selectedExamId.value) return;
+  isDownloading.value = true;
+
   try {
-    const dataToExport = reports.value.map((item, index) => ({
+    let allData = [];
+    let offset = 0;
+    const BATCH_LIMIT = 100; 
+    let keepFetching = true;
+
+   
+    while (keepFetching) {
+        const res = await getExamSessions(BATCH_LIMIT, offset, selectedExamId.value);
+        
+        let chunk = [];
+        if (Array.isArray(res)) chunk = res;
+        else if (res && res.data && Array.isArray(res.data)) chunk = res.data;
+        else if (res && Array.isArray(res.data)) chunk = res.data;
+
+        if (chunk.length > 0) {
+            allData = [...allData, ...chunk];
+            offset += BATCH_LIMIT;
+            if (chunk.length < BATCH_LIMIT) keepFetching = false;
+        } else {
+            keepFetching = false;
+        }
+    }
+
+
+    const finishedData = allData.filter(s => s.status === 'finished' || s.status === 'submitted');
+    
+  
+    await fetchUserNames(finishedData);
+
+
+    const dataToExport = finishedData.map((item, index) => ({
       No: index + 1,
-      "Nama Mahasiswa": usersMap.value[item.user_id] || item.user_id,
+      "Nama Mahasiswa": usersMap.value[item.user_id] || `ID: ${item.user_id}`,
       "Judul Ujian": getExamTitle(item.exam_id),
       "Nilai": item.score,
       "Status": item.is_passed ? 'Lulus' : 'Tidak Lulus',
       "Tanggal Selesai": formatDate(item.finished_at)
     }));
 
+
     const ws = XLSX.utils.json_to_sheet(dataToExport);
     const wb = XLSX.utils.book_new();
+    const wscols = [{wch: 5}, {wch: 30}, {wch: 30}, {wch: 10}, {wch: 15}, {wch: 20}];
+    ws['!cols'] = wscols;
+
     XLSX.utils.book_append_sheet(wb, ws, "Laporan Nilai");
-    XLSX.writeFile(wb, `Laporan_Nilai_Page_${currentPage.value}.xlsx`);
+    const fileName = `Laporan_Ujian_${getExamTitle(selectedExamId.value)}.xlsx`.replace(/ /g, "_");
+    XLSX.writeFile(wb, fileName);
     
-    await showSuccess("Berhasil", "File Excel berhasil diunduh.");
-  } catch (err) {
-    console.error(err);
-    showError("Gagal", "Terjadi kesalahan saat mengunduh Excel.");
+  } catch (e) {
+    console.error("Gagal download excel:", e);
+    alert("Gagal mengunduh Excel: " + e.message);
+  } finally {
+    isDownloading.value = false;
   }
 };
 
-onMounted(() => { fetchExamList(); });
+
+watch(selectedExamId, () => {
+    currentPage.value = 1; 
+    reports.value = [];
+    fetchReports();
+});
+
+onMounted(() => {
+    fetchExamList();
+});
 </script>

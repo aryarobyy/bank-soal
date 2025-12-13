@@ -17,16 +17,18 @@
       <p class="text-red-600">{{ error }}</p>
     </div>
 
-    <div v-else class="bg-white shadow rounded-lg overflow-hidden">
+<div v-else class="bg-white shadow rounded-lg overflow-hidden overflow-x-auto">
       <table class="min-w-full border-collapse">
         <thead class="bg-gray-100 text-gray-700 text-sm">
           <tr>
             <th class="px-4 py-3 text-left">No</th>
-            <th class="px-4 py-3 text-left">Nama</th>
+            
+            <th class="px-4 py-3 text-left">Nama / Username</th>
+            
             <th class="px-4 py-3 text-left">Email</th>
-            <th class="px-4 py-3 text-left">Username</th>
             <th class="px-4 py-3 text-left">Role</th>
-            <th class="px-4 py-3 text-left">Tanggal Dibuat</th>
+            <th class="px-4 py-3 text-left">Jurusan</th>
+            <th class="px-4 py-3 text-left">Fakultas</th>
             <th class="px-4 py-3 text-left">Aksi</th>
           </tr>
         </thead>
@@ -37,9 +39,13 @@
             class="border-t hover:bg-gray-50 transition"
           >
             <td class="px-4 py-3">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-            <td class="px-4 py-3 font-medium">{{ admin.name }}</td>
+            
+            <td class="px-4 py-3 font-medium">
+              <div class="text-gray-900">{{ admin.name }}</div>
+              <div class="text-xs text-gray-500 font-normal">{{ admin.username }}</div>
+            </td>
+
             <td class="px-4 py-3">{{ admin.email }}</td>
-            <td class="px-4 py-3">{{ admin.username }}</td>
             <td class="px-4 py-3">
               <span 
                 :class="roleClass(admin.role)" 
@@ -48,17 +54,19 @@
                 {{ admin.role }}
               </span>
             </td>
-            <td class="px-4 py-3">{{ new Date(admin.created_at).toLocaleDateString("id-ID") }}</td>
-            <td class="px-4 py-3">
+            <td class="px-4 py-3">{{ admin.major || '-' }}</td>
+            <td class="px-4 py-3">{{ admin.faculty || '-' }}</td>
+            
+            <td class="px-4 py-3 flex gap-2">
               <button
                 @click="editAdmin(admin)"
-                class="px-3 py-1 bg-yellow-400 text-white rounded-md hover:bg-yellow-500 mr-2 transition"
+                class="px-3 py-1 bg-yellow-400 text-white rounded-md hover:bg-yellow-500 transition text-xs"
               >
                 Edit
               </button>
               <button
                 @click="hapusAdmin(admin)"
-                class="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                class="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition text-xs"
               >
                 Hapus
               </button>
@@ -75,7 +83,7 @@
 
     <div v-if="!loading && totalPages > 1" class="flex justify-between items-center mt-6">
       <span class="text-sm text-gray-700">
-        Halaman <span class="font-semibold">{{ currentPage }}</span> dari <span class="font-semibold">{{ totalPages }}</span> (Total <span class="font-semibold">{{ totalItems }}</span> admin)
+        Halaman <span class="font-semibold">{{ currentPage }}</span> dari <span class="font-semibold">{{ totalPages }}</span>
       </span>
       <div class="flex gap-1">
         <button
@@ -83,14 +91,14 @@
           :disabled="currentPage === 1"
           class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          &lt; Sebelumnya
+          &lt; Prev
         </button>
         <button
           @click="nextPage"
           :disabled="currentPage === totalPages"
           class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Berikutnya &gt;
+          Next &gt;
         </button>
       </div>
     </div>
@@ -99,7 +107,7 @@
       v-if="showModal"
       class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50"
     >
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-semibold mb-4">
           {{ editMode ? "Edit Admin" : "Tambah Admin" }}
         </h3>
@@ -107,60 +115,110 @@
         <form @submit.prevent="simpanAdmin">
           <div class="mb-3">
             <label class="block mb-1 text-sm font-medium text-gray-700">Nama</label>
-            <input v-model="form.name" type="text" required class="w-full p-2 border rounded-md"/>
+            <input 
+              v-model="form.name" 
+              type="text" 
+              required 
+              class="w-full p-2 border rounded-md disabled:bg-gray-100 disabled:text-gray-500" 
+              :disabled="editMode && form.role !== 'admin'" 
+            />
+            <small v-if="editMode && form.role !== 'admin'" class="text-xs text-red-500 block mt-1">
+              *Nama tidak dapat diedit saat ganti role.
+            </small>
           </div>
+          
           <div class="mb-3">
             <label class="block mb-1 text-sm font-medium text-gray-700">Email</label>
-            <input v-model="form.email" type="email" required class="w-full p-2 border rounded-md"/>
+            <input 
+              v-model="form.email" 
+              type="email" 
+              required 
+              class="w-full p-2 border rounded-md disabled:bg-gray-100 disabled:text-gray-500" 
+              :disabled="editMode && form.role !== 'admin'" 
+            />
           </div>
 
           <div class="mb-3">
             <label class="block mb-1 text-sm font-medium text-gray-700">Username</label>
-            <input v-model="form.username" type="text" required class="w-full p-2 border rounded-md"/>
+            <input 
+              v-model="form.username" 
+              type="text" 
+              required 
+              class="w-full p-2 border rounded-md disabled:bg-gray-100 disabled:text-gray-500" 
+              :disabled="editMode && form.role !== 'admin'" 
+            />
           </div>
 
-          <template v-if="!editMode">
-            <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700">Password</label>
-              <input v-model="form.password" type="password" required class="w-full p-2 border rounded-md"/>
-            </div>
+          <div class="mb-3 pt-2">
+            <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
+            <select v-model="form.role" class="w-full p-2 border rounded-md bg-white">
+              <option v-for="role in availableRoles" :key="role" :value="role">
+                {{ role }}
+              </option>
+            </select>
+          </div>
 
-            <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
-              <select v-model="form.role" class="w-full p-2 border rounded-md bg-white">
-                <option v-for="role in availableRoles" :key="role" :value="role">
-                  {{ role }}
-                </option>
-              </select>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan</label>
+              <input 
+                v-model="form.major" 
+                type="text" 
+                placeholder="Contoh: Informatika" 
+                class="w-full p-2 border rounded-md" 
+                required
+              />
             </div>
-            
-            <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700">Jurusan (Major)</label>
-              <input v-model="form.major" type="text" class="w-full p-2 border rounded-md" />
+            <div>
+              <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas</label>
+              <input 
+                v-model="form.faculty" 
+                type="text" 
+                placeholder="Contoh: Teknik" 
+                class="w-full p-2 border rounded-md" 
+                required
+              />
             </div>
-            <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700">Fakultas (Faculty)</label>
-              <input v-model="form.faculty" type="text" class="w-full p-2 border rounded-md" />
+          </div>
+
+          <template v-if="form.role === 'user'">
+            <div class="p-3 bg-blue-50 rounded-md mb-3 border border-blue-100">
+                <h4 class="text-xs font-bold text-blue-700 mb-2 uppercase tracking-wide">Data Akademik Mahasiswa</h4>
+                <div class="mb-3">
+                    <label class="block mb-1 text-sm font-medium text-gray-700">NIM <span class="text-red-500">*</span></label>
+                    <input v-model="form.nim" type="text" placeholder="NIM" class="w-full p-2 border rounded-md" />
+                </div>
+                <div class="mb-3">
+                    <label class="block mb-1 text-sm font-medium text-gray-700">Angkatan <span class="text-red-500">*</span></label>
+                    <input v-model="form.academic_year" type="text" placeholder="2024" maxlength="4" class="w-full p-2 border rounded-md" />
+                </div>
             </div>
           </template>
 
-          <template v-else>
-            <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700">Password Baru</label>
-              <input v-model="form.password" type="password" class="w-full p-2 border rounded-md" placeholder="Kosongkan jika tidak ingin diubah"/>
-            </div>
-            
-            <div class="mb-3">
-              <label class="block mb-1 text-sm font-medium text-gray-700">Ubah Role</label>
-              <select v-model="form.role" class="w-full p-2 border rounded-md bg-white">
-                <option v-for="role in availableRoles" :key="role" :value="role">
-                  {{ role }}
-                </option>
-              </select>
+          <template v-if="form.role === 'lecturer'">
+            <div class="p-3 bg-green-50 rounded-md mb-3 border border-green-100">
+                <h4 class="text-xs font-bold text-green-700 mb-2 uppercase tracking-wide">Data Dosen</h4>
+                <div class="mb-3">
+                    <label class="block mb-1 text-sm font-medium text-gray-700">NIP <span class="text-red-500">*</span></label>
+                    <input v-model="form.nip" type="text" placeholder="NIP 18 Digit" maxlength="18" class="w-full p-2 border rounded-md" />
+                </div>
             </div>
           </template>
+
+          <div class="mb-3 border-t pt-3">
+            <label class="block mb-1 text-sm font-medium text-gray-700">
+              {{ editMode ? "Password Baru (Opsional)" : "Password" }}
+            </label>
+            <input 
+              v-model="form.password" 
+              type="password" 
+              :required="!editMode" 
+              class="w-full p-2 border rounded-md" 
+              :placeholder="editMode ? 'Isi untuk ubah password' : ''"
+            />
+          </div>
           
-          <div class="flex justify-end gap-2 mt-4">
+          <div class="flex justify-end gap-2 mt-6">
             <button
               type="button" @click="closeModal"
               class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition"
@@ -171,7 +229,7 @@
               type="submit"
               class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition"
             >
-              {{ editMode ? "Simpan" : "Tambah" }}
+              {{ editMode ? "Simpan Perubahan" : "Simpan Admin" }}
             </button>
           </div>
         </form>
@@ -188,14 +246,13 @@ import {
   updateUser,
   deleteUser,
   changePassword,
-  changeRole,
+  changeRole, 
 } from "../../provider/user.provider.js";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
-
 import { usePopup } from "../../hooks/usePopup";
 
-
 const { showSuccess, showError, showConfirm } = usePopup();
+
 
 const adminList = ref([]);
 const loading = ref(true);
@@ -214,6 +271,8 @@ const initialFormState = {
   password: "",
   role: "admin", 
   nim: null, 
+  nip: null,          
+  academic_year: null, 
   major: "",   
   faculty: ""  
 };
@@ -221,13 +280,13 @@ const form = ref({ ...initialFormState });
 
 const { user: storedUser } = useGetCurrentUser();
 
+
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
 const totalItems = ref(0);
 
-const totalPages = computed(() => {
-  return Math.ceil(totalItems.value / itemsPerPage.value);
-});
+const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value));
+
 
 const fetchAdmins = async () => {
   try {
@@ -237,8 +296,8 @@ const fetchAdmins = async () => {
     adminList.value = response.data || [];
     totalItems.value = response.total || 0;
   } catch (err) {
-    console.error("Gagal mengambil data admin:", err);
-    error.value = "Tidak dapat memuat data. Silakan coba lagi nanti.";
+    console.error("Fetch error:", err);
+    error.value = "Gagal memuat data.";
   } finally {
     loading.value = false;
   }
@@ -247,21 +306,11 @@ const fetchAdmins = async () => {
 onMounted(fetchAdmins);
 
 watch(currentPage, (newPage, oldPage) => {
-  if (newPage !== oldPage) {
-    fetchAdmins();
-  }
+  if (newPage !== oldPage) fetchAdmins();
 });
 
-const prevPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--;
-  }
-};
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++;
-  }
-};
+const prevPage = () => { if (currentPage.value > 1) currentPage.value--; };
+const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++; };
 
 const openAddModal = () => {
   editMode.value = false;
@@ -280,76 +329,89 @@ const simpanAdmin = async () => {
     const userId = form.value.id;
     const adminId = storedUser.value?.id || storedUser.value?.ID;
 
-    if (!adminId) {
-      showError("Akses Ditolak", "Error: Sesi Super Admin tidak ditemukan. Silakan login ulang.");
-      return;
+ 
+    if (form.value.role === 'user' && (!form.value.nim || !form.value.academic_year)) {
+        showError("Validasi Gagal", "NIM dan Angkatan wajib untuk Mahasiswa."); return;
+    }
+    if (form.value.role === 'lecturer' && !form.value.nip) {
+        showError("Validasi Gagal", "NIP wajib untuk Dosen."); return;
+    }
+    if (!form.value.major || !form.value.faculty) {
+        showError("Validasi Gagal", "Jurusan dan Fakultas wajib diisi."); return;
     }
 
     if (editMode.value) {
-      if (!userId) {
-        showError("Data Invalid", "Error: ID admin tidak ditemukan."); return;
-      }
-      
-      const dataToUpdate = { 
-        name: form.value.name, 
-        email: form.value.email,
-        username: form.value.username 
-      };
-      await updateUser(dataToUpdate, userId);
 
-      let passwordErrorMessage = "";
-      if (form.value.password && form.value.password.trim() !== "") {
-        try {
-          await changePassword(userId, form.value.password, adminId);
-        } catch (passwordError) {
-          console.warn("Gagal mengganti password:", passwordError);
-          passwordErrorMessage = passwordError.response?.data?.message || "";
-        }
-      }
-      let roleErrorMessage = "";
+      if (!userId) return;
+      
       const originalRole = originalAdminData.value?.role; 
       const newRole = form.value.role;
-      if (newRole && originalRole && newRole !== originalRole) {
+
+
+      if (newRole && (newRole !== originalRole || newRole === 'user' || newRole === 'lecturer')) {
         try {
-          await changeRole(userId, adminId, newRole); 
+          const rolePayload = { 
+            role: newRole,
+            nim: newRole === 'user' ? form.value.nim : null,
+            nip: newRole === 'lecturer' ? form.value.nip : null,
+            academic_year: newRole === 'user' ? form.value.academic_year : null,
+            username: null 
+          };
+          await changeRole(userId, rolePayload);
         } catch (roleError) {
-          console.warn("Gagal mengganti role:", roleError);
-          roleErrorMessage = roleError.response?.data?.message || "";
+          throw new Error(roleError.response?.data?.message || "Gagal update Role.");
         }
       }
-      
-      let errors = [];
-      if (passwordErrorMessage) errors.push(passwordErrorMessage);
-      if (roleErrorMessage) errors.push(roleErrorMessage);
-      
-      if (errors.length > 0) {
-        await showSuccess("Update Sebagian", `Data diperbarui, namun: ${errors.join(', ')}`);
-      } else {
-        await showSuccess("Berhasil", "Data admin berhasil diperbarui!");
+
+  
+      try {
+         const profileData = {
+             name: form.value.name,
+             email: form.value.email,
+             major: form.value.major,
+             faculty: form.value.faculty,
+             
+  
+             username: newRole === 'admin' ? form.value.username : undefined 
+         };
+         
+         await updateUser(profileData, userId);
+      } catch (e) {
+         console.error("Update profil gagal:", e);
+         throw new Error(e.response?.data?.message || "Gagal mengupdate profil.");
       }
 
+  
+      if (form.value.password?.trim()) {
+        await changePassword(userId, form.value.password, adminId);
+      }
+
+      await showSuccess("Berhasil", "Data berhasil diperbarui!");
+
     } else {
+   
       const dataToCreate = {
         name: form.value.name,
         email: form.value.email,
         username: form.value.username,
         password: form.value.password,
         role: form.value.role,
-        nim: null, 
-        major: form.value.major.trim() || null, 
-        faculty: form.value.faculty.trim() || null
+        nim: form.value.role === 'user' ? form.value.nim : null,
+        nip: form.value.role === 'lecturer' ? form.value.nip : null,
+        academic_year: form.value.role === 'user' ? form.value.academic_year : null,
+        major: form.value.major,
+        faculty: form.value.faculty
       };
       await register(dataToCreate);
       await showSuccess("Berhasil", "Admin baru berhasil ditambahkan!");
     }
-    closeModal();
     
-  
+    closeModal();
     fetchAdmins(); 
 
   } catch (err) {
-    console.error("Gagal menyimpan data:", err);
-    showError("Gagal", err.response?.data?.message || "Terjadi kesalahan.");
+    console.error("Error save:", err);
+    showError("Gagal", err.message || err.response?.data?.message || "Terjadi kesalahan.");
   }
 };
 
@@ -357,53 +419,31 @@ const editAdmin = (admin) => {
   editMode.value = true;
   originalAdminData.value = { ...admin }; 
   const userId = admin.id || admin.ID || admin._id;
+  
   form.value = { 
     ...initialFormState, 
     ...admin,
-    username: admin.username || "",
-    major: admin.major || "",
-    faculty: admin.faculty || "",
     id: userId,
-    password: "" 
+    password: "", 
+
+    nim: admin.nim || "",
+    nip: admin.nip || "",
+    academic_year: admin.academic_year || "",
+    major: admin.major || "",
+    faculty: admin.faculty || ""
   };
   showModal.value = true;
 };
 
 const hapusAdmin = async (admin) => {
   const userId = admin.id || admin.ID || admin._id;
-  if (!userId) {
-    showError("Data Invalid", "Error: ID admin tidak ditemukan."); return;
-  }
-  
-  const isConfirmed = await showConfirm(
-    "Konfirmasi Hapus", 
-    "Yakin ingin menghapus admin ini?",
-    "Ya, Hapus"
-  );
-
-  if (isConfirmed) {
+  if (await showConfirm("Hapus Admin", "Yakin hapus akun ini?")) {
     try {
       await deleteUser(userId);
-      
-      
-      const oldLength = adminList.value.length;
-      adminList.value = adminList.value.filter(a => (a.id || a.ID || a._id) !== userId);
-      
-      if (adminList.value.length < oldLength) {
-         totalItems.value--;
-      }
-
-      await showSuccess("Berhasil", "Admin berhasil dihapus.");
-
-    
-      if (adminList.value.length === 0 && currentPage.value > 1) {
-        currentPage.value--;
-      } else {
-        if(adminList.value.length === 0) fetchAdmins();
-      }
+      fetchAdmins();
+      showSuccess("Terhapus", "Data admin dihapus.");
     } catch (err) {
-      console.error("Gagal menghapus admin:", err);
-      showError("Gagal", err.response?.data?.message || err.response?.data || "Gagal menghapus data.");
+      showError("Gagal", "Tidak dapat menghapus admin.");
     }
   }
 };
