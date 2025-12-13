@@ -172,29 +172,63 @@
          <button @click="closeAddSoalModal" class="text-gray-400 hover:text-gray-600">✖</button>
       </div>
       
-      <div class="p-5 bg-gray-50 border-b space-y-3">
-         <label class="block text-sm font-bold text-gray-700">Pilih Mata Kuliah (Subjek)</label>
-         <div class="flex flex-col sm:flex-row gap-3">
-            <select 
-              v-model="selectedSubject" 
-              class="flex-1 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            >
-              <option :value="null" disabled>-- Pilih Subjek --</option>
-              <option v-for="subject in availableSubjects" :key="subject.id" :value="subject.id">
-                {{ subject.title }}
-              </option>
-            </select>
-            
-            <button 
-              v-if="selectedSubject"
-              @click="selectAllBySubject"
-              :disabled="loadingAllSubject"
-              class="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition disabled:opacity-70 flex items-center justify-center gap-2 whitespace-nowrap"
-            >
-              <span v-if="loadingAllSubject" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-              {{ loadingAllSubject ? 'Mengambil Data...' : 'Ambil SEMUA Soal Subjek Ini' }}
-            </button>
+      <div class="p-5 bg-gray-50 border-b space-y-4">
+         
+         <div>
+            <label class="block text-sm font-bold text-gray-700 mb-2">Pilih Mata Kuliah (Subjek)</label>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <select 
+                  v-model="selectedSubject" 
+                  class="flex-1 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option :value="null" disabled>-- Pilih Subjek --</option>
+                  <option v-for="subject in availableSubjects" :key="subject.id" :value="subject.id">
+                    {{ subject.title }}
+                  </option>
+                </select>
+                
+                <button 
+                  v-if="selectedSubject"
+                  @click="selectAllBySubject"
+                  :disabled="loadingAllSubject"
+                  class="w-full sm:w-auto px-4 py-2.5 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg shadow-sm transition disabled:opacity-70 flex items-center justify-center gap-2 whitespace-nowrap"
+                >
+                  <span v-if="loadingAllSubject" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                  {{ loadingAllSubject ? 'Mengambil...' : 'Ambil SEMUA Soal' }}
+                </button>
+            </div>
          </div>
+
+         <div v-if="selectedSubject" class="p-4 bg-blue-50 rounded-lg border border-blue-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+                <div class="bg-blue-600 text-white p-2 rounded-full">
+                    <i class="fas fa-dice"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-blue-900">Ambil Soal Acak</p>
+                    <p class="text-xs text-blue-600">Pilih soal secara random dari subjek ini</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <input 
+                    v-model.number="randomCount" 
+                    type="number" 
+                    min="1" 
+                    class="w-20 p-2 border border-blue-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="Jml"
+                >
+                <button 
+                    @click="handleGetRandom"
+                    :disabled="loadingRandom"
+                    class="flex-1 sm:flex-none px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-sm transition disabled:opacity-70 flex items-center justify-center gap-2"
+                >
+                    <span v-if="loadingRandom" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                    {{ loadingRandom ? 'Mengacak...' : 'Generate' }}
+                </button>
+            </div>
+         </div>
+
       </div>
 
       <div class="flex-1 overflow-hidden flex flex-col relative">
@@ -309,8 +343,8 @@ import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { deleteExam, addQuestions, removeQuestions, getExamById } from "../../provider/exam.provider";
 import { getPaginatedSubjects } from "../../provider/subject.provider";
-import { getQuestionsBySubject, getQuestionsByExam } from "../../provider/question.provider";
-
+// IMPORT getRandomQuestions di sini
+import { getQuestionsBySubject, getQuestionsByExam, getRandomQuestions } from "../../provider/question.provider";
 import { usePopup } from "../../hooks/usePopup";
 
 const { showSuccess, showError, showConfirm } = usePopup();
@@ -418,6 +452,10 @@ const modalPage = ref(1);
 const modalLimit = 10;
 const modalTotalItems = ref(0);
 
+// -- STATE BARU UNTUK RANDOM --
+const randomCount = ref(10);
+const loadingRandom = ref(false);
+
 const modalTotalPages = computed(() => {
   return modalTotalItems.value > 0 ? Math.ceil(modalTotalItems.value / modalLimit) : 1;
 });
@@ -426,6 +464,7 @@ const openAddSoalModal = () => {
   selectedSubject.value = null;
   questionsForSubject.value = [];
   selectedQuestions.value = [];
+  randomCount.value = 10;
   modalPage.value = 1;
   modalTotalItems.value = 0;
   fetchAvailableSubjects();
@@ -493,6 +532,56 @@ const toggleSelectAllPage = () => {
     });
   }
 };
+
+
+const handleGetRandom = async () => {
+  if (!selectedSubject.value) {
+    showError("Validasi", "Pilih subjek terlebih dahulu.");
+    return;
+  }
+  if (randomCount.value <= 0) {
+    showError("Validasi", "Jumlah soal harus lebih dari 0.");
+    return;
+  }
+
+  loadingRandom.value = true;
+  try {
+
+    const randomQuestions = await getRandomQuestions(randomCount.value, selectedSubject.value);
+    
+ 
+    const list = Array.isArray(randomQuestions) ? randomQuestions : (randomQuestions?.data || []);
+
+    if (!list || list.length === 0) {
+      showError("Kosong", "Tidak ada soal tersedia di subjek ini.");
+      return;
+    }
+
+    let addedCount = 0;
+    
+    list.forEach(q => {
+      const qId = Number(q.id);
+
+      if (!isQuestionAlreadyAdded(qId) && !selectedQuestions.value.includes(qId)) {
+        selectedQuestions.value.push(qId);
+        addedCount++;
+      }
+    });
+
+    if (addedCount > 0) {
+      showSuccess("Berhasil", `Berhasil memilih ${addedCount} soal secara acak! Jangan lupa klik 'Simpan Pilihan'.`);
+    } else {
+      showSuccess("Info", "Soal-soal tersebut sudah ada/terpilih.");
+    }
+
+  } catch (err) {
+    console.error(err);
+    showError("Gagal", "Gagal mengambil soal random.");
+  } finally {
+    loadingRandom.value = false;
+  }
+};
+
 
 const selectAllBySubject = async () => {
   if (!selectedSubject.value) return;
@@ -571,7 +660,6 @@ const handleAddSoal = async () => {
   savingText.value = "Menyiapkan...";
 
   try {
-    
     const BATCH_SIZE = 50; 
     const total = selectedQuestions.value.length;
     let processed = 0;
