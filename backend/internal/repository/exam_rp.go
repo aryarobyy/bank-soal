@@ -20,6 +20,7 @@ type ExamRepository interface {
 	ReplaceQuestions(ctx context.Context, examId int, questionIds []int) error
 	RemoveQuestions(ctx context.Context, examId int, questionIds []int) error
 	CheckQuestion(ctx context.Context, examId int, questionId int) (bool, error)
+	GetByCreator(ctx context.Context, creatorId int, limit int, offset int) ([]model.Exam, error)
 }
 
 type examRepository struct {
@@ -238,4 +239,19 @@ func (r *examRepository) CheckQuestion(ctx context.Context, examId int, question
 		return false, err
 	}
 	return true, nil
+}
+
+func (r *examRepository) GetByCreator(ctx context.Context, creatorId int, limit int, offset int) ([]model.Exam, error) {
+	e := []model.Exam{}
+
+	if err := r.db.WithContext(ctx).
+		Model(&model.Exam{}).
+		Limit(limit).
+		Offset(offset).
+		Where("creator_id = ?", creatorId).
+		Find(&e).
+		Error; err != nil {
+		return nil, err
+	}
+	return e, nil
 }

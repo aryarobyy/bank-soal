@@ -490,7 +490,6 @@ func (s *userService) ChangeRole(
 	case model.RoleAdmin, model.RoleSuperAdmin:
 		input.Nim = nil
 		input.Nip = nil
-		input.Username = nil
 		input.AcademicYear = nil
 
 	default:
