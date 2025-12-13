@@ -21,9 +21,10 @@ var optRepo = repo.OptionRepoMock{Mock: mock.Mock{}}
 var sessionRepo = repo.ExamSessionRepoMock{Mock: mock.Mock{}}
 var examRepo = repo.ExamRepoMock{Mock: mock.Mock{}}
 var answerRepo = repo.UserAnswerRepoMock{Mock: mock.Mock{}}
+var subjectRepo = repo.SubjectRepoMock{Mock: mock.Mock{}}
 
 var userSrv = service.NewUserService(&userRepo)
-var questSrv = service.NewQuestionService(&questRepo, &userRepo, &optRepo)
+var questSrv = service.NewQuestionService(&questRepo, &userRepo, &optRepo, &subjectRepo)
 var sessionSrv = service.NewExamSessionService(&sessionRepo, &examRepo, &answerRepo, &questRepo)
 
 func TestRegister(t *testing.T) {
