@@ -39,10 +39,6 @@ func ValidateAuthorization(
 			}
 		}
 
-		if modifyingOtherFields(data) {
-			return fmt.Errorf("super admin cannot update fields other than role")
-		}
-
 		return nil
 	}
 
@@ -62,15 +58,6 @@ func ValidateAuthorization(
 	}
 
 	return fmt.Errorf("invalid requester role")
-}
-
-func modifyingOtherFields(data model.UpdateUser) bool {
-	return data.Name != nil ||
-		data.Faculty != nil ||
-		data.Email != nil ||
-		data.ImgUrl != nil ||
-		data.ImgDelete != nil ||
-		data.Major != nil
 }
 
 func NormalizeRoleTransition(oldUser *model.User, data *model.UpdateUser, effectiveRole model.Role) {

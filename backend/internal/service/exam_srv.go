@@ -21,6 +21,7 @@ type ExamService interface {
 	AddQuestions(ctx context.Context, examId int, questionIds []int) error
 	ReplaceQuestions(ctx context.Context, examId int, questionIds []int) error
 	RemoveQuestions(ctx context.Context, examId int, questionIds []int) error
+	GetByCreator(ctx context.Context, creatorId int, limit int, offset int) ([]model.Exam, error)
 }
 
 type examService struct {
@@ -230,4 +231,12 @@ func (s *examService) RemoveQuestions(ctx context.Context, examId int, questionI
 	}
 
 	return nil
+}
+
+func (s *examService) GetByCreator(ctx context.Context, creatorId int, limit int, offset int) ([]model.Exam, error) {
+	data, err := s.repo.GetByCreator(ctx, creatorId, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get exams %w", err)
+	}
+	return data, nil
 }

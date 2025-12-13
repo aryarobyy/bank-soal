@@ -298,6 +298,12 @@ func (r *userRepository) ChangeRole(ctx context.Context, id int, data model.User
 		updates["academic_year"] = data.AcademicYear
 	}
 
+	if data.Username != nil {
+		updates["username"] = data.Username
+	} else {
+		updates["username"] = nil
+	}
+
 	return r.db.
 		WithContext(ctx).
 		Model(&model.User{}).

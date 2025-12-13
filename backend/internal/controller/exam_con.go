@@ -209,3 +209,33 @@ func (h *ExamController) RemoveQuestions(c *gin.Context) {
 
 	helper.Success(c, nil, "questions removed")
 }
+
+func (h *ExamController) GetByCreator(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	creatorIdStr := c.Query("creator_id")
+	if creatorIdStr == "" {
+		helper.Error(c, http.StatusBadRequest, "creator_id is required")
+		return
+	}
+
+	creatorId, err := strconv.Atoi(creatorIdStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "creator_id must be a number")
+		return
+	}
+
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	data, dataErr := h.service.GetByCreator(ctx, creatorId, limit, offset)
+	if dataErr != nil {
+		helper.Error(c, http.StatusInternalServerError, dataErr.Error())
+		return
+	}
+
+	helper.Success(c, data, "success get exams")
+}
