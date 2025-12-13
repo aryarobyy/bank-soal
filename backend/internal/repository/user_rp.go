@@ -21,7 +21,7 @@ type UserRepository interface {
 	GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error)
 	GetByRole(ctx context.Context, role model.Role, limit int, offset int) ([]model.User, int64, error)
 	ChangePassword(ctx context.Context, id int, password string) error
-	ChangeRole(ctx context.Context, id int, role model.Role) error
+	ChangeRole(ctx context.Context, id int, data model.User) error
 	BulkInsert(ctx context.Context, users []model.User) ([]model.User, error)
 }
 
@@ -277,16 +277,33 @@ func (r *userRepository) ChangePassword(ctx context.Context, id int, password st
 	return nil
 }
 
-func (r *userRepository) ChangeRole(ctx context.Context, id int, role model.Role) error {
-	if err := r.db.
+func (r *userRepository) ChangeRole(ctx context.Context, id int, data model.User) error {
+	updates := map[string]interface{}{
+		"role": data.Role,
+	}
+
+	if data.Nim != nil {
+		updates["nim"] = data.Nim
+	} else {
+		updates["nim"] = nil
+	}
+
+	if data.Nip != nil {
+		updates["nip"] = data.Nip
+	} else {
+		updates["nip"] = nil
+	}
+
+	if data.AcademicYear != "" {
+		updates["academic_year"] = data.AcademicYear
+	}
+
+	return r.db.
 		WithContext(ctx).
 		Model(&model.User{}).
 		Where("id = ?", id).
-		Update("role", role).
-		Error; err != nil {
-		return err
-	}
-	return nil
+		Updates(updates).
+		Error
 }
 
 func (r *userRepository) BulkInsert(ctx context.Context, users []model.User) ([]model.User, error) {
