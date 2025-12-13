@@ -66,7 +66,6 @@ func ValidateAuthorization(
 
 func modifyingOtherFields(data model.UpdateUser) bool {
 	return data.Name != nil ||
-		data.AcademicYear != nil ||
 		data.Faculty != nil ||
 		data.Email != nil ||
 		data.ImgUrl != nil ||

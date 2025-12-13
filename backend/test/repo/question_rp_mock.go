@@ -106,3 +106,25 @@ func (m *QuestionRepoMock) GetByExamId(ctx context.Context, examId int) ([]model
 
 	return args.Get(0).([]model.Question), args.Error(1)
 }
+
+func (m *QuestionRepoMock) GetRandomQuestionBySubject(ctx context.Context, total int, subjectId int) ([]model.Question, error) {
+	args := m.Called(ctx, total, subjectId)
+
+	var zero []model.Question
+	if args.Get(0) == nil {
+		return zero, args.Error(1)
+	}
+
+	return args.Get(0).([]model.Question), args.Error(1)
+}
+
+func (m *QuestionRepoMock) GetRandomQuestion(ctx context.Context, total int) ([]model.Question, error) {
+	args := m.Called(ctx, total)
+
+	var zero []model.Question
+	if args.Get(0) == nil {
+		return zero, args.Error(1)
+	}
+
+	return args.Get(0).([]model.Question), args.Error(1)
+}
