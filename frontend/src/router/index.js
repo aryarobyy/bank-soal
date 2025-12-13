@@ -126,7 +126,13 @@ const routes = [
         path: 'exam', 
         component: RouterWrapper,
         children: examRoutes.map(route => ({ ...route, name: `Dosen${route.name}` }))
+      },
+      {
+        path: 'reports',
+        name: 'DosenExamReports',
+        component: ExamReports
       }
+
     ]
   },
 

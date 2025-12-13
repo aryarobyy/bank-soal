@@ -93,6 +93,13 @@
             :class="isActive('/dosen/exam') ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'">
             <i class="fas fa-chalkboard-teacher w-5 text-center"></i> Ujian
           </router-link>
+          <router-link 
+            to="/dosen/reports" 
+            @click="isSidebarOpen = false"
+            class="flex items-center gap-3 px-4 py-3 font-medium rounded-lg transition-colors" 
+            :class="isActive('/dosen/reports') ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'">
+            <i class="fas fa-chart-bar w-5 text-center"></i> Laporan Nilai
+          </router-link>
         </div>
       </aside>
 
