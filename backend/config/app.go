@@ -98,12 +98,8 @@ func NewApp(db *gorm.DB) *App {
 
 func setupRoutes(r *gin.Engine, ctrl *Controllers) {
 	r.Static("/storages/images/user", "./storages/images/user")
-	protectedStorage := r.Group("/storages")
-	protectedStorage.Use(middleware.AuthMiddleware())
-	{
-		protectedStorage.Static("/images/question", "./storages/images/question")
-		protectedStorage.Static("/files", "./storages/files")
-	}
+	r.Static("/storages/images/question", "./storages/images/question")
+	r.Static("/files", "./storages/files")
 	route.UserRoutes(r, ctrl.User)
 	route.ExamRoutes(r, ctrl.Exam)
 	route.QuestionRoutes(r, ctrl.Question)
