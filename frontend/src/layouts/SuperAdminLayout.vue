@@ -100,6 +100,6 @@ const logout = () => {
   const { removeValue: removeId } = useLocalStorage('id');
   removeToken();
   removeId();
-  window.location.href = '/';
+  window.location.href = '/landing';
 };
 </script>
