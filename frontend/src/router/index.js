@@ -29,8 +29,8 @@ import ManageDosen from '../views/ManageDosen/ManageDosen.vue'
 import ManageXlsFiles from '../views/Admin/ManageXlsFiles.vue'
 
 // Halaman Soal (Shared)
-import LecturerSoal from '../views/question/LecturerSoal.vue'
-import LecturerSoalList from '../views/question/LecturerSoalList.vue'
+import SoalHome from '../views/question/SoalHome.vue'
+import SoalList from '../views/question/SoalList.vue'
 import CreateSoal from '../views/question/CreateSoal.vue'
 import CreateManualSoal from '../views/question/CreateManualSoal.vue'
 import UploadJsonSoal from '../views/question/UploadJsonSoal.vue'
@@ -47,10 +47,11 @@ import SuperAdminDashboard from '../views/SuperAdmin/SuperAdminDashboard.vue'
 import ManageAdmin from '../views/ManageAdmin/ManageAdmin.vue'
 
 
+
 // --- GRUP RUTE SOAL (Shared) ---
 const soalRoutes = [
-  { path: '', name: 'SoalHome', component: LecturerSoal, },
-  { path: 'list', name: 'SoalList', component: LecturerSoalList, },
+  { path: '', name: 'SoalHome', component: SoalHome, },
+  { path: 'list', name: 'SoalList', component: SoalList, },
   { path: 'create', name: 'SoalCreate', component: CreateSoal, },
   { path: 'create-manual', name: 'SoalCreateManual', component: CreateManualSoal, },
   { path: 'edit/:id', name: 'SoalEdit', component: CreateManualSoal, },
