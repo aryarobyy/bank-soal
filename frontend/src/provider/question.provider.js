@@ -1,6 +1,22 @@
 import { QUESTION } from "../core/constant";
 import ApiHandler from "./api.handler";
 
+const extractData = (res) => {
+  let items = [];
+  let total = 0;
+  if (res?.data?.data?.data && Array.isArray(res.data.data.data)) {
+    items = res.data.data.data;
+    total = res.data.data.total || 0;
+  } else if (res?.data?.data && Array.isArray(res.data.data)) {
+    items = res.data.data;
+    total = res.data.total || items.length;
+  } else if (res?.data && Array.isArray(res.data)) {
+    items = res.data;
+    total = items.length;
+  }
+  return { items, total };
+};
+
 export const getAllQuestions = async () => {
   const res = await ApiHandler.get(`/${QUESTION}/`);
   return res.data.data;
@@ -119,30 +135,33 @@ export const getQuestionsByDiff = async (difficulty) => {
 };
 
 export const getQuestionsByCreator = async (creatorId, limit, offset) => {
-
-  const params = new URLSearchParams();
-  params.append('creator_id', creatorId);
-  params.append('limit', limit);
-  params.append('offset', offset);
-
-  
-  const res = await ApiHandler.get(`/${QUESTION}/creator?${params.toString()}`);
-  
- 
-  return res.data.data; 
+  const res = await ApiHandler.get(`/${QUESTION}/creator`, {
+    params: { creator_id: creatorId, limit, offset }
+  });
+  return extractData(res);
 };
-
 export const getQuestionsBySubject = async (subjectId, limit, offset) => {
   
   const params = new URLSearchParams();
   params.append('subject_id', subjectId);
   params.append('limit', limit);
   params.append('offset', offset);
-
+  
   const res = await ApiHandler.get(`/${QUESTION}/subject?${params.toString()}`);
   
 
   return res.data.data; 
+};
+export const getQuestionsByCreatorAndSubject = async (creatorId, subjectId, limit, offset) => {
+  const res = await ApiHandler.get(`/${QUESTION}/creator/subject`, {
+    params: { 
+      creator_id: creatorId, 
+      subject_id: subjectId, 
+      limit, 
+      offset 
+    }
+  });
+  return res.data.data;
 };
 
 export const createWithJson = async () => {
