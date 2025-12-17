@@ -344,11 +344,11 @@ import { useRoute, useRouter } from "vue-router";
 import { deleteExam, addQuestions, removeQuestions, getExamById } from "../../provider/exam.provider";
 import { getPaginatedSubjects } from "../../provider/subject.provider";
 // IMPORT getRandomQuestions di sini
-import { getQuestionsBySubject, getQuestionsByExam, getRandomQuestions } from "../../provider/question.provider";
+import { getQuestionsBySubject, getQuestionsByExam, getRandomQuestions,getQuestionsByCreatorAndSubject } from "../../provider/question.provider";
 import { usePopup } from "../../hooks/usePopup";
-
+import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 const { showSuccess, showError, showConfirm } = usePopup();
-
+const { user } = useGetCurrentUser();
 const route = useRoute();
 const router = useRouter();
 const isAdminRoute = computed(() => route.path.startsWith('/admin'));
@@ -452,7 +452,7 @@ const modalPage = ref(1);
 const modalLimit = 10;
 const modalTotalItems = ref(0);
 
-// -- STATE BARU UNTUK RANDOM --
+
 const randomCount = ref(10);
 const loadingRandom = ref(false);
 
@@ -487,14 +487,29 @@ const fetchQuestionsForSubject = async (subjectId) => {
   modalLoading.value = true;
   try {
     const offset = (modalPage.value - 1) * modalLimit;
-    const result = await getQuestionsBySubject(subjectId, modalLimit, offset);
-    if (result.data && Array.isArray(result.data)) {
-       questionsForSubject.value = result.data;
-       modalTotalItems.value = result.total || 9999;
+    let result;
+
+
+    if (isAdminRoute.value) {
+
+       result = await getQuestionsBySubject(subjectId, modalLimit, offset);
+    } else {
+
+       result = await getQuestionsByCreatorAndSubject(user.value.id, subjectId, modalLimit, offset);
+    }
+
+
+    if (result && (result.data || result.items)) {
+       const dataArr = result.data || result.items || [];
+       questionsForSubject.value = Array.isArray(dataArr) ? dataArr : [];
+       modalTotalItems.value = result.total || questionsForSubject.value.length;
+    } else if (Array.isArray(result)) {
+       questionsForSubject.value = result;
+       modalTotalItems.value = result.length;
     } else {
        questionsForSubject.value = [];
-       modalTotalItems.value = 0;
     }
+
   } catch (err) {
     questionsForSubject.value = [];
   } finally {
@@ -535,6 +550,7 @@ const toggleSelectAllPage = () => {
 
 
 const handleGetRandom = async () => {
+
   if (!selectedSubject.value) {
     showError("Validasi", "Pilih subjek terlebih dahulu.");
     return;
@@ -546,37 +562,48 @@ const handleGetRandom = async () => {
 
   loadingRandom.value = true;
   try {
+   
+    const creatorFilter = isAdminRoute.value ? null : user.value?.id;
 
-    const randomQuestions = await getRandomQuestions(randomCount.value, selectedSubject.value);
-    
  
-    const list = Array.isArray(randomQuestions) ? randomQuestions : (randomQuestions?.data || []);
+    const res = await getRandomQuestions(
+        randomCount.value, 
+        selectedSubject.value, 
+        creatorFilter
+    );
+    
+
+    const list = Array.isArray(res) ? res : (res?.data || []);
 
     if (!list || list.length === 0) {
       showError("Kosong", "Tidak ada soal tersedia di subjek ini.");
       return;
     }
 
+
     let addedCount = 0;
     
     list.forEach(q => {
       const qId = Number(q.id);
 
+      
+    
       if (!isQuestionAlreadyAdded(qId) && !selectedQuestions.value.includes(qId)) {
         selectedQuestions.value.push(qId);
         addedCount++;
       }
     });
 
+   
     if (addedCount > 0) {
       showSuccess("Berhasil", `Berhasil memilih ${addedCount} soal secara acak! Jangan lupa klik 'Simpan Pilihan'.`);
     } else {
-      showSuccess("Info", "Soal-soal tersebut sudah ada/terpilih.");
+      showSuccess("Info", "Soal-soal yang terambil random ternyata sudah ada di ujian ini.");
     }
 
   } catch (err) {
-    console.error(err);
-    showError("Gagal", "Gagal mengambil soal random.");
+    console.error("Error Random:", err);
+    showError("Gagal", "Gagal mengambil soal random. Pastikan koneksi aman.");
   } finally {
     loadingRandom.value = false;
   }
@@ -585,25 +612,49 @@ const handleGetRandom = async () => {
 
 const selectAllBySubject = async () => {
   if (!selectedSubject.value) return;
+  
   loadingAllSubject.value = true;
   try {
     let allFetchedIds = [];
     let offset = 0;
-    const BATCH_LIMIT = 20; 
+    const BATCH_LIMIT = 50; 
     let hasMoreData = true;
 
     while (hasMoreData) {
-       const result = await getQuestionsBySubject(selectedSubject.value, BATCH_LIMIT, offset);
+       let result;
+
+   
+       if (isAdminRoute.value) {
+   
+          result = await getQuestionsBySubject(selectedSubject.value, BATCH_LIMIT, offset);
+       } else {
+        
+          result = await getQuestionsByCreatorAndSubject(user.value.id, selectedSubject.value, BATCH_LIMIT, offset);
+       }
+      
+
+      
        let chunk = [];
-       if (Array.isArray(result)) chunk = result;
-       else if (result.data && Array.isArray(result.data)) chunk = result.data;
-       else if (result.data && result.data.data && Array.isArray(result.data.data)) chunk = result.data.data;
+       
+       if (result.items) {
+          chunk = result.items; 
+       } else if (Array.isArray(result)) {
+          chunk = result;       
+       } else if (result.data && Array.isArray(result.data)) {
+          chunk = result.data;  
+       } else if (result.data && result.data.data && Array.isArray(result.data.data)) {
+          chunk = result.data.data; 
+       }
 
        if (chunk.length > 0) {
           chunk.forEach(q => allFetchedIds.push(q.id));
           offset += BATCH_LIMIT;
        } 
-       if (chunk.length < BATCH_LIMIT) hasMoreData = false;
+       
+     
+       if (chunk.length < BATCH_LIMIT) {
+          hasMoreData = false;
+       }
     }
 
     if (allFetchedIds.length === 0) {
@@ -612,6 +663,7 @@ const selectAllBySubject = async () => {
       return;
     }
 
+    
     let addedCount = 0;
     allFetchedIds.forEach(id => {
       const qId = Number(id);
@@ -630,6 +682,7 @@ const selectAllBySubject = async () => {
        showSuccess('Info', "Semua soal sudah terpilih.");
     }
   } catch (err) {
+    console.error(err);
     showError('Gagal', "Gagal mengambil semua soal.");
   } finally {
     loadingAllSubject.value = false;

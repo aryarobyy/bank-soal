@@ -95,8 +95,17 @@ export const createQuestionFromJson = async (data) => {
   const res = await ApiHandler.post(`${QUESTION}/json`, data);
   return res.data;
 };
-export const getRandomQuestions = async (total, subjectId) => {
-  const res = await ApiHandler.get(`/${QUESTION}/random?total=${total}&subject_id=${subjectId}`);
+export const getRandomQuestions = async (total, subjectId, creatorId = null) => {
+  const params = new URLSearchParams();
+  params.append('total', total);
+  params.append('subject_id', subjectId);
+  
+
+  if (creatorId) {
+    params.append('creator_id', creatorId);
+  }
+
+  const res = await ApiHandler.get(`/${QUESTION}/random?${params.toString()}`);
   return res.data.data;
 };
 
