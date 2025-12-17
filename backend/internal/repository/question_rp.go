@@ -22,8 +22,8 @@ type QuestionRepository interface {
 	GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, int64, error)
 	GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, int64, error)
 	GetByExamId(ctx context.Context, examId int) ([]model.Question, error)
-	GetRandomQuestionBySubject(ctx context.Context, total int, subjectId int) ([]model.Question, error)
-	GetRandomQuestion(ctx context.Context, total int) ([]model.Question, error)
+	GetRandomQuestionBySubject(ctx context.Context, total int, subjectId int, creatorId *int) ([]model.Question, error)
+	GetRandomQuestion(ctx context.Context, total int, creatorId *int) ([]model.Question, error)
 	GetByCreatorNSubject(ctx context.Context, creatorId int, subjectId int, limit int, offset int) ([]model.Question, int64, error)
 	GetByCreatorNDifficult(ctx context.Context, creatorId int, diff string, limit int, offset int) ([]model.Question, int64, error)
 }
@@ -300,11 +300,18 @@ func (r *questionRepository) GetByExamId(ctx context.Context, examId int) ([]mod
 	return exam.Questions, nil
 }
 
-func (r *questionRepository) GetRandomQuestionBySubject(ctx context.Context, total int, subjectId int) ([]model.Question, error) {
+func (r *questionRepository) GetRandomQuestionBySubject(ctx context.Context, total int, subjectId int, creatorId *int) ([]model.Question, error) {
 	var count int64
-	if err := r.db.WithContext(ctx).
+
+	query := r.db.WithContext(ctx).
 		Model(&model.Question{}).
-		Where("subject_id = ?", subjectId).
+		Where("subject_id = ?", subjectId)
+
+	if creatorId != nil {
+		query = query.Where("creator_id = ?", creatorId)
+	}
+
+	if err := query.
 		Count(&count).Error; err != nil {
 		return nil, err
 	}
@@ -324,9 +331,7 @@ func (r *questionRepository) GetRandomQuestionBySubject(ctx context.Context, tot
 	}
 
 	questions := []model.Question{}
-	if err := r.db.WithContext(ctx).
-		Preload("Options").
-		Where("subject_id = ?", subjectId).
+	if err := query.
 		Offset(offset).
 		Limit(total).
 		Find(&questions).Error; err != nil {
@@ -336,10 +341,17 @@ func (r *questionRepository) GetRandomQuestionBySubject(ctx context.Context, tot
 	return questions, nil
 }
 
-func (r *questionRepository) GetRandomQuestion(ctx context.Context, total int) ([]model.Question, error) {
+func (r *questionRepository) GetRandomQuestion(ctx context.Context, total int, creatorId *int) ([]model.Question, error) {
 	var count int64
-	if err := r.db.WithContext(ctx).
-		Model(&model.Question{}).
+
+	query := r.db.WithContext(ctx).
+		Model(&model.Question{})
+
+	if creatorId != nil {
+		query = query.Where("creator_id", creatorId)
+	}
+
+	if err := query.
 		Count(&count).Error; err != nil {
 		return nil, err
 	}
@@ -359,7 +371,7 @@ func (r *questionRepository) GetRandomQuestion(ctx context.Context, total int) (
 	}
 
 	questions := []model.Question{}
-	if err := r.db.WithContext(ctx).
+	if err := query.
 		Preload("Options").
 		Offset(offset).
 		Limit(total).
