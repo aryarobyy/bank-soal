@@ -347,8 +347,10 @@ func (r *questionRepository) GetRandomQuestion(ctx context.Context, total int, c
 	query := r.db.WithContext(ctx).
 		Model(&model.Question{})
 
+	fmt.Println(creatorId)
+
 	if creatorId != nil {
-		query = query.Where("creator_id", creatorId)
+		query = query.Where("creator_id = ?", creatorId)
 	}
 
 	if err := query.
