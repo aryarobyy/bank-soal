@@ -129,10 +129,20 @@ const handleSubmit = async () => {
     const data = await login(formData.value);
     const userData = data.data.data;
 
+
     if (data.data.token && userData) {
+
       setToken(data.data.token);
       setId(userData.id);
-      setGlobalUser(userData);
+      
+    
+      localStorage.setItem('user', JSON.stringify(userData)); 
+  
+
+  
+      if (setGlobalUser) {
+        setGlobalUser(userData);
+      }
     }
 
     const userRole = userData.role;
@@ -144,6 +154,9 @@ const handleSubmit = async () => {
       redirectPath = '/admin/dashboard';
     } else if (userRole === 'super_admin') {
       redirectPath = '/superadmin/dashboard';
+    }else {
+
+      redirectPath = '/dashboard'; 
     }
 
     toastRef.value.showToast(

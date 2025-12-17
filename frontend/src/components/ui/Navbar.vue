@@ -2,14 +2,14 @@
   <nav class="bg-white shadow-sm border-b border-gray-200 relative z-50">
     <div class="px-6 py-3 flex justify-between items-center">
       
-      <RouterLink to="/" class="text-3xl font-bold no-underline text-blue-600">
+      <RouterLink to="/dashboard" class="text-3xl font-bold no-underline text-blue-600">
         Latih.in
       </RouterLink>
 
       <ul class="hidden md:flex items-center space-x-6">
         <template v-if="user">
           <li>
-            <RouterLink to="/" :class="linkClass('/')">Dashboard</RouterLink>
+            <RouterLink to="/dashboard" :class="linkClass('/dashboard')">Dashboard</RouterLink>
           </li>
           <li v-if="user.role === 'user'">
             <RouterLink to="/ujian" :class="linkClass('/ujian')">Ujian</RouterLink>
@@ -158,7 +158,7 @@ const handleLogout = async () => {
   closeMobileMenu();
   user.value = null; 
   
-  window.location.href = '/'; 
+  window.location.href = '/landing'; 
 };
 
 const handleClickOutside = (event) => {
