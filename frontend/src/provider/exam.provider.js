@@ -8,26 +8,30 @@ export const getAllExam = async (limit = 10, offset = 0, creatorId = null) => {
     const params = new URLSearchParams();
     params.append('limit', limit);
     params.append('offset', offset);
-    
-    if (creatorId) {
-      params.append('creator_id', creatorId);
-    }
-
-
     const res = await ApiHandler.get(
       `/${EXAM}/?${params.toString()}`
     );
-    
-
     return res.data.data; 
-    
   } catch (error) {
     console.error("Gagal mengambil data ujian:", error);
     return { data: [], total: 0 }; 
   }
 };
 
-
+export const getExamsByCreator = async (creatorId, limit = 10, offset = 0) => {
+  try {
+    const params = new URLSearchParams();
+    params.append('creator_id', creatorId);
+    params.append('limit', limit);
+    params.append('offset', offset);
+    const res = await ApiHandler.get(`/${EXAM}/creator?${params.toString()}`);
+    
+    return res.data.data || res.data || []; 
+  } catch (error) {
+    console.error(`Gagal mengambil ujian creator ${creatorId}:`, error);
+    return [];
+  }
+};
 
 export const getExamById = async (id) => {
   try {

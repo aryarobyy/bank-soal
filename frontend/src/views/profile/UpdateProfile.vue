@@ -12,15 +12,25 @@
         
         <div class="relative group">
           <img
-            :src="avatarPreview || user?.img_url || 'https://ui-avatars.com/api/?name=' + (formData.name || 'U') + '&background=random'"
+            :src="getProfileImage()"
             alt="Profile"
             class="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
             @error="handleImageError"
           />
-          <label for="avatarInput" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+          
+          <label for="avatarInput" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <Camera class="w-6 h-6 text-white" />
           </label>
           <input type="file" id="avatarInput" ref="avatarInputRef" @change="handleFileSelect" accept="image/*" class="hidden" />
+
+          <button 
+            v-if="(avatarPreview || (user?.img_url && !isDeleteImage))"
+            @click.prevent="handleRemoveImage"
+            class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition z-20"
+            title="Hapus Foto"
+          >
+            <X class="w-3 h-3" />
+          </button>
         </div>
         
         <div class="flex-1">
@@ -80,7 +90,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { ArrowLeft, User, CreditCard, Mail, Camera, Clipboard, BookText } from 'lucide-vue-next';
+
+import { ArrowLeft, User, CreditCard, Mail, Camera, Clipboard, BookText, X } from 'lucide-vue-next';
 import { useUser } from '../../hooks/useGetCurrentUser'; 
 import Button from '../../components/ui/Button.vue';
 import { updateUser, getUserById } from '../../provider/user.provider';
@@ -97,6 +108,8 @@ const loading = ref(false);
 const avatarInputRef = ref(null);
 const avatarFile = ref(null);
 const avatarPreview = ref(null);
+
+const isDeleteImage = ref(false);
 
 const formData = ref({
   name: '',
@@ -121,10 +134,8 @@ onMounted(() => {
       faculty: user.value.faculty || '',
     };
     
-    if (user.value.img_url) {
-      avatarPreview.value = user.value.img_url;
-    }
-
+ 
+    
     const baseFields = [
       {
         name: 'name', title: 'Full Name',
@@ -138,38 +149,48 @@ onMounted(() => {
     
     fields.value = [...baseFields];
 
-
     if (user.value.role === 'user') {
-      fields.value.push({
-        name: 'nim', title: 'NIM',
-        placeholder: 'Enter your NIM', icon: CreditCard, type: 'text'
-      });
-
-      fields.value.push({
-        name: 'major', title: 'Jurusan (Major)',
-        placeholder: 'Enter your major', icon: BookText, type: 'text'
-      });
-      fields.value.push({
-        name: 'faculty', title: 'Fakultas (Faculty)',
-        placeholder: 'Enter your faculty', icon: BookText, type: 'text'
-      });
+      fields.value.push({ name: 'nim', title: 'NIM', placeholder: 'Enter your NIM', icon: CreditCard, type: 'text' });
+      fields.value.push({ name: 'major', title: 'Jurusan (Major)', placeholder: 'Enter your major', icon: BookText, type: 'text' });
+      fields.value.push({ name: 'faculty', title: 'Fakultas (Faculty)', placeholder: 'Enter your faculty', icon: BookText, type: 'text' });
     } else if (user.value.role === 'lecturer') {
-      fields.value.push({
-        name: 'nip', title: 'NIP',
-        placeholder: 'Enter your NIP', icon: Clipboard, type: 'text'
-      });
+      fields.value.push({ name: 'nip', title: 'NIP', placeholder: 'Enter your NIP', icon: Clipboard, type: 'text' });
     } else if (user.value.role === 'admin') {
-      fields.value.push({
-        name: 'major', title: 'Jurusan (Major)',
-        placeholder: 'Enter your major', icon: BookText, type: 'text'
-      });
-      fields.value.push({
-        name: 'faculty', title: 'Fakultas (Faculty)',
-        placeholder: 'Enter your faculty', icon: BookText, type: 'text'
-      });
+      fields.value.push({ name: 'major', title: 'Jurusan (Major)', placeholder: 'Enter your major', icon: BookText, type: 'text' });
+      fields.value.push({ name: 'faculty', title: 'Fakultas (Faculty)', placeholder: 'Enter your faculty', icon: BookText, type: 'text' });
     }
   }
 });
+
+
+const getProfileImage = () => {
+
+  if (avatarPreview.value) {
+    return avatarPreview.value;
+  }
+  
+
+  if (isDeleteImage.value) {
+    return 'https://ui-avatars.com/api/?name=' + encodeURIComponent(formData.value.name || 'U') + '&background=random';
+  }
+
+  
+  if (user.value?.img_url) {
+    return user.value.img_url;
+  }
+
+ 
+  return 'https://ui-avatars.com/api/?name=' + encodeURIComponent(formData.value.name || 'U') + '&background=random';
+};
+
+
+const handleRemoveImage = () => {
+  avatarFile.value = null;    
+  avatarPreview.value = null;  
+  if (avatarInputRef.value) avatarInputRef.value.value = ''; 
+  
+  isDeleteImage.value = true;  
+};
 
 const handleImageError = (e) => {
   console.error('Image failed to load:', e.target.src);
@@ -190,6 +211,7 @@ const handleFileSelect = (event) => {
     return;
   }
 
+  isDeleteImage.value = false;
   avatarFile.value = file;
   
   const reader = new FileReader();
@@ -203,26 +225,13 @@ const handleSubmit = async () => {
   errors.value = {};
   let isValid = true;
   
-  if (!formData.value.name.trim()) {
-    errors.value.name = 'Nama lengkap wajib diisi'; 
-    isValid = false;
-  } else if (!/^[a-zA-Z\s]+$/.test(formData.value.name)) {
-    errors.value.name = 'Nama hanya boleh berisi huruf'; 
-    isValid = false;
-  }
+  if (!formData.value.name.trim()) { errors.value.name = 'Nama lengkap wajib diisi'; isValid = false; }
+  else if (!/^[a-zA-Z\s]+$/.test(formData.value.name)) { errors.value.name = 'Nama hanya boleh berisi huruf'; isValid = false; }
 
-  if (user.value && user.value.role === 'user' && !formData.value.nim.trim()) {
-     errors.value.nim = 'NIM wajib diisi'; 
-     isValid = false;
-  }
+  if (user.value && user.value.role === 'user' && !formData.value.nim.trim()) { errors.value.nim = 'NIM wajib diisi'; isValid = false; }
 
-  if (!formData.value.email.trim()) {
-    errors.value.email = 'Email wajib diisi'; 
-    isValid = false;
-  } else if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.value.email)) {
-    errors.value.email = 'Format email tidak valid'; 
-    isValid = false;
-  }
+  if (!formData.value.email.trim()) { errors.value.email = 'Email wajib diisi'; isValid = false; }
+  else if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.value.email)) { errors.value.email = 'Format email tidak valid'; isValid = false; }
   
   if (!isValid) {
     toastRef.value.showToast("error", "Validasi Gagal", "Mohon periksa kembali inputan Anda.");
@@ -237,7 +246,6 @@ const handleSubmit = async () => {
       email: formData.value.email,
     };
 
-
     if (user.value.role === 'user') {
       dataToUpdate.nim = formData.value.nim;
       dataToUpdate.major = formData.value.major;
@@ -249,8 +257,13 @@ const handleSubmit = async () => {
       dataToUpdate.faculty = formData.value.faculty;
     }
 
+ 
     if (avatarFile.value) {
-      dataToUpdate.image = avatarFile.value; 
+
+      dataToUpdate.image = avatarFile.value;
+    } else if (isDeleteImage.value) {
+
+      dataToUpdate.img_delete = true;
     }
     
     await updateUser(dataToUpdate, user.value.id);

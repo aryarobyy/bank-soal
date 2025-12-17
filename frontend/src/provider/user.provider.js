@@ -79,10 +79,9 @@ export const getUsersByRole = async (role, limit = 10, offset = 0) => {
   return res.data.data;
 };
 
-export const changeRole = async (userId, adminId, role) => {
-  const res = await ApiHandler.put(`${USER}/role?id=${userId}`, {
-    admin_id: adminId,
-    role: role,
+export const changeRole = async (id, data) => {
+  const res = await ApiHandler.put(`${USER}/role?id=${id}`, data, {
+    headers: { "Content-Type": "application/json" },
   });
   return res.data;
 };
