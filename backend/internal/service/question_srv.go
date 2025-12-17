@@ -370,9 +370,6 @@ func (s *questionService) GetRandomQuestion(ctx context.Context, total int, subj
 	}
 
 	if subjectId != nil {
-		if *subjectId <= 0 {
-			return nil, fmt.Errorf("invalid subject id")
-		}
 		_, err := s.subjectRepo.GetById(ctx, *subjectId)
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
