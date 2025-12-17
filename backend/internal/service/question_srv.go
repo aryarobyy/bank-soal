@@ -27,7 +27,7 @@ type QuestionService interface {
 	GetByCreatorId(ctx context.Context, creatorId int, limit int, offset int) ([]model.Question, int64, error)
 	GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, int64, error)
 	GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, int64, error)
-	GetRandomQuestion(ctx context.Context, total int, subjectId *int) ([]model.Question, error)
+	GetRandomQuestion(ctx context.Context, total int, subjectId *int, creatorId *int) ([]model.Question, error)
 	GetByCreatorNSubject(ctx context.Context, creatorId int, subjectId int, limit int, offset int) ([]model.Question, int64, error)
 	GetByCreatorNDifficult(ctx context.Context, creatorId int, diff string, limit int, offset int) ([]model.Question, int64, error)
 }
@@ -364,7 +364,7 @@ func (s *questionService) GetBySubject(ctx context.Context, subjectId int, limit
 	return data, total, nil
 }
 
-func (s *questionService) GetRandomQuestion(ctx context.Context, total int, subjectId *int) ([]model.Question, error) {
+func (s *questionService) GetRandomQuestion(ctx context.Context, total int, subjectId *int, creatorId *int) ([]model.Question, error) {
 	if total <= 0 {
 		return nil, fmt.Errorf("total must be greater than zero")
 	}
@@ -381,19 +381,19 @@ func (s *questionService) GetRandomQuestion(ctx context.Context, total int, subj
 			return nil, fmt.Errorf("failed to validate subject: %w", err)
 		}
 
-		questions, err := s.repo.GetRandomQuestionBySubject(ctx, total, *subjectId)
+		questions, err := s.repo.GetRandomQuestionBySubject(ctx, total, *subjectId, creatorId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch questions by subject: %w", err)
 		}
 
 		if len(questions) == 0 {
-			return nil, fmt.Errorf("no questions available for subject %d", *subjectId)
+			return nil, fmt.Errorf("no questions available")
 		}
 
 		return questions, nil
 	}
 
-	questions, err := s.repo.GetRandomQuestion(ctx, total)
+	questions, err := s.repo.GetRandomQuestion(ctx, total, creatorId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch random questions: %w", err)
 	}

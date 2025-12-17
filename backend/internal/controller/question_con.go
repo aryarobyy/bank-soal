@@ -343,11 +343,13 @@ func (h *QuestionController) GetRandomQuestion(c *gin.Context) {
 
 	totalStr := c.Query("total")
 	subjectIdStr := c.Query("subject_id")
+	creatorIdStr := c.Query("creator_id")
 
 	total := helper.BindToInt(totalStr)
 	subjectId := helper.BindToInt(subjectIdStr)
+	creatorId := helper.BindToInt(creatorIdStr)
 
-	data, err := h.service.GetRandomQuestion(ctx, total, &subjectId)
+	data, err := h.service.GetRandomQuestion(ctx, total, &subjectId, &creatorId)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
