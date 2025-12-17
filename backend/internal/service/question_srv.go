@@ -28,6 +28,8 @@ type QuestionService interface {
 	GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, int64, error)
 	GetBySubject(ctx context.Context, subjectId int, limit int, offset int) ([]model.Question, int64, error)
 	GetRandomQuestion(ctx context.Context, total int, subjectId *int) ([]model.Question, error)
+	GetByCreatorNSubject(ctx context.Context, creatorId int, subjectId int, limit int, offset int) ([]model.Question, int64, error)
+	GetByCreatorNDifficult(ctx context.Context, creatorId int, diff string, limit int, offset int) ([]model.Question, int64, error)
 }
 
 type questionService struct {
@@ -338,6 +340,9 @@ func (s *questionService) GetByCreatorId(ctx context.Context, creatorId int, lim
 }
 
 func (s *questionService) GetByDifficult(ctx context.Context, diff string, limit int, offset int) ([]model.Question, int64, error) {
+	if !helper.IsValidDifficulty(diff) {
+		return nil, 0, fmt.Errorf("invalid difficulty format")
+	}
 	data, total, err := s.repo.GetByDifficult(ctx, diff, limit, offset)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -398,4 +403,23 @@ func (s *questionService) GetRandomQuestion(ctx context.Context, total int, subj
 	}
 
 	return questions, nil
+}
+
+func (s *questionService) GetByCreatorNSubject(ctx context.Context, creatorId int, subjectId int, limit int, offset int) ([]model.Question, int64, error) {
+	data, total, err := s.repo.GetByCreatorNSubject(ctx, creatorId, subjectId, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("question not found: %w", err)
+	}
+	return data, total, nil
+}
+
+func (s *questionService) GetByCreatorNDifficult(ctx context.Context, creatorId int, diff string, limit int, offset int) ([]model.Question, int64, error) {
+	if !helper.IsValidDifficulty(diff) {
+		return nil, 0, fmt.Errorf("invalid difficulty format")
+	}
+	data, total, err := s.repo.GetByCreatorNDifficult(ctx, creatorId, diff, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("question not found: %w", err)
+	}
+	return data, total, nil
 }

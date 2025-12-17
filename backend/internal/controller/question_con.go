@@ -357,3 +357,54 @@ func (h *QuestionController) GetRandomQuestion(c *gin.Context) {
 
 	helper.Success(c, questionsRes, "data found")
 }
+
+func (h *QuestionController) GetByCreatorNSubject(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	creatorIdStr := c.Query("creator_id")
+	subjectIdStr := c.Query("subject_id")
+
+	creatorId := helper.BindToInt(creatorIdStr)
+	subjectId := helper.BindToInt(subjectIdStr)
+
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	data, total, err := h.service.GetByCreatorNSubject(ctx, creatorId, subjectId, limit, offset)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	questionsRes := response.QuestionsResponse(data)
+
+	helper.Success(c, gin.H{"data": questionsRes, "total": total}, "data found")
+}
+
+func (h *QuestionController) GetByCreatorNDifficult(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	creatorIdStr := c.Query("creator_id")
+	diff := c.Query("diff")
+
+	creatorId := helper.BindToInt(creatorIdStr)
+
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	data, total, err := h.service.GetByCreatorNDifficult(ctx, creatorId, diff, limit, offset)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	questionsRes := response.QuestionsResponse(data)
+
+	helper.Success(c, gin.H{"data": questionsRes, "total": total}, "data found")
+}

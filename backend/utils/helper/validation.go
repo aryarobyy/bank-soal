@@ -183,3 +183,12 @@ func ValidateAndFilterUserData(userData map[string]interface{}) map[string]inter
 	}
 	return filteredData
 }
+
+func IsValidDifficulty(diff string) bool {
+	switch model.Difficulty(diff) {
+	case model.DifficultyEasy, model.DifficultyMedium, model.DifficultyHard:
+		return true
+	default:
+		return false
+	}
+}

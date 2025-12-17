@@ -28,6 +28,8 @@ func QuestionRoutes(r *gin.Engine, question *controller.QuestionController) {
 			auth.GET("/creator", question.GetByCreator)
 			auth.GET("/subject", question.GetBySubject)
 			auth.GET("/random", question.GetRandomQuestion)
+			auth.GET("/creator/subject", question.GetByCreatorNSubject)
+			auth.GET("/creator/diff", question.GetByCreatorNDifficult)
 		}
 	}
 }

@@ -24,6 +24,8 @@ type QuestionRepository interface {
 	GetByExamId(ctx context.Context, examId int) ([]model.Question, error)
 	GetRandomQuestionBySubject(ctx context.Context, total int, subjectId int) ([]model.Question, error)
 	GetRandomQuestion(ctx context.Context, total int) ([]model.Question, error)
+	GetByCreatorNSubject(ctx context.Context, creatorId int, subjectId int, limit int, offset int) ([]model.Question, int64, error)
+	GetByCreatorNDifficult(ctx context.Context, creatorId int, diff string, limit int, offset int) ([]model.Question, int64, error)
 }
 
 type questionRepository struct {
@@ -286,7 +288,7 @@ func (r *questionRepository) GetBySubject(ctx context.Context, subjectId int, li
 	return q, total, nil
 }
 
-func (r *questionRepository) GetByExamId(ctx context.Context, examId int) ([]model.Question, error) { //Khsusus be jgn dibuatin endpoint
+func (r *questionRepository) GetByExamId(ctx context.Context, examId int) ([]model.Question, error) { // Khsusus be jgn dibuatin endpoint
 	var exam model.Exam
 
 	if err := r.db.WithContext(ctx).
@@ -366,4 +368,56 @@ func (r *questionRepository) GetRandomQuestion(ctx context.Context, total int) (
 	}
 
 	return questions, nil
+}
+
+func (r *questionRepository) GetByCreatorNSubject(ctx context.Context, creatorId int, subjectId int, limit int, offset int) ([]model.Question, int64, error) {
+	var (
+		q     []model.Question
+		total int64
+	)
+	query := r.db.WithContext(ctx).
+		Model(model.Question{}).
+		Where("creator_id = ? AND subject_id = ?", creatorId, subjectId)
+
+	if err := query.
+		Count(&total).
+		Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.
+		Preload("Options").
+		Limit(limit).
+		Offset(offset).
+		Find(&q).
+		Error; err != nil {
+		return nil, 0, err
+	}
+	return q, total, nil
+}
+
+func (r *questionRepository) GetByCreatorNDifficult(ctx context.Context, creatorId int, diff string, limit int, offset int) ([]model.Question, int64, error) {
+	var (
+		q     []model.Question
+		total int64
+	)
+	query := r.db.WithContext(ctx).
+		Model(model.Question{}).
+		Where("creator_id = ? AND difficulty = ?", creatorId, diff)
+
+	if err := query.
+		Count(&total).
+		Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.
+		Preload("Options").
+		Limit(limit).
+		Offset(offset).
+		Find(&q).
+		Error; err != nil {
+		return nil, 0, err
+	}
+	return q, total, nil
 }
