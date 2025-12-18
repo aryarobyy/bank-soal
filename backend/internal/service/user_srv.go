@@ -238,10 +238,18 @@ func (s *userService) GetByEmail(ctx context.Context, email string) (*model.User
 	return data, nil
 }
 
-func (s *userService) Update(ctx context.Context, c *gin.Context, data model.UpdateUser, id int, requesterRole model.Role, currentId int) (*model.User, error) {
+func (s *userService) Update(
+	ctx context.Context,
+	c *gin.Context,
+	data model.UpdateUser,
+	id int,
+	requesterRole model.Role,
+	currentId int,
+) (*model.User, error) {
+
 	oldUser, err := s.repo.GetById(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("user not found: %w", err)
+		return nil, fmt.Errorf("user not found")
 	}
 
 	effectiveRole := oldUser.Role
@@ -249,7 +257,12 @@ func (s *userService) Update(ctx context.Context, c *gin.Context, data model.Upd
 		effectiveRole = *data.Role
 	}
 
-	if err := update.ValidateAuthorization(effectiveRole, oldUser, data, requesterRole, currentId); err != nil {
+	if err := update.ValidateAuthorization(
+		oldUser,
+		effectiveRole,
+		requesterRole,
+		currentId,
+	); err != nil {
 		return nil, err
 	}
 

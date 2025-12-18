@@ -10,33 +10,23 @@ import (
 )
 
 func ValidateAuthorization(
-	effectiveRole model.Role,
 	oldUser *model.User,
-	data model.UpdateUser,
+	effectiveRole model.Role,
 	requesterRole model.Role,
 	currentId int,
 ) error {
 
-	targetRole := oldUser.Role
+	oldRole := oldUser.Role
+	isSelf := oldUser.Id == currentId
+	isRoleChanged := effectiveRole != "" && effectiveRole != oldRole
 
 	if requesterRole == model.RoleUser || requesterRole == model.RoleLecturer {
-		if effectiveRole != "" && effectiveRole != targetRole {
+		if !isSelf {
+			return fmt.Errorf("you can only update your own account")
+		}
+
+		if isRoleChanged {
 			return fmt.Errorf("you are not allowed to change role")
-		}
-		return nil
-	}
-
-	if requesterRole == model.RoleSuperAdmin {
-		if targetRole == model.RoleSuperAdmin {
-			return fmt.Errorf("super admin cannot modify another super admin")
-		}
-
-		if effectiveRole != "" {
-			if effectiveRole != model.RoleAdmin &&
-				effectiveRole != model.RoleLecturer &&
-				effectiveRole != model.RoleUser {
-				return fmt.Errorf("invalid role assignment")
-			}
 		}
 
 		return nil
@@ -44,14 +34,30 @@ func ValidateAuthorization(
 
 	if requesterRole == model.RoleAdmin {
 
-		if targetRole == model.RoleAdmin || targetRole == model.RoleSuperAdmin {
-			return fmt.Errorf("admin cannot modify %s", targetRole)
+		if oldRole == model.RoleSuperAdmin {
+			return fmt.Errorf("admin cannot modify super admin")
 		}
 
-		if effectiveRole != "" {
-			if effectiveRole == model.RoleAdmin || effectiveRole == model.RoleSuperAdmin {
-				return fmt.Errorf("admin cannot assign elevated roles")
-			}
+		if oldRole == model.RoleAdmin && !isSelf {
+			return fmt.Errorf("admin cannot modify another admin")
+		}
+
+		if isRoleChanged &&
+			(effectiveRole == model.RoleAdmin || effectiveRole == model.RoleSuperAdmin) {
+			return fmt.Errorf("admin cannot assign elevated roles")
+		}
+
+		return nil
+	}
+
+	if requesterRole == model.RoleSuperAdmin {
+
+		if oldRole == model.RoleSuperAdmin && !isSelf {
+			return fmt.Errorf("super admin cannot modify another super admin")
+		}
+
+		if isRoleChanged && effectiveRole == model.RoleSuperAdmin {
+			return fmt.Errorf("invalid role assignment")
 		}
 
 		return nil

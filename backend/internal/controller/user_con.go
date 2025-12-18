@@ -168,128 +168,58 @@ func (h *UserController) Update(c *gin.Context) {
 		return
 	}
 
-	currRole, exists := c.Get("role")
+	currRoleVal, exists := c.Get("role")
 	if !exists {
-		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		helper.Error(c, http.StatusUnauthorized, "role not found")
 		return
 	}
 
-	currId, exists := c.Get("user_id")
+	currIdVal, exists := c.Get("user_id")
 	if !exists {
-		helper.Error(c, http.StatusUnauthorized, "id not found in context")
+		helper.Error(c, http.StatusUnauthorized, "user_id not found")
 		return
 	}
 
-	currIdInt, ok := currId.(int)
+	currId, ok := currIdVal.(int)
 	if !ok {
 		helper.Error(c, http.StatusBadRequest, "invalid user_id type")
 		return
 	}
 
-	if id != currIdInt {
-		roleStr, _ := currRole.(string)
-		if roleStr != "admin" && roleStr != "super_admin" {
-			helper.Error(c, http.StatusBadRequest, "you can't update other user profile")
-			return
-		}
-	}
-
-	roleStr, ok := currRole.(string)
+	roleStr, ok := currRoleVal.(string)
 	if !ok {
 		helper.Error(c, http.StatusBadRequest, "invalid role type")
 		return
 	}
 
-	currentRole := model.Role(roleStr)
-
-	name := c.PostForm("name")
-	email := c.PostForm("email")
-	nim := c.PostForm("nim")
-	nip := c.PostForm("nip")
-	username := c.PostForm("username")
-	roleForm := c.PostForm("role")
-	major := c.PostForm("major")
-	faculty := c.PostForm("faculty")
-	academicYear := c.PostForm("academic_year")
-	statusForm := c.PostForm("status")
-	imgDelete := c.PostForm("img_delete")
-
-	if name != "" && len(name) > 100 {
-		helper.Error(c, http.StatusBadRequest, "name too long")
-		return
-	}
-
-	if email != "" {
-		if len(email) > 254 {
-			helper.Error(c, http.StatusBadRequest, "email too long")
-			return
-		}
-		if !helper.IsValidEmail(email) {
-			helper.Error(c, http.StatusBadRequest, "wrong email format")
-			return
-		}
-	}
-
-	if nim != "" && len(nim) > 20 {
-		helper.Error(c, http.StatusBadRequest, "nim too long")
-		return
-	}
-
-	if nip != "" && len(nip) != 18 {
-		helper.Error(c, http.StatusBadRequest, "nip must be exactly 18 characters")
-		return
-	}
-
-	if username != "" {
-		if len(username) > 50 {
-			helper.Error(c, http.StatusBadRequest, "username too long")
-			return
-		}
-		if helper.IsValidName(username) && len(username) < 3 {
-			helper.Error(c, http.StatusBadRequest, "username too short with numbers")
-			return
-		}
-	}
-
-	if academicYear != "" && len(academicYear) != 4 {
-		helper.Error(c, http.StatusBadRequest, "academic year must be 4 digits")
-		return
-	}
-
-	if statusForm != "" {
-		allowedStatuses := map[string]bool{
-			"passed":     true,
-			"not_passed": true,
-		}
-		if !allowedStatuses[statusForm] {
-			helper.Error(c, http.StatusBadRequest, "invalid status")
-			return
-		}
-	}
-
 	updateData := model.UpdateUser{
-		Name:         helper.BindAndConvertToPtr(name),
-		Email:        helper.BindAndConvertToPtr(email),
-		Username:     helper.BindAndConvertToPtr(username),
-		Nim:          helper.BindAndConvertToPtr(nim),
-		Nip:          helper.BindAndConvertToPtr(nip),
-		Major:        helper.BindAndConvertToPtr(major),
-		Faculty:      helper.BindAndConvertToPtr(faculty),
-		AcademicYear: helper.BindAndConvertToPtr(academicYear),
-		Role:         (*model.Role)(helper.BindAndConvertToPtr(roleForm)),
-		Status:       (*model.Status)(helper.BindAndConvertToPtr(statusForm)),
-		ImgDelete:    helper.BindAndConvertToBoolPtr(imgDelete),
+		Name:         helper.BindAndConvertToPtr(c.PostForm("name")),
+		Email:        helper.BindAndConvertToPtr(c.PostForm("email")),
+		Username:     helper.BindAndConvertToPtr(c.PostForm("username")),
+		Nim:          helper.BindAndConvertToPtr(c.PostForm("nim")),
+		Nip:          helper.BindAndConvertToPtr(c.PostForm("nip")),
+		Major:        helper.BindAndConvertToPtr(c.PostForm("major")),
+		Faculty:      helper.BindAndConvertToPtr(c.PostForm("faculty")),
+		AcademicYear: helper.BindAndConvertToPtr(c.PostForm("academic_year")),
+		Role:         (*model.Role)(helper.BindAndConvertToPtr(c.PostForm("role"))),
+		Status:       (*model.Status)(helper.BindAndConvertToPtr(c.PostForm("status"))),
+		ImgDelete:    helper.BindAndConvertToBoolPtr(c.PostForm("img_delete")),
 	}
 
-	updatedUser, err := h.service.Update(ctx, c, updateData, id, currentRole, currIdInt)
+	updatedUser, err := h.service.Update(
+		ctx,
+		c,
+		updateData,
+		id,
+		model.Role(roleStr),
+		currId,
+	)
 	if err != nil {
-		helper.Error(c, http.StatusInternalServerError, err.Error())
+		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	userRes := response.UserResponse(*updatedUser)
-
-	helper.Success(c, userRes, "user updated successfully")
+	helper.Success(c, response.UserResponse(*updatedUser), "user updated successfully")
 }
 
 func (h *UserController) Delete(c *gin.Context) {
