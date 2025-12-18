@@ -166,7 +166,7 @@ const logout = async () => {
   
   // 3. Redirect
   user.value = null;
-  window.location.href = '/'; 
+  window.location.href = '/landing'; 
 };
 
 const isActive = (path) => {

@@ -80,7 +80,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useGetCurrentUser } from '../hooks/useGetCurrentUser';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-
+import { logoutUser } from '../provider/user.provider';
 const router = useRouter();
 const route = useRoute();
 const { user } = useGetCurrentUser();
@@ -95,11 +95,18 @@ onMounted(() => {
   }
 });
 
-const logout = () => {
+const logout = async () => {
+  try {
+    await logoutUser();
+  } catch (err) {
+    console.error("Logout API failed", err);
+  }
   const { removeValue: removeToken } = useLocalStorage('token');
   const { removeValue: removeId } = useLocalStorage('id');
   removeToken();
   removeId();
-  window.location.href = '/';
+  localStorage.removeItem('user');
+  localStorage.clear();
+  window.location.href = '/landing';
 };
 </script>

@@ -29,8 +29,8 @@ import ManageDosen from '../views/ManageDosen/ManageDosen.vue'
 import ManageXlsFiles from '../views/Admin/ManageXlsFiles.vue'
 
 // Halaman Soal (Shared)
-import LecturerSoal from '../views/question/LecturerSoal.vue'
-import LecturerSoalList from '../views/question/LecturerSoalList.vue'
+import SoalHome from '../views/question/SoalHome.vue'
+import SoalList from '../views/question/SoalList.vue'
 import CreateSoal from '../views/question/CreateSoal.vue'
 import CreateManualSoal from '../views/question/CreateManualSoal.vue'
 import UploadJsonSoal from '../views/question/UploadJsonSoal.vue'
@@ -47,10 +47,11 @@ import SuperAdminDashboard from '../views/SuperAdmin/SuperAdminDashboard.vue'
 import ManageAdmin from '../views/ManageAdmin/ManageAdmin.vue'
 
 
+
 // --- GRUP RUTE SOAL (Shared) ---
 const soalRoutes = [
-  { path: '', name: 'SoalHome', component: LecturerSoal, },
-  { path: 'list', name: 'SoalList', component: LecturerSoalList, },
+  { path: '', name: 'SoalHome', component: SoalHome, },
+  { path: 'list', name: 'SoalList', component: SoalList, },
   { path: 'create', name: 'SoalCreate', component: CreateSoal, },
   { path: 'create-manual', name: 'SoalCreateManual', component: CreateManualSoal, },
   { path: 'edit/:id', name: 'SoalEdit', component: CreateManualSoal, },
@@ -69,7 +70,21 @@ const routes = [
   
   { path: '/login', name: 'login', component: LoginView },
   
+ 
 
+
+    {
+      path: '/landing',
+      component: UserLayout, 
+   
+      children: [
+        { 
+          path: '', 
+          name: 'LandingPage', 
+          component: HomePage 
+        }
+      ]
+    },
   {
     path: "/exam/start",
     name: "ExamDo",
@@ -80,8 +95,10 @@ const routes = [
   {
     path: '/',
     component: UserLayout,
+    meta: { requiresAuth: true, role: 'user' },
+    redirect: '/dashboard',
     children: [
-      { path: 'landing', name: 'LandingPage', component: HomePage },
+    
       
      
       { path: 'ujian', name: 'UserExamList', component: UserExamList },
@@ -97,7 +114,7 @@ const routes = [
       { path: 'profile/:id', name: 'Profile', component: Profile },
       { path: 'update-profile', name: 'UpdateProfile', component: UpdateProfile },
       { 
-        path: '', 
+        path: '/dashboard', 
         name: 'Dashboard', 
         component: UserDashboard 
       },
@@ -108,6 +125,7 @@ const routes = [
   {
     path: '/dosen',
     component: DosenLayout,
+    meta: { requiresAuth: true, role: 'lecturer' },
     redirect: '/dosen/dashboard',
     children: [
       { path: 'dashboard', name: 'LecturerDashboard', component: LecturerDashboard },
@@ -140,6 +158,7 @@ const routes = [
   {
     path: '/admin',
     component: AdminLayout,
+    meta: { requiresAuth: true, role: 'admin' },
     redirect: '/admin/dashboard',
     children: [
       { path: 'dashboard', name: 'AdminDashboard', component: AdminDashboard },
@@ -182,6 +201,7 @@ const routes = [
   {
     path: '/superadmin',
     component: SuperAdminLayout, 
+    meta: { requiresAuth: true, role: 'super_admin' },
     redirect: '/superadmin/dashboard',
     children: [
       {
@@ -205,4 +225,59 @@ const router = createRouter({
   routes
 })
 
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token');
+  let user = null;
+
+  try {
+    const userStr = localStorage.getItem('user');
+    
+    if (userStr && userStr !== 'undefined' && userStr !== 'null') {
+      user = JSON.parse(userStr);
+    }
+  } catch (e) {
+    user = null;
+  }
+
+ 
+  if (token && !user) {
+    localStorage.clear();
+    return next({ name: 'Login' });
+  }
+
+  
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (!token) {
+      next({ name: 'Login' });
+    } else {
+   
+      if (to.meta.role && user && to.meta.role !== user.role) {
+        
+        if (user.role === 'admin') next({ name: 'AdminDashboard' });
+        else if (user.role === 'lecturer') next({ name: 'LecturerDashboard' });
+        else if (user.role === 'super_admin') next({ name: 'SuperAdminDashboard' });
+        else next({ name: 'Dashboard' }); 
+      } else {
+        next();
+      }
+    }
+  } 
+
+  else if (to.matched.some(record => record.meta.guest)) {
+    if (token && user) {
+      
+      if (user.role === 'admin') next({ name: 'AdminDashboard' });
+      else if (user.role === 'lecturer') next({ name: 'LecturerDashboard' });
+      else if (user.role === 'super_admin') next({ name: 'SuperAdminDashboard' });
+      else next({ name: 'Dashboard' });
+    } else {
+      next();
+    }
+  } 
+  else {
+    next();
+  }
+});
+
 export default router
+

@@ -50,7 +50,7 @@ import { getPaginatedSubjects, deleteSubject } from '../../provider/subject.prov
 import { usePopup } from '../../hooks/usePopup'; 
 
 export default {
-  name: 'LecturerSoal',
+  name: 'SoalHome',
   components: { SoalManagement },
 
   setup() {

@@ -160,7 +160,7 @@ const logout = async () => {
   localStorage.clear();
 
   user.value = null;
-  window.location.href = '/';
+  window.location.href = '/landing';
 };
 
 const isActive = (path) => {
