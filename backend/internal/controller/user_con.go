@@ -385,11 +385,11 @@ func (h *UserController) GetByName(c *gin.Context) {
 	}
 
 	name := c.Query("name")
-	users, total, err := h.service.GetByName(ctx, name, limit, offset)
 	if name != "" && len(name) > 256 {
 		helper.Error(c, http.StatusBadRequest, "invalid name")
 		return
 	}
+	users, total, err := h.service.GetByName(ctx, name, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusNotFound, err.Error())
 		return
