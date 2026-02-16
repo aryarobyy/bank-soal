@@ -11,9 +11,9 @@ type ExamRepoMock struct {
 	mock.Mock
 }
 
-func (m *ExamRepoMock) Create(ctx context.Context, req model.CreateExam) (*model.Exam, error) {
+func (m *ExamRepoMock) Create(ctx context.Context, req model.CreateExam) error {
 	args := m.Called(ctx, req)
-	return GetReturn[*model.Exam](args)
+	return args.Error(0)
 }
 
 func (m *ExamRepoMock) GetById(ctx context.Context, id int) (*model.Exam, error) {
@@ -75,15 +75,4 @@ func (m *ExamRepoMock) CheckQuestion(ctx context.Context, examId int, questionId
 	}
 
 	return args.Get(0).(bool), args.Error(1)
-}
-
-func (m *ExamRepoMock) GetByCreator(ctx context.Context, creatorId int, limit int, offset int) ([]model.Exam, error) {
-	args := m.Called(ctx, creatorId, limit, offset)
-
-	var zero []model.Exam
-	if args.Get(0) == nil {
-		return zero, args.Error(1)
-	}
-
-	return args.Get(0).([]model.Exam), args.Error(1)
 }

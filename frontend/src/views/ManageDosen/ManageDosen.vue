@@ -444,7 +444,17 @@ const simpanDosen = async () => {
 
     closeModal();
     
-    await fetchDosen();
+    if (!editMode.value) {
+      try {
+        const response = await getUsersByRole("lecturer", 1, 0);
+        totalItems.value = response.total || 0;
+        currentPage.value = totalPages.value; 
+      } catch (e) {
+        fetchDosen(); 
+      }
+    } else {
+      fetchDosen(); 
+    }
 
   } catch (err) {
     console.error("Gagal menyimpan data:", err);

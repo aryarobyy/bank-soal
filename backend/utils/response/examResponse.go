@@ -10,8 +10,6 @@ func ExamResponse(data model.Exam) model.ExamResponse {
 		Difficulty:  data.Difficulty,
 		LongTime:    data.LongTime,
 		CreatorId:   data.CreatorId,
-		SubjectId:   data.SubjectId,
-		Subject:     data.Subject,
 		StartedAt:   data.StartedAt,
 		FinishedAt:  data.FinishedAt,
 		Score:       data.Score,

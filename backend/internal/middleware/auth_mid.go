@@ -52,6 +52,11 @@ func RoleGuard(allowedRoles ...model.Role) gin.HandlerFunc {
 			return
 		}
 
+		if strings.EqualFold(userRole, string(model.RoleSuperAdmin)) {
+			c.Next()
+			return
+		}
+
 		allowed := false
 		for _, r := range allowedRoles {
 			if strings.EqualFold(string(r), userRole) {

@@ -13,7 +13,7 @@ import (
 )
 
 type ExamService interface {
-	Create(ctx context.Context, data model.CreateExam) (*model.Exam, error)
+	Create(ctx context.Context, data model.CreateExam) error
 	GetById(ctx context.Context, id int) (*model.Exam, error)
 	Update(ctx context.Context, newData model.Exam, id int, userId int) (*model.Exam, error)
 	Delete(ctx context.Context, id int, userId int) error
@@ -42,17 +42,16 @@ func NewExamService(
 	}
 }
 
-func (s *examService) Create(ctx context.Context, data model.CreateExam) (*model.Exam, error) {
+func (s *examService) Create(ctx context.Context, data model.CreateExam) error {
 	if data.FinishedAt.Before(*data.StartedAt) {
-		return nil, fmt.Errorf("finished_at must be after started_at")
+		return fmt.Errorf("finished_at must be after started_at")
 	}
 
-	exam, err := s.repo.Create(ctx, data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create exam: %w", err)
+	if err := s.repo.Create(ctx, data); err != nil {
+		return fmt.Errorf("failed to create exam: %w", err)
 	}
 
-	return exam, nil
+	return nil
 }
 
 func (s *examService) GetById(ctx context.Context, id int) (*model.Exam, error) {

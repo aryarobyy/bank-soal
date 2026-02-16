@@ -532,8 +532,8 @@ const simpanMahasiswa = async () => {
 
     } catch (err) {
       console.error("Gagal menyimpan data (Update):", err);
-      showError = err.response?.data?.message || "Terjadi kesalahan saat menyimpan data.";
-      alert(errorMsg);
+      const errorMsg = err.response?.data?.message || "Terjadi kesalahan saat menyimpan data.";
+      showError("Gagal Update", errorMsg);
       fetchMahasiswa();
     }
 
@@ -574,8 +574,8 @@ const simpanMahasiswa = async () => {
 
     } catch (err) {
       console.error("Gagal menambah data:", err);
-      showError = err.response?.data?.message || "Terjadi kesalahan saat menambah data.";
-      alert(errorMsg);
+      const errorMsg = err.response?.data?.message || "Terjadi kesalahan saat menambah data.";
+      showError("Gagal Tambah", errorMsg);
     }
   }
 };

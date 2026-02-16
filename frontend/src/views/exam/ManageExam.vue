@@ -10,10 +10,9 @@
       </router-link>
     </div>
 
-    <!-- Filter Row 1: Urutkan & Mata Kuliah -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <div class="flex items-center gap-2">
-        <span class="text-sm text-gray-600 font-medium whitespace-nowrap">Urutkan:</span>
+        <span class="text-sm text-gray-600 font-medium">Urutkan:</span>
         <select v-model="sortBy" class="border rounded-lg p-2 flex-1 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
           <option value="Last Modified">Terbaru (Last Modified)</option>
           <option value="A-Z">Judul (A-Z)</option>
@@ -21,22 +20,6 @@
         </select>
       </div>
 
-      <!-- Filter Mata Kuliah -->
-      <div class="flex items-center gap-2">
-        <span class="text-sm text-gray-600 font-medium whitespace-nowrap">
-          <i class="fas fa-filter text-indigo-400 mr-1"></i>Mata Kuliah:
-        </span>
-        <select v-model="filterSubjectId" class="border rounded-lg p-2 flex-1 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
-          <option :value="null">Semua</option>
-          <option v-for="subject in availableSubjects" :key="subject.id" :value="subject.id">
-            {{ subject.title }} ({{ subject.code }})
-          </option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Filter Row 2: Search -->
-    <div class="mb-6">
       <div class="flex items-center border rounded-lg px-3 bg-white focus-within:ring-2 focus-within:ring-blue-500">
         <i class="fas fa-search text-gray-400 mr-2"></i>
         <input
@@ -59,7 +42,6 @@
         <thead>
           <tr class="text-left border-b text-sm font-bold bg-gray-100 text-gray-700">
             <th class="p-3">Nama Ujian & Deskripsi</th>
-            <th class="p-3">Mata Kuliah</th>
             <th class="p-3">Durasi</th>
             <th class="p-3">Waktu Mulai</th>
             <th class="p-3 text-center">Aksi</th>
@@ -75,12 +57,6 @@
             <td class="p-3">
               <div class="font-bold text-gray-800">{{ exam.title }}</div>
               <div class="text-xs text-gray-500 mt-1 line-clamp-1">{{ exam.description || 'Tidak ada deskripsi' }}</div>
-            </td>
-            <td class="p-3">
-              <span v-if="exam.subject" class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-xs font-semibold">
-                {{ exam.subject.title }}
-              </span>
-              <span v-else class="text-xs text-gray-400 italic">Tidak ada</span>
             </td>
             <td class="p-3">
               <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-semibold">
@@ -108,7 +84,7 @@
           </tr>
 
           <tr v-if="paginatedExams.length === 0">
-            <td colspan="5" class="text-center p-8 text-gray-500">
+            <td colspan="4" class="text-center p-8 text-gray-500">
               <div class="flex flex-col items-center">
                 <i class="fas fa-inbox text-4xl mb-2 text-gray-300"></i>
                 <p>Tidak ada ujian ditemukan.</p>
@@ -148,7 +124,6 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 // PENTING: Pastikan getExamsByCreator sudah ada di provider
 import { getAllExam, deleteExam, getExamsByCreator } from "../../provider/exam.provider";
-import { getPaginatedSubjects } from "../../provider/subject.provider";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import { usePopup } from "../../hooks/usePopup";
 
@@ -158,20 +133,12 @@ const { showConfirm, showSuccess, showError } = usePopup();
 const { user } = useGetCurrentUser();
 
 const exams = ref([]);
-const subjects = ref([]);
 const search = ref("");
 const sortBy = ref("Last Modified");
-const filterSubjectId = ref(null);
 const page = ref(1);
 const limit = 10;
 const totalItems = ref(0);
 const loading = ref(false);
-
-// Computed: subjects that exist in the loaded exams
-const availableSubjects = computed(() => {
-  const subjectIds = [...new Set(exams.value.map(e => e.subject_id).filter(Boolean))];
-  return subjects.value.filter(s => subjectIds.includes(s.id));
-});
 
 
 const hasFullAccess = computed(() => {
@@ -270,10 +237,6 @@ const removeExam = async (id) => {
 const filteredExams = computed(() => {
   let data = [...exams.value];
 
-  // Filter by subject
-  if (filterSubjectId.value) {
-    data = data.filter(e => e.subject_id === filterSubjectId.value);
-  }
 
   if (search.value) {
     const query = search.value.toLowerCase();
@@ -326,25 +289,7 @@ const formatDate = (dateString) => {
 };
 
 
-const fetchSubjects = async () => {
-  try {
-    const response = await getPaginatedSubjects(100, 0);
-    if (response?.data?.data && Array.isArray(response.data.data)) {
-      subjects.value = response.data.data;
-    } else if (response?.data && Array.isArray(response.data)) {
-      subjects.value = response.data;
-    } else {
-      subjects.value = [];
-    }
-  } catch (error) {
-    console.error("Failed to load subjects", error);
-  }
-};
-
-onMounted(() => {
-  fetchSubjects();
-  loadExams();
-});
+onMounted(loadExams);
 
 
 watch([page, user], loadExams);

@@ -47,10 +47,6 @@ func NewUserService(repo repository.UserRepository) UserService {
 }
 
 func (s *userService) Register(ctx context.Context, data model.RegisterCredential, requesterRole model.Role) error {
-	if requesterRole == model.RoleSuperAdmin && data.Role != model.RoleAdmin {
-		return fmt.Errorf("super admin cannot create non admin")
-	}
-
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(data.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
@@ -214,10 +210,6 @@ func (s *userService) GetById(ctx context.Context, id int) (*model.User, error) 
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
-	if data.Role == model.RoleSuperAdmin {
-		return nil, fmt.Errorf("user not found")
-	}
-
 	return data, nil
 }
 
@@ -231,10 +223,6 @@ func (s *userService) GetByEmail(ctx context.Context, email string) (*model.User
 		return nil, fmt.Errorf("user with email %s not found: %w", email, err)
 	}
 
-	if data.Role == model.RoleSuperAdmin {
-		return nil, fmt.Errorf("user not found")
-	}
-
 	return data, nil
 }
 
@@ -246,7 +234,6 @@ func (s *userService) Update(
 	requesterRole model.Role,
 	currentId int,
 ) (*model.User, error) {
-
 	oldUser, err := s.repo.GetById(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("user not found")
@@ -316,20 +303,7 @@ func (s *userService) GetMany(ctx context.Context, limit int, offset int) ([]mod
 		return nil, 0, fmt.Errorf("failed to get users: %w", err)
 	}
 
-	filtered := make([]model.User, 0)
-	hiddenCount := int64(0)
-
-	for _, u := range dataList {
-		if u.Role == model.RoleSuperAdmin {
-			hiddenCount++
-			continue
-		}
-		filtered = append(filtered, u)
-	}
-
-	totalWithoutSA := total - hiddenCount
-
-	return filtered, totalWithoutSA, nil
+	return dataList, total, nil
 }
 
 func (s *userService) GetByNim(ctx context.Context, nim string, requesterRole model.Role) (*model.User, error) {
@@ -340,10 +314,6 @@ func (s *userService) GetByNim(ctx context.Context, nim string, requesterRole mo
 	data, err := s.repo.GetByNim(ctx, nim)
 	if err != nil {
 		return nil, fmt.Errorf("user with nim %q not found: %w", nim, err)
-	}
-
-	if data.Role == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
-		return nil, fmt.Errorf("user not found")
 	}
 
 	return data, nil
@@ -359,10 +329,6 @@ func (s *userService) GetByNip(ctx context.Context, nip string, requesterRole mo
 		return nil, fmt.Errorf("user with nip %q not found: %w", nip, err)
 	}
 
-	if data.Role == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
-		return nil, fmt.Errorf("user not found")
-	}
-
 	return data, nil
 }
 
@@ -376,15 +342,11 @@ func (s *userService) GetByUsn(ctx context.Context, username string, requesterRo
 		return nil, fmt.Errorf("user with username %q not found: %w", username, err)
 	}
 
-	if data.Role == model.RoleSuperAdmin && requesterRole != model.RoleSuperAdmin {
-		return nil, fmt.Errorf("user not found")
-	}
-
 	return data, nil
 }
 
 func (s *userService) GetByName(ctx context.Context, name string, limit int, offset int) ([]model.User, int64, error) {
-	if helper.IsValidName(name) {
+	if !helper.IsValidName(name) {
 		return nil, 0, fmt.Errorf("name cannot contain numbers")
 	}
 
@@ -393,31 +355,13 @@ func (s *userService) GetByName(ctx context.Context, name string, limit int, off
 		return nil, 0, fmt.Errorf("user with name %q not found: %w", name, err)
 	}
 
-	filtered := make([]model.User, 0)
-	hiddenCount := int64(0)
-
-	for _, u := range dataList {
-		if u.Role == model.RoleSuperAdmin {
-			hiddenCount++
-			continue
-		}
-		filtered = append(filtered, u)
-	}
-
-	totalWithoutSA := total - hiddenCount
-
-	return filtered, totalWithoutSA, nil
+	return dataList, total, nil
 }
 
 func (s *userService) GetByRole(ctx context.Context, role string, limit int, offset int, requesterRole string) ([]model.User, int64, error) {
 	modelRole := model.Role(role)
-	requesterRoleModel := model.Role(requesterRole)
 
-	if modelRole == model.RoleSuperAdmin && requesterRoleModel != model.RoleSuperAdmin {
-		return nil, 0, fmt.Errorf("user not found")
-	}
-
-	if modelRole != model.RoleAdmin && modelRole != model.RoleUser && modelRole != model.RoleLecturer {
+	if modelRole != model.RoleAdmin && modelRole != model.RoleUser && modelRole != model.RoleLecturer && modelRole != model.RoleSuperAdmin {
 		return nil, 0, fmt.Errorf("invalid role: %s", role)
 	}
 
@@ -448,7 +392,7 @@ func (s *userService) ChangePassword(ctx context.Context, id int, newPassword st
 	}
 
 	if role == model.RoleAdmin && user.Role == model.RoleSuperAdmin {
-		return fmt.Errorf("admin cannot change super admin role")
+		return fmt.Errorf("admin cannot change super admin password")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
@@ -469,7 +413,6 @@ func (s *userService) ChangeRole(
 	input model.ChangeRoleCredential,
 	requesterRole model.Role,
 ) error {
-
 	if input.Role == model.RoleAdmin && requesterRole != model.RoleSuperAdmin {
 		return fmt.Errorf("you dont have permission to assign admin role")
 	}

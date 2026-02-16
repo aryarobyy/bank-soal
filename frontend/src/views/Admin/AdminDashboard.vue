@@ -13,11 +13,11 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div class="p-6 bg-white rounded-lg shadow-md flex items-center gap-5">
           <div class="bg-blue-100 p-4 rounded-full">
-            <GraduationCap class="w-8 h-8 text-blue-600" />
+            <Users class="w-8 h-8 text-blue-600" />
           </div>
           <div>
-            <p class="text-sm text-gray-500">Total Mahasiswa</p>
-            <p class="text-3xl font-bold text-dark-text">{{ stats.totalStudents }}</p>
+            <p class="text-sm text-gray-500">Total Pengguna</p>
+            <p class="text-3xl font-bold text-dark-text">{{ stats.totalUsers }}</p>
           </div>
         </div>
         
@@ -75,7 +75,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Users, UserCheck, BookOpen, FileText, GraduationCap } from 'lucide-vue-next';
+import { Users, UserCheck, BookOpen, FileText } from 'lucide-vue-next';
 import { getUsers, getUsersByRole } from '../../provider/user.provider';
 import { getAllExam } from '../../provider/exam.provider';
 import { getmanyQuestions } from '../../provider/question.provider';
@@ -83,7 +83,7 @@ import { getmanyQuestions } from '../../provider/question.provider';
 const loading = ref(true);
 const error = ref(null);
 const stats = ref({
-  totalStudents: 0,
+  totalUsers: 0,
   totalLecturers: 0,
   totalExams: 0, 
   totalQuestions: 0,
@@ -92,9 +92,8 @@ const recentUsers = ref([]);
 
 const fetchDashboardData = async () => {
   try {
-    const [userResponse, studentResponse, lecturerResponse, examResponse, questionResponse] = await Promise.all([
+    const [userResponse, lecturerResponse, examResponse, questionResponse] = await Promise.all([
       getUsers(10, 0), 
-      getUsersByRole('user', 1, 0),
       getUsersByRole('lecturer', 1, 0),
       getAllExam(1, 0), 
       getmanyQuestions(1, 0)
@@ -102,9 +101,8 @@ const fetchDashboardData = async () => {
 
  
     const userList = userResponse.data || [];
-    // const totalUsers = userResponse.total || 0;
+    const totalUsers = userResponse.total || 0;
     
-    const totalStudents = studentResponse.total || 0;
     const totalLecturers = lecturerResponse.total || 0;
     
    
@@ -113,7 +111,7 @@ const fetchDashboardData = async () => {
     const totalQuestions = questionResponse.total || 0; 
 
     // Set Statistik
-    stats.value.totalStudents = totalStudents;
+    stats.value.totalUsers = totalUsers;
     stats.value.totalLecturers = totalLecturers;
     stats.value.totalExams = totalExams; 
     stats.value.totalQuestions = totalQuestions;

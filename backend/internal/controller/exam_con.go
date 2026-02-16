@@ -36,14 +36,11 @@ func (h *ExamController) Create(c *gin.Context) {
 		return
 	}
 
-	exam, err := h.service.Create(ctx, data)
-	if err != nil {
+	if err := h.service.Create(ctx, data); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	examRes := response.ExamResponse(*exam)
-	helper.Success(c, examRes, "exam created")
+	helper.Success(c, data, "exam created")
 }
 
 func (h *ExamController) GetById(c *gin.Context) {

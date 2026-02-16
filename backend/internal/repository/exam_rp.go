@@ -9,7 +9,7 @@ import (
 )
 
 type ExamRepository interface {
-	Create(ctx context.Context, req model.CreateExam) (*model.Exam, error)
+	Create(ctx context.Context, req model.CreateExam) error
 	GetById(ctx context.Context, id int) (*model.Exam, error)
 	Update(ctx context.Context, e model.Exam, id int) (*model.Exam, error)
 	Delete(ctx context.Context, id int) error
@@ -31,20 +31,19 @@ func NewExamRepository(db *gorm.DB) ExamRepository {
 	return &examRepository{db: db}
 }
 
-func (r *examRepository) Create(ctx context.Context, req model.CreateExam) (*model.Exam, error) {
-	exam := model.Exam{
-		Title:       req.Title,
-		Description: req.Description,
-		Difficulty:  model.Difficulty(req.Difficulty),
-		LongTime:    req.LongTime,
-		CreatorId:   req.CreatorId,
-		SubjectId:   req.SubjectId,
-		StartedAt:   req.StartedAt,
-		FinishedAt:  req.FinishedAt,
-		Score:       req.Score,
-	}
+func (r *examRepository) Create(ctx context.Context, req model.CreateExam) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		exam := model.Exam{
+			Title:       req.Title,
+			Description: req.Description,
+			Difficulty:  model.Difficulty(req.Difficulty),
+			LongTime:    req.LongTime,
+			CreatorId:   req.CreatorId,
+			StartedAt:   req.StartedAt,
+			FinishedAt:  req.FinishedAt,
+			Score:       req.Score,
+		}
 
-	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&exam).Error; err != nil {
 			return err
 		}
@@ -65,11 +64,6 @@ func (r *examRepository) Create(ctx context.Context, req model.CreateExam) (*mod
 
 		return nil
 	})
-
-	if err != nil {
-		return nil, err
-	}
-	return &exam, nil
 }
 
 func (r *examRepository) GetById(ctx context.Context, id int) (*model.Exam, error) {
@@ -77,7 +71,6 @@ func (r *examRepository) GetById(ctx context.Context, id int) (*model.Exam, erro
 
 	if err := r.db.WithContext(ctx).
 		Model(model.Exam{}).
-		Preload("Subject").
 		First(&e, id).
 		Error; err != nil {
 		return nil, err
@@ -158,7 +151,6 @@ func (r *examRepository) GetMany(ctx context.Context, limit int, offset int) ([]
 
 	if err := r.db.WithContext(ctx).
 		Model(&model.Exam{}).
-		Preload("Subject").
 		Limit(limit).
 		Offset(offset).
 		Find(&e).
@@ -254,7 +246,6 @@ func (r *examRepository) GetByCreator(ctx context.Context, creatorId int, limit 
 
 	if err := r.db.WithContext(ctx).
 		Model(&model.Exam{}).
-		Preload("Subject").
 		Limit(limit).
 		Offset(offset).
 		Where("creator_id = ?", creatorId).

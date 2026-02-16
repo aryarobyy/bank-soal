@@ -9,8 +9,6 @@ type Exam struct {
 	Difficulty  Difficulty `json:"difficulty" gorm:"type:enum('easy','medium','hard');not null" validate:"oneof=easy medium hard"`
 	LongTime    int        `json:"long_time" validate:"required,min=1"` // menit
 	CreatorId   int        `json:"creator_id" validate:"required" gorm:"index"`
-	SubjectId   *int       `json:"subject_id" gorm:"index"`
-	Subject     *Subject   `json:"subject,omitempty" gorm:"foreignKey:SubjectId"`
 	StartedAt   *time.Time `json:"started_at" validate:"required"`
 	FinishedAt  *time.Time `json:"finished_at" validate:"required, gtfield=StartedAt"`
 	Score       int        `json:"score" validate:"required"`
@@ -27,7 +25,6 @@ type CreateExam struct {
 	Difficulty  string     `json:"difficulty" validate:"required,oneof=easy medium hard"`
 	LongTime    int        `json:"long_time" validate:"required,min=1"`
 	CreatorId   int        `json:"creator_id" validate:"required"`
-	SubjectId   *int       `json:"subject_id"`
 	StartedAt   *time.Time `json:"started_at"`
 	FinishedAt  *time.Time `json:"finished_at"`
 	Score       int        `json:"score"`
@@ -41,8 +38,6 @@ type ExamResponse struct {
 	Difficulty  Difficulty `json:"difficulty"`
 	LongTime    int        `json:"long_time"` // menit
 	CreatorId   int        `json:"creator_id"`
-	SubjectId   *int       `json:"subject_id"`
-	Subject     *Subject   `json:"subject,omitempty"`
 	StartedAt   *time.Time `json:"started_at"`
 	FinishedAt  *time.Time `json:"finished_at"`
 	Score       int        `json:"score"`
