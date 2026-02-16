@@ -1,0 +1,465 @@
+<template>
+  <div class="min-h-screen bg-[#e9edfc] flex items-center justify-center px-4">
+    <div
+      class="w-full max-w-5xl bg-white rounded-3xl shadow-lg p-6 sm:p-8 border border-gray-200"
+    >
+      <div v-if="loading" class="text-center text-gray-500 py-10">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        Memuat ujian...
+      </div>
+
+      <div v-else-if="error" class="text-center text-red-500 py-10">
+        {{ error }}
+      </div>
+
+      <div
+        v-else-if="!questions.length"
+        class="text-center text-gray-600 py-10"
+      >
+        Soal tidak tersedia.
+      </div>
+
+      <div v-else>
+        <div class="mb-6 flex justify-between items-center">
+          <h1 class="text-xl sm:text-2xl font-bold text-gray-800">
+            {{ exam?.title || "Ujian" }}
+          </h1>
+
+          <div class="text-right">
+            <p class="text-sm text-gray-500">
+              Soal {{ currentNo }} dari {{ questions.length }}
+            </p>
+            <p class="text-sm font-semibold text-red-600">
+              ⏱ {{ formattedTime }}
+            </p>
+            <p class="text-xs mt-1 h-4 font-medium transition-colors duration-300" :class="saveStatusColor">
+              {{ saveStatusText }}
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-[#f5f7ff] rounded-2xl p-6 sm:p-8 mb-8">
+          
+          <div v-if="currentQuestion?.img_url" class="mb-5 flex justify-center">
+            <img 
+              :src="constructImageUrl(currentQuestion.img_url)" 
+              alt="Gambar Soal"
+              loading="lazy"
+              class="max-h-[300px] max-w-full rounded-lg shadow-sm border border-gray-300 object-contain"
+            />
+          </div>
+
+          <p class="text-sm sm:text-base font-semibold text-gray-800 mb-4">
+            {{ currentQuestion?.question_text || "-" }}
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              v-for="opt in currentQuestion?.options || []"
+              :key="opt.id"
+              type="button"
+              @click="selectAnswer(opt.id)"
+              :class="[
+                'w-full text-left px-4 py-3 rounded-xl border text-base transition',
+                answers[currentNo - 1] === opt.id
+                  ? 'bg-blue-600 text-white border-blue-600 shadow'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400',
+              ]"
+            >
+              <span class="font-bold mr-2">{{ opt.option_label || opt.label }}.</span>
+              {{ opt.option_text || opt.text || "NO_TEXT" }}
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-2 mb-6">
+          <button
+            v-for="n in questions.length"
+            :key="n"
+            @click="goToQuestion(n)"
+            type="button"
+            :class="[
+              'w-8 h-8 sm:w-9 sm:h-9 text-xs sm:text-sm rounded-full border transition',
+              currentNo === n
+                ? 'bg-blue-600 text-white border-blue-600'
+                : answers[n-1] 
+                  ? 'bg-green-100 text-green-700 border-green-300'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400',
+            ]"
+          >
+            {{ n }}
+          </button>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <button
+            class="px-4 py-2 rounded-md text-sm bg-gray-200 text-gray-700 disabled:opacity-50"
+            :disabled="currentNo === 1"
+            @click="prevQuestion"
+          >
+            ← Sebelumnya
+          </button>
+
+          <button
+            v-if="currentNo < questions.length"
+            class="px-4 py-2 rounded-md text-sm bg-blue-600 text-white hover:bg-blue-700"
+            @click="nextQuestion"
+          >
+            Selanjutnya →
+          </button>
+
+          <button
+            v-else
+            class="px-4 py-2 rounded-md text-sm bg-green-600 text-white hover:bg-green-700"
+            @click="finishExam(false)"
+          >
+            Selesaikan Ujian
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted, watch } from "vue"; 
+import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
+import { API_BASE_URL } from "../../core/constant"; 
+import { useRoute, useRouter } from "vue-router";
+
+import { getExamById } from "../../provider/exam.provider";
+import { getQuestionsByExam } from "../../provider/question.provider"; 
+import { submitUserAnswer, getUserAnswersBySession } from "../../provider/useranswer.provider";
+import { finishExamSession, updateCurrentNo, getExamSessionById } from "../../provider/examsession.provider";
+import { getAllQuestionsForExamDo } from "../../provider/question.provider";
+
+import { usePopup } from "../../hooks/usePopup";
+
+const { showSuccess, showError, showConfirm } = usePopup();
+
+const route = useRoute();
+const router = useRouter();
+const { user } = useGetCurrentUser();
+
+const loading = ref(true);
+const error = ref("");
+const exam = ref(null);
+const questions = ref([]);
+const currentNo = ref(1);
+const answers = ref([]); 
+
+
+let saveTimeout = null;
+const saveStatusText = ref("");
+const saveStatusColor = ref("text-gray-400");
+
+const timeLeft = ref(0);
+let timer = null;
+let statusCheckInterval = null; 
+
+const currentQuestion = computed(() => {
+  return questions.value[currentNo.value - 1] || null;
+});
+
+
+const getStorageKey = () => `exam_${route.query.id}_session_${route.query.session_id}_answers`;
+
+const saveToLocalStorage = (data) => {
+  try {
+    localStorage.setItem(getStorageKey(), JSON.stringify(data));
+  } catch (e) { console.error("LS Error", e); }
+};
+
+const loadFromLocalStorage = () => {
+  try {
+    const data = localStorage.getItem(getStorageKey());
+    return data ? JSON.parse(data) : null;
+  } catch (e) { return null; }
+};
+
+
+const selectAnswer = (optionId) => {
+
+  answers.value[currentNo.value - 1] = optionId;
+  
+
+  saveToLocalStorage(answers.value);
+
+ 
+  saveStatusText.value = "Menyimpan ke server...";
+  saveStatusColor.value = "text-yellow-600";
+
+
+  if (saveTimeout) clearTimeout(saveTimeout);
+
+  saveTimeout = setTimeout(async () => {
+    await processSaveAnswer(optionId);
+  }, 2000); 
+};
+
+
+const processSaveAnswer = async (optionId) => {
+  const sessionId = Number(route.query.session_id);
+  const examId = Number(route.query.id);
+  let userId = user.value?.id || Number(localStorage.getItem("id"));
+  const questionId = currentQuestion.value.id;
+  
+  const selectedOption = currentQuestion.value.options.find(opt => opt.id === optionId);
+  const answerLabel = selectedOption?.option_label || selectedOption?.label;
+
+  if (!sessionId || !userId || !answerLabel) return;
+
+  try {
+    await submitUserAnswer({
+      exam_session_id: sessionId,
+      user_id: userId,
+      question_id: questionId,
+      answer: answerLabel,
+      exam_id: examId 
+    });
+    
+
+    saveStatusText.value = "Tersimpan di Server";
+    saveStatusColor.value = "text-green-600";
+    setTimeout(() => { if(saveStatusText.value === "Tersimpan di Server") saveStatusText.value = ""; }, 2000);
+
+  } catch (err) {
+
+    console.warn("Gagal simpan server (429/Timeout), tapi aman di lokal:", err);
+    saveStatusText.value = "Tersimpan di Perangkat";
+    saveStatusColor.value = "text-blue-600"; 
+  }
+};
+
+const constructImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  const cleanPath = path.startsWith("./") ? path.substring(2) : path.startsWith("/") ? path.substring(1) : path;
+  return `${API_BASE_URL}/${cleanPath}`;
+};
+
+const startTimer = (seconds) => {
+  timeLeft.value = seconds;
+  if (timer) clearInterval(timer);
+
+  timer = setInterval(() => {
+    if (timeLeft.value > 0) {
+      timeLeft.value--;
+    } else {
+      clearInterval(timer);
+      finishExam(true); 
+    }
+  }, 1000);
+};
+
+const formattedTime = computed(() => {
+  const h = Math.floor(timeLeft.value / 3600);
+  const m = Math.floor((timeLeft.value % 3600) / 60);
+  const s = timeLeft.value % 60;
+  
+  if (h > 0) {
+      return `${h}:${m < 10 ? "0" + m : m}:${s < 10 ? "0" + s : s}`;
+  }
+  return `${m}:${s < 10 ? "0" + s : s}`;
+});
+
+onMounted(async () => {
+  const examId = Number(route.query.id);
+  const sessionId = Number(route.query.session_id);
+
+  if (!examId || !sessionId) {
+    error.value = "ID ujian atau sesi tidak ditemukan.";
+    loading.value = false;
+    return;
+  }
+
+ try {
+        const examRes = await getExamById(examId);
+        exam.value = examRes?.data || examRes;
+
+        const sessionRes = await getExamSessionById(sessionId);
+        const sessionData = sessionRes.data || sessionRes; 
+
+        if (sessionData.status === 'finished' || sessionData.status === 'submitted') {
+            loading.value = false;
+            await showError("Ujian Selesai", "Anda sudah menyelesaikan ujian ini.");
+            router.replace("/ujian");
+            return;
+        }
+
+        const qRes = await getAllQuestionsForExamDo(examId);
+        if (qRes && Array.isArray(qRes)) {
+            qRes.sort((a, b) => a.id - b.id);
+        }
+        questions.value = qRes || [];
+
+        answers.value = Array(questions.value.length).fill(null);
+
+    
+        const localAnswers = loadFromLocalStorage();
+        if (localAnswers && localAnswers.length === questions.value.length) {
+            answers.value = localAnswers;
+            console.log("Jawaban dipulihkan dari LocalStorage");
+        } else {
+    
+            try {
+                const savedAnswers = await getUserAnswersBySession(sessionId);
+                if (savedAnswers && savedAnswers.length > 0) {
+                    savedAnswers.forEach(ans => {
+                        const qIndex = questions.value.findIndex(q => q.id === ans.question_id);
+                        if (qIndex !== -1) {
+                            const selectedOption = questions.value[qIndex].options.find(opt => 
+                                (opt.option_label || opt.label) === ans.answer
+                            );
+                            if (selectedOption) answers.value[qIndex] = selectedOption.id;
+                        }
+                    });
+           
+                    saveToLocalStorage(answers.value);
+                }
+            } catch (err) {
+                console.warn("Gagal load jawaban server:", err);
+            }
+        }
+
+    if (sessionData && sessionData.current_no && sessionData.current_no > 0) {
+        currentNo.value = sessionData.current_no;
+    }
+
+    if (sessionData && sessionData.started_at) {
+        const durationMinutes = exam.value?.long_time || 120;
+        const startTime = new Date(sessionData.started_at).getTime();
+        const now = new Date().getTime();
+        const endTime = startTime + (durationMinutes * 60 * 1000);
+        const remainingSeconds = Math.floor((endTime - now) / 1000);
+
+        if (remainingSeconds > 0) {
+            startTimer(remainingSeconds);
+        } else {
+            finishExam(true);
+        }
+    } else {
+        startTimer((exam.value?.long_time || 120) * 60);
+    }
+
+    statusCheckInterval = setInterval(async () => {
+        try {
+            const res = await getExamSessionById(sessionId);
+            const currentSession = res.data || res;
+
+            if (currentSession.status === 'finished' || currentSession.status === 'submitted') {
+                clearInterval(statusCheckInterval);
+                clearInterval(timer);
+                router.replace("/ujian");
+                showError("Waktu Habis", "Sesi ujian telah berakhir menurut Server.");
+            }
+        } catch (err) { /* ignore */ }
+    }, 60000); 
+    
+  } catch (e) {
+    console.error(e);
+    if (e.response && e.response.status === 500) {
+       if (!questions.value.length) {
+          const qRes = await getQuestionsByExam(examId);
+          questions.value = Array.isArray(qRes) ? qRes : qRes.data || [];
+          answers.value = Array(questions.value.length).fill(null);
+       }
+       startTimer((exam.value?.long_time || 120) * 60);
+    } else {
+       error.value = "Terjadi kesalahan saat memuat ujian.";
+    }
+  } finally {
+    loading.value = false;
+  }
+});
+
+onUnmounted(() => {
+  if (timer) clearInterval(timer);
+  if (statusCheckInterval) clearInterval(statusCheckInterval);
+  if (saveTimeout) clearTimeout(saveTimeout);
+});
+
+const goToQuestion = (n) => { currentNo.value = n; };
+const nextQuestion = () => { if (currentNo.value < questions.value.length) currentNo.value++; };
+const prevQuestion = () => { if (currentNo.value > 1) currentNo.value--; };
+
+watch(currentNo, async (newNo) => {
+  const sessionId = Number(route.query.session_id);
+  if (sessionId) {
+    try { await updateCurrentNo(sessionId, newNo); } catch (e) { console.error(e); }
+  }
+});
+
+const finishExam = async (isAuto = false) => {
+
+  if (!isAuto && timeLeft.value > 0) {
+     const isConfirmed = await showConfirm(
+       "Selesaikan Ujian", 
+       "Apakah Anda yakin ingin menyelesaikan ujian sekarang?",
+       "Ya, Selesaikan"
+     );
+     if (!isConfirmed) return;
+  }
+
+  if (statusCheckInterval) clearInterval(statusCheckInterval);
+  if (timer) clearInterval(timer);
+  if (saveTimeout) clearTimeout(saveTimeout);
+
+  loading.value = true; 
+
+  try {
+    const sessionId = Number(route.query.session_id);
+    const examId = Number(route.query.id); 
+    let userId = user.value?.id || Number(localStorage.getItem("id"));
+
+
+    const currentQ = questions.value[currentNo.value - 1];
+    const currentAnsId = answers.value[currentNo.value - 1];
+    
+    if (currentQ && currentAnsId) {
+        const selectedOption = currentQ.options.find((opt) => opt.id === currentAnsId);
+        if (selectedOption) {
+            try {
+                await submitUserAnswer({
+                    exam_session_id: sessionId,
+                    user_id: userId,
+                    question_id: currentQ.id,
+                    answer: selectedOption.option_label || selectedOption.label, 
+                    exam_id: Number(examId) 
+                });
+            } catch (e) { console.warn("Last answer failed send to server, ignoring."); }
+        }
+    }
+
+
+    const payload = { session_id: sessionId, exam_id: examId, user_id: userId };
+    await finishExamSession(payload);
+
+    localStorage.removeItem(getStorageKey());
+
+    loading.value = false;
+
+    if (isAuto) {
+        router.replace("/ujian");
+        showError("Waktu Habis", "Waktu ujian telah habis! Jawaban otomatis disimpan.");
+    } else {
+        router.replace("/ujian");
+        showSuccess("Ujian Selesai", "Terima kasih telah mengerjakan ujian.");
+    }
+
+  } catch (err) {
+    console.error("FinishExam Error:", err);
+    loading.value = false;
+    
+  
+    router.replace("/ujian");
+    
+    if (!isAuto) {
+        showSuccess("Ujian Selesai", "Jawaban Anda telah diproses. Silakan cek hasil nanti.");
+    }
+    
+
+    localStorage.removeItem(getStorageKey());
+  }
+};
+</script>

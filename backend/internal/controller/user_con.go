@@ -1,0 +1,654 @@
+package controller
+
+import (
+	"log"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"latih.in-be/internal/model"
+	"latih.in-be/internal/service"
+	"latih.in-be/utils/helper"
+	"latih.in-be/utils/response"
+)
+
+type UserController struct {
+	service        service.UserService
+	xlsPathService service.XlsPathService
+}
+
+func NewUserController(s service.UserService, x service.XlsPathService) *UserController {
+	return &UserController{
+		service:        s,
+		xlsPathService: x,
+	}
+}
+
+func (h *UserController) Register(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var user model.RegisterCredential
+	if err := c.ShouldBindJSON(&user); err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if user.Name == "" {
+		helper.Error(c, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	if user.Password == "" {
+		helper.Error(c, http.StatusBadRequest, "password is required")
+		return
+	}
+
+	if len(user.Password) < 6 {
+		helper.Error(c, http.StatusBadRequest, "password must be at least 6 characters")
+		return
+	}
+
+	if user.Email != "" && !helper.IsValidEmail(user.Email) {
+		helper.Error(c, http.StatusBadRequest, "invalid email format")
+		return
+	}
+
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	roleStr, ok := currRole.(string)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	role := model.Role(roleStr)
+
+	allowedRoles := map[model.Role]bool{
+		model.RoleAdmin:      true,
+		model.RoleSuperAdmin: true,
+	}
+	if !allowedRoles[model.Role(role)] {
+		helper.Error(c, http.StatusBadRequest, "invalid role")
+		return
+	}
+
+	if err := h.service.Register(ctx, user, role); err != nil {
+		helper.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	helper.Success(c, user, "user registered")
+}
+
+func (h *UserController) Login(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var cred model.LoginCredential
+	if err := c.ShouldBindJSON(&cred); err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	user, accessToken, refreshToken, err := h.service.Login(ctx, cred)
+	if err != nil {
+		helper.Error(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	if err := helper.Write(c, refreshToken); err != nil {
+		helper.Error(c, http.StatusInternalServerError, "failed to set cookie")
+		return
+	}
+	sanitizedUser := helper.SanitizeUserResponse(user)
+	helper.Success(c, sanitizedUser, "login successful", accessToken)
+}
+
+func (h *UserController) GetById(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	idStr := c.Query("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	user, err := h.service.GetById(ctx, id)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	userRes := response.UserResponse(*user)
+
+	helper.Success(c, userRes, "user found")
+}
+
+func (h *UserController) GetByEmail(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	email := c.Query("email")
+	if email == "" {
+		helper.Error(c, http.StatusBadRequest, "invalid email")
+		return
+	}
+	if len(email) > 512 {
+		helper.Error(c, http.StatusBadRequest, "invalid email")
+		return
+	}
+
+	if !helper.IsValidEmail(email) {
+		helper.Error(c, http.StatusBadRequest, "wrong email format")
+		return
+	}
+
+	user, err := h.service.GetByEmail(ctx, email)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	userRes := response.UserResponse(*user)
+
+	helper.Success(c, userRes, "user found")
+}
+
+func (h *UserController) Update(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	currRoleVal, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found")
+		return
+	}
+
+	currIdVal, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "user_id not found")
+		return
+	}
+
+	currId, ok := currIdVal.(int)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid user_id type")
+		return
+	}
+
+	roleStr, ok := currRoleVal.(string)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	updateData := model.UpdateUser{
+		Name:         helper.BindAndConvertToPtr(c.PostForm("name")),
+		Email:        helper.BindAndConvertToPtr(c.PostForm("email")),
+		Username:     helper.BindAndConvertToPtr(c.PostForm("username")),
+		Nim:          helper.BindAndConvertToPtr(c.PostForm("nim")),
+		Nip:          helper.BindAndConvertToPtr(c.PostForm("nip")),
+		Major:        helper.BindAndConvertToPtr(c.PostForm("major")),
+		Faculty:      helper.BindAndConvertToPtr(c.PostForm("faculty")),
+		AcademicYear: helper.BindAndConvertToPtr(c.PostForm("academic_year")),
+		Role:         (*model.Role)(helper.BindAndConvertToPtr(c.PostForm("role"))),
+		Status:       (*model.Status)(helper.BindAndConvertToPtr(c.PostForm("status"))),
+		ImgDelete:    helper.BindAndConvertToBoolPtr(c.PostForm("img_delete")),
+	}
+
+	updatedUser, err := h.service.Update(
+		ctx,
+		c,
+		updateData,
+		id,
+		model.Role(roleStr),
+		currId,
+	)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	helper.Success(c, response.UserResponse(*updatedUser), "user updated successfully")
+}
+
+func (h *UserController) Delete(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	roleStr, ok := currRole.(string)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	role := model.Role(roleStr)
+
+	err = h.service.Delete(ctx, id, role)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+	helper.Success(c, nil, "user deleted")
+}
+
+func (h *UserController) GetMany(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	users, total, err := h.service.GetMany(ctx, limit, offset)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	usersRes := response.UsersResponse(users)
+
+	helper.Success(c, gin.H{"data": usersRes, "total": total}, "users found")
+}
+
+func (h *UserController) GetByNim(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	nim := c.Query("nim")
+	if len(nim) >= 10 {
+		helper.Error(c, http.StatusBadRequest, "invalid nim")
+		return
+	}
+
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	roleStr, ok := currRole.(string)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	role := model.Role(roleStr)
+
+	user, err := h.service.GetByNim(ctx, nim, role)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	userRes := response.UserResponse(*user)
+
+	helper.Success(c, userRes, "user found")
+}
+
+func (h *UserController) GetByNip(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	nip := c.Query("nip")
+	if nip != "" && len(nip) != 18 {
+		helper.Error(c, http.StatusBadRequest, "invalid nip")
+		return
+	}
+
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	roleStr, ok := currRole.(string)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	role := model.Role(roleStr)
+
+	user, err := h.service.GetByNip(ctx, nip, role)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	userRes := response.UserResponse(*user)
+
+	helper.Success(c, userRes, "user found")
+}
+
+func (h *UserController) GetByUsn(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	username := c.Query("username")
+	if username != "" && len(username) >= 10 {
+		helper.Error(c, http.StatusBadRequest, "invalid username")
+		return
+	}
+
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	roleStr, ok := currRole.(string)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	role := model.Role(roleStr)
+
+	user, err := h.service.GetByUsn(ctx, username, role)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	userRes := response.UserResponse(*user)
+
+	helper.Success(c, userRes, "user found")
+}
+
+func (h *UserController) GetByName(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	name := c.Query("name")
+	users, total, err := h.service.GetByName(ctx, name, limit, offset)
+	if name != "" && len(name) > 256 {
+		helper.Error(c, http.StatusBadRequest, "invalid name")
+		return
+	}
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	usersRes := response.UsersResponse(users)
+
+	helper.Success(c, gin.H{"data": usersRes, "total": total}, "users found")
+}
+
+func (h *UserController) GetByRole(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	limit, offset, err := helper.GetPaginationQuery(c, 20, 0)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	role := c.Query("role")
+
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+	log.Printf("role: %s", currRole)
+
+	userRole, ok := currRole.(string)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	users, total, err := h.service.GetByRole(ctx, role, limit, offset, userRole)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	usersRes := response.UsersResponse(users)
+
+	helper.Success(c, gin.H{"data": usersRes, "total": total}, "users found")
+}
+
+func (h *UserController) ChangePassword(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	idStr := c.Query("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	var req model.ChangePasswordCredential
+	if err := c.ShouldBindJSON(&req); err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	currRole, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	roleStr, ok := currRole.(string)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	role := model.Role(roleStr)
+
+	if err := h.service.ChangePassword(ctx, id, req.NewPassword, role); err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	helper.Success(c, nil, "password changed successfully")
+}
+
+func (h *UserController) ChangeRole(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	idStr := c.Query("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	var input model.ChangeRoleCredential
+	if err := c.ShouldBindJSON(&input); err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid input format")
+		return
+	}
+
+	roleCtx, exists := c.Get("role")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "role not found in context")
+		return
+	}
+
+	roleStr, ok := roleCtx.(string)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid role type")
+		return
+	}
+
+	requesterRole := model.Role(roleStr)
+
+	if err := h.service.ChangeRole(ctx, id, input, requesterRole); err != nil {
+		helper.Error(c, http.StatusForbidden, err.Error())
+		return
+	}
+
+	user, err := h.service.GetById(ctx, id)
+	if err != nil {
+		helper.Error(c, http.StatusInternalServerError, "failed to fetch updated user")
+		return
+	}
+
+	userRes := response.UserResponse(*user)
+	helper.Success(c, userRes, "user role updated successfully")
+}
+
+func (h *UserController) RefreshToken(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil || refreshToken == "" {
+		helper.Error(c, http.StatusUnauthorized, "missing refresh token")
+		return
+	}
+
+	newAccessToken, err := h.service.RefreshToken(ctx, refreshToken)
+	if err != nil {
+		helper.Error(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	helper.Success(c, newAccessToken, "token refreshed")
+}
+
+func (h *UserController) BulkInsert(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var batchUser model.BulkUserCredential
+
+	if err := c.ShouldBindJSON(&batchUser); err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid input body")
+		return
+	}
+
+	year := strings.TrimSpace(batchUser.AcademicYear)
+
+	if len(year) < 2 {
+		helper.Error(c, http.StatusBadRequest, "academic year must be at least 2 characters")
+		return
+	}
+
+	if len(year) != 4 {
+		helper.Error(c, http.StatusBadRequest, "academic year must be 4 digits, e.g. 2025")
+		return
+	}
+
+	prefix := year[len(year)-3:]
+
+	startStr := c.Query("start")
+	endStr := c.Query("end")
+
+	startInt, err := strconv.Atoi(startStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid start")
+		return
+	}
+
+	endInt, err := strconv.Atoi(endStr)
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "invalid end")
+		return
+	}
+
+	users, err := h.service.BulkInsert(ctx, batchUser, prefix, startInt, endInt)
+	if err != nil {
+		helper.Error(c, 500, err.Error())
+		return
+	}
+
+	storageDir := "./storages/files"
+	filename, filepath, err := h.xlsPathService.ExportUsersToExcel(users, storageDir)
+	if err != nil {
+		helper.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err := h.xlsPathService.SaveXlsPath(c, filepath); err != nil {
+		helper.Error(c, http.StatusInternalServerError, "failed to save xls path")
+		return
+	}
+
+	response := map[string]interface{}{
+		"file":     filename,
+		"filepath": filepath,
+		"message":  "users created and xls file saved",
+		"users":    users,
+	}
+
+	helper.Success(c, response, "users created and xls file saved")
+}
+
+func (h *UserController) Logout(c *gin.Context) {
+	_, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	clear := func(name string) {
+		c.SetCookie(
+			name,
+			"",
+			-1,
+			"/",
+			"",
+			false,
+			true,
+		)
+	}
+
+	clear("refresh_token")
+
+	helper.Success(c, http.StatusOK, "Logout successful")
+}
+
+func (h *UserController) JsonInput(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		helper.Error(c, http.StatusBadRequest, "File not found. Use key 'file' untuk upload")
+		return
+	}
+
+	if file.Size > 10*1024*1024 {
+		helper.Error(c, http.StatusBadRequest, "File is too big. Max 10MB")
+		return
+	}
+
+	if file.Header.Get("Content-Type") != "application/json" && !strings.HasSuffix(strings.ToLower(file.Filename), ".json") {
+		helper.Error(c, http.StatusBadRequest, "File must be json")
+		return
+	}
+
+	if err := h.service.JsonInput(ctx, file); err != nil {
+		helper.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	helper.Success(c, nil, "users created successfully")
+}
