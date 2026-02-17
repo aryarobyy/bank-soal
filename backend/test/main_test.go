@@ -33,7 +33,7 @@ func TestRegister(t *testing.T) {
 	rawPassword := "rahasia123"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(rawPassword), bcrypt.DefaultCost)
 
-	nim := "G1A023007"
+	nim := "2510631170007"
 	nip := "198901182015042004"
 	username := "ilhamgoat"
 
@@ -80,7 +80,7 @@ func TestRegister(t *testing.T) {
 			registerCred: model.RegisterCredential{
 				Name:     "ilham kurniawan",
 				Password: rawPassword,
-				Nim:      "Y1G025003",
+				Nim:      "2510631170003", // Valid 13 chars
 				Role:     model.RoleUser,
 				Major:    "Informatika",
 				Faculty:  "Teknik",
@@ -93,7 +93,7 @@ func TestRegister(t *testing.T) {
 				userRepo.Mock.On("GetByUsn", mock.Anything, "").
 					Return(nil, errNotFound).Once()
 
-				userRepo.Mock.On("GetByNim", mock.Anything, "Y1G025003").
+				userRepo.Mock.On("GetByNim", mock.Anything, "2510631170003").
 					Return(nil, errNotFound).Once()
 
 				userRepo.Mock.On("Register", mock.Anything, mock.MatchedBy(func(user model.User) bool {
@@ -216,7 +216,7 @@ func TestRegister(t *testing.T) {
 			registerCred: model.RegisterCredential{
 				Name:     "Mahasiswa Biasa",
 				Password: rawPassword,
-				Nim:      "Y1G025999",
+				Nim:      "2510631170999",
 				Role:     model.RoleUser,
 				Email:    "wrong@test.com",
 				Major:    "Informatika",
@@ -229,7 +229,7 @@ func TestRegister(t *testing.T) {
 				userRepo.Mock.On("GetByUsn", mock.Anything, "").
 					Return(nil, errNotFound).Once()
 
-				userRepo.Mock.On("GetByNim", mock.Anything, "Y1G025999").
+				userRepo.Mock.On("GetByNim", mock.Anything, "2510631170999").
 					Return(nil, errNotFound).Once()
 
 				userRepo.Mock.On("Register", mock.Anything, mock.MatchedBy(func(user model.User) bool {
@@ -278,7 +278,7 @@ func TestRegister(t *testing.T) {
 			registerCred: model.RegisterCredential{
 				Name:     "Mahasiswa Bimbingan",
 				Password: rawPassword,
-				Nim:      "Y1G025005",
+				Nim:      "2510631170005",
 				Role:     model.RoleUser,
 				Email:    "dosen_iseng@test.com",
 				Major:    "Informatika",
@@ -291,7 +291,7 @@ func TestRegister(t *testing.T) {
 				userRepo.Mock.On("GetByUsn", mock.Anything, "").
 					Return(nil, errNotFound).Once()
 
-				userRepo.Mock.On("GetByNim", mock.Anything, "Y1G025005").
+				userRepo.Mock.On("GetByNim", mock.Anything, "2510631170005").
 					Return(nil, errNotFound).Once()
 
 				userRepo.Mock.On("Register", mock.Anything, mock.MatchedBy(func(user model.User) bool {

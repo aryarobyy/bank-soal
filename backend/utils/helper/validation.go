@@ -96,19 +96,19 @@ func IsNipValid(nip string) bool {
 	return nipRegex.MatchString(nip)
 }
 
-func IsNimValid(nim string) bool {
-	if len(nim) > 9 {
+func IsNimValid(nim string) bool { // cakupan 2 prodi
+	if len(nim) != 13 {
 		return false
 	}
-	nimRegex := regexp.MustCompile(`^(G1A0\d{5}|Y1G0\d{5})$`)
 
+	nimRegex := regexp.MustCompile(`^((2|3)[0-9])(1063)(117|125)\d{4}$`)
 	return nimRegex.MatchString(nim)
 }
 
 func DetectLoginType(id string) string {
 	if len(id) == 18 && IsNipValid(id) {
 		return "nip"
-	} else if len(id) == 9 && IsNimValid(id) {
+	} else if len(id) == 13 && IsNimValid(id) {
 		return "nim"
 	} else {
 		return "username"

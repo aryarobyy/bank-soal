@@ -277,7 +277,7 @@ func (h *UserController) GetByNim(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	nim := c.Query("nim")
-	if len(nim) >= 10 {
+	if len(nim) >= 14 {
 		helper.Error(c, http.StatusBadRequest, "invalid nim")
 		return
 	}
