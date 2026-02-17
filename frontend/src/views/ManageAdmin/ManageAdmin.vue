@@ -10,8 +10,19 @@
       </button>
     </div>
 
-    <div v-if="loading" class="text-center py-10">
-      <p class="text-gray-500">Memuat data admin...</p>
+    <div v-if="loading" class="bg-white shadow rounded-lg overflow-hidden p-4 space-y-4">
+      <div v-for="n in 5" :key="n" class="flex items-center gap-4 py-3 border-b border-gray-100">
+        <div class="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
+        <div class="flex-1 space-y-1">
+          <div class="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+          <div class="h-3 bg-gray-200 rounded w-20 animate-pulse"></div>
+        </div>
+        <div class="h-4 bg-gray-200 rounded w-40 animate-pulse"></div>
+        <div class="h-5 bg-gray-200 rounded-full w-16 animate-pulse"></div>
+        <div class="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+        <div class="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+        <div class="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+      </div>
     </div>
     <div v-else-if="error" class="text-center py-10 bg-red-50 p-4 rounded-lg">
       <p class="text-red-600">{{ error }}</p>

@@ -32,9 +32,19 @@
         </div>
     </div>
 
-    <div v-if="loading" class="text-center py-12">
-        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p class="text-gray-500">Memuat data laporan...</p>
+    <div v-if="loading" class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+      <div class="p-4 space-y-4">
+        <div v-for="n in 5" :key="n" class="flex items-center gap-6 py-3 border-b border-gray-100">
+          <div class="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
+          <div class="flex-1 space-y-1">
+            <div class="h-4 bg-gray-200 rounded w-40 animate-pulse"></div>
+            <div class="h-3 bg-gray-200 rounded w-24 animate-pulse"></div>
+          </div>
+          <div class="h-6 bg-gray-200 rounded w-12 animate-pulse"></div>
+          <div class="h-5 bg-gray-200 rounded-full w-20 animate-pulse"></div>
+          <div class="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
+        </div>
+      </div>
     </div>
 
     <div v-else-if="reports.length === 0 && selectedExamId" class="text-center py-12 bg-white rounded-lg shadow-sm border border-dashed border-gray-300">
@@ -60,7 +70,8 @@
                 {{ (currentPage - 1) * itemsPerPage + index + 1 }}
               </td>
               <td class="p-4 font-medium text-gray-800">
-                 {{ usersMap[item.user_id] || 'Memuat...' }}
+                 <template v-if="usersMap[item.user_id]">{{ usersMap[item.user_id] }}</template>
+                 <div v-else class="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
                  <span class="text-xs text-gray-400 block font-normal">ID: {{ item.user_id }}</span>
               </td>
               <td class="p-4 text-center font-bold text-blue-600 text-lg">

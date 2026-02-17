@@ -3,8 +3,21 @@
     <div class="bg-white rounded-xl shadow-md p-8 w-full max-w-2xl">
       <h2 class="text-2xl font-bold text-primary mb-6">Edit Ujian</h2>
 
-      <div v-if="loading" class="text-gray-500 text-center py-10">
-        Memuat data ujian...
+      <div v-if="loading" class="space-y-4 py-4">
+        <div v-for="n in 4" :key="n" class="space-y-2">
+          <div class="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
+          <div class="h-10 bg-gray-200 rounded w-full animate-pulse"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <div class="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
+            <div class="h-10 bg-gray-200 rounded w-full animate-pulse"></div>
+          </div>
+          <div class="space-y-2">
+            <div class="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
+            <div class="h-10 bg-gray-200 rounded w-full animate-pulse"></div>
+          </div>
+        </div>
       </div>
 
       <form v-else @submit.prevent="handleSubmit" class="space-y-4">

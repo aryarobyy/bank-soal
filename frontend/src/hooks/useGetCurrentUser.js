@@ -1,5 +1,6 @@
 import { ref, provide, inject, readonly } from "vue";
-import { getUserById } from "../provider/user.provider"; // Pastikan path ini benar
+import { getUserById } from "../provider/user.provider";
+import { useRouter } from "vue-router";
 
 const UserSymbol = Symbol('user')
 
@@ -7,6 +8,7 @@ export const provideUser = () => {
   const user = ref(null)
   const loading = ref(false)
   const error = ref(null)
+  const router = useRouter()
   
   const setUser = (newUser) => {
     user.value = newUser
@@ -16,31 +18,27 @@ export const provideUser = () => {
     user.value = null
   }
 
-  // --- FUNGSI BARU: Fetch User dengan Validasi Token ---
   const fetchUser = async () => {
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('id');
 
-    // 1. CEK TOKEN & ID (SOLUSI MASALAH ANDA)
-    // Jika tidak ada token, JANGAN panggil API. Stop di sini.
     if (!token || !userId) {
-       user.value = null;
-       return; 
+      user.value = null;
+      router.push('/login');
+      return; 
     }
 
     loading.value = true;
     try {
-       // Panggil API hanya jika token ada
-       const res = await getUserById(userId);
-       // Sesuaikan dengan struktur response (res.data atau res)
-       user.value = res.data || res; 
+      const res = await getUserById(userId);
+      user.value = res.data || res; 
     } catch (err) {
-       console.error("Gagal mengambil data user:", err);
-       error.value = err;
-       // Jika error 401, biasanya api.handler sudah handle logout
-       user.value = null;
+      console.error("Gagal mengambil data user:", err);
+      error.value = err;
+      user.value = null;
+      router.push('/login');
     } finally {
-       loading.value = false;
+      loading.value = false;
     }
   }
   
@@ -50,7 +48,7 @@ export const provideUser = () => {
     error: readonly(error),
     setUser,
     clearUser,
-    fetchUser // <-- Expose fungsi ini agar bisa dipanggil di App.vue
+    fetchUser 
   })
   
   return {
@@ -74,7 +72,6 @@ export const useUser = () => {
 }
 
 export const useGetCurrentUser = () => {
-  // Return semua yang dibutuhkan komponen
   const context = useUser();
   return context;
 }

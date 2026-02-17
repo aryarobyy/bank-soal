@@ -4,8 +4,21 @@
       <div
         class="w-full max-w-4xl bg-white rounded-3xl shadow-lg p-8 sm:p-10 border border-gray-200"
       >
-        <div v-if="loading" class="text-center text-gray-600 py-10">
-          Memuat data ujian...
+        <div v-if="loading" class="space-y-6 py-4">
+          <div class="bg-gray-50 p-8 rounded-2xl text-center space-y-3">
+            <div class="h-7 bg-gray-200 rounded w-64 mx-auto animate-pulse"></div>
+            <div class="h-4 bg-gray-200 rounded w-40 mx-auto animate-pulse"></div>
+            <div class="h-4 bg-gray-200 rounded w-32 mx-auto animate-pulse"></div>
+          </div>
+          <div class="space-y-2 px-6">
+            <div class="h-5 bg-gray-200 rounded w-24 animate-pulse"></div>
+            <div class="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+            <div class="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+          </div>
+          <div class="space-y-3 px-6">
+            <div class="h-5 bg-gray-200 rounded w-28 animate-pulse"></div>
+            <div v-for="n in 3" :key="n" class="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+          </div>
         </div>
 
         <div v-else-if="error" class="text-center text-red-500 py-10">

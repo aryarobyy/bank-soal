@@ -2,17 +2,50 @@
   <div class="bg-white rounded-lg shadow-md p-6">
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-2xl font-bold text-gray-800">Detail Ujian</h2>
-      <router-link
+      <Button
         :to="{ name: isAdminRoute ? 'AdminManageExam' : 'DosenManageExam' }"
-        class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md"
+        variant="secondary"
+        icon="fas fa-arrow-left"
       >
-        ⬅️ Kembali
-      </router-link>
+        Kembali
+      </Button>
     </div>
 
-    <div v-if="loading" class="text-center text-gray-500 py-10">
-      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4"></div>
-      Memuat data ujian...
+    <div v-if="loading" class="space-y-6 py-4">
+      <div class="bg-gray-50 p-4 rounded-lg border">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <div class="space-y-2">
+              <div class="h-3 bg-gray-200 rounded w-20 animate-pulse"></div>
+              <div class="h-5 bg-gray-200 rounded w-48 animate-pulse"></div>
+            </div>
+            <div class="space-y-2">
+              <div class="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
+              <div class="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <div class="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
+                <div class="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+              </div>
+              <div class="space-y-2">
+                <div class="h-3 bg-gray-200 rounded w-12 animate-pulse"></div>
+                <div class="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="space-y-3">
+        <div class="h-5 bg-gray-200 rounded w-40 animate-pulse"></div>
+        <div v-for="n in 3" :key="n" class="flex items-center gap-4 py-3 border-b border-gray-100">
+          <div class="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
+          <div class="flex-1 h-4 bg-gray-200 rounded animate-pulse"></div>
+          <div class="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
+        </div>
+      </div>
     </div>
 
     <div v-else-if="error" class="text-center text-red-600 py-10 bg-red-50 rounded-lg">
@@ -31,7 +64,7 @@
               <h3 class="text-sm font-bold text-gray-500 uppercase">Deskripsi</h3>
               <p class="text-gray-600">{{ exam.description || "-" }}</p>
             </div>
-            </div>
+          </div>
           <div class="space-y-3">
              <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -58,109 +91,107 @@
       </div>
 
       <div class="flex gap-3 mt-4">
-        <router-link
+        <Button
           :to="{ name: isAdminRoute ? 'AdminExamEdit' : 'DosenExamEdit', params: { id: exam.id } }"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium text-sm flex items-center gap-2"
+          variant="primary"
+          icon="fas fa-pencil-alt"
         >
-          ✏️ Edit Ujian
-        </router-link>
-        <button
+          Edit Ujian
+        </Button>
+        <Button
           @click="removeExam(exam.id)"
-          class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md font-medium text-sm flex items-center gap-2"
+          variant="danger"
+          icon="fas fa-trash"
         >
-          🗑️ Hapus Ujian
-        </button>
+          Hapus Ujian
+        </Button>
       </div>
 
       <div class="mt-10">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-bold text-gray-800">Daftar Soal (Total: {{ totalQuestions }})</h3>
-          <button
+          <Button
             @click="openAddSoalModal"
-            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow hover:shadow-lg transition font-medium flex items-center gap-2"
+            variant="success"
+            icon="fas fa-plus"
           >
-            ➕ Tambah Soal
-          </button>
+            Tambah Soal
+          </Button>
         </div>
 
-        <div class="border rounded-lg overflow-hidden shadow-sm">
-          <table class="w-full text-left">
-            <thead class="bg-gray-100 border-b text-gray-700 text-sm uppercase tracking-wider">
-              <tr>
-                <th class="p-4 w-16 text-center">No</th>
-                <th class="p-4">Pertanyaan</th>
-                <th class="p-4 w-24 text-center">Aksi</th>
-              </tr>
-            </thead>
-            
-            <tbody v-if="tableLoading">
-               <tr>
-                 <td colspan="3" class="p-8 text-center text-gray-500">
-                   <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                   Memuat soal halaman {{ mainPage }}...
-                 </td>
-               </tr>
-            </tbody>
+        <Table
+          :headers="questionHeaders"
+          :items="examQuestions"
+          :loading="tableLoading"
+          empty-text="Belum ada soal. Klik tombol 'Tambah Soal' di atas untuk memasukkan soal."
+        >
+          <template #loading>
+            <div class="space-y-3 py-2">
+              <div v-for="n in 5" :key="n" class="flex items-center gap-4 py-2 border-b border-gray-100">
+                <div class="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
+                <div class="flex-1 h-4 bg-gray-200 rounded animate-pulse"></div>
+                <div class="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
+              </div>
+            </div>
+          </template>
 
-            <tbody v-else class="divide-y divide-gray-200">
-              <tr v-for="(q, index) in examQuestions" :key="q.id" class="hover:bg-gray-50">
-                <td class="p-4 text-center text-gray-500">
-                  {{ (mainPage - 1) * mainLimit + index + 1 }}
-                </td>
-                <td class="p-4">
-                  <p class="text-gray-800 line-clamp-2">{{ q.question_text || "[Konten Soal Tidak Valid]" }}</p>
-                </td>
-                <td class="p-4 text-center">
-                  <button
-                    @click="handleDeleteQuestion(q)"
-                    class="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded transition"
-                    title="Hapus dari ujian"
-                  >
-                    🗑️
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="examQuestions.length === 0">
-                <td colspan="3" class="p-8 text-center text-gray-500">
-                  <p class="text-lg mb-2">Belum ada soal.</p>
-                  <p class="text-sm">Klik tombol "Tambah Soal" di atas untuk memasukkan soal.</p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          <template #cell-no="{ index }">
+            {{ (mainPage - 1) * mainLimit + index + 1 }}
+          </template>
 
-        <div v-if="totalQuestions > mainLimit" class="flex justify-between items-center mt-4 px-2">
-          <div class="text-sm text-gray-600">
-            Halaman <span class="font-bold">{{ mainPage }}</span> dari <span class="font-bold">{{ mainTotalPages }}</span>
-          </div>
-          <div class="flex gap-1">
-            <button 
-              @click="mainPage--" 
-              :disabled="mainPage === 1"
-              class="px-3 py-1 border rounded bg-white hover:bg-gray-50 disabled:opacity-50 text-sm"
+          <template #cell-question="{ item }">
+            <p class="text-gray-800 line-clamp-2">{{ item.question_text || "[Konten Soal Tidak Valid]" }}</p>
+          </template>
+
+          <template #cell-actions="{ item }">
+            <Button
+              @click="handleDeleteQuestion(item)"
+              variant="ghost"
+              size="sm"
+              class="text-red-500 hover:text-red-700 hover:bg-red-50"
+              title="Hapus dari ujian"
             >
-              Prev
-            </button>
-            
-            <button 
-              v-for="p in visibleMainPages" 
-              :key="p"
-              @click="mainPage = p"
-              :class="['px-3 py-1 border rounded text-sm', mainPage === p ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-gray-50']"
-            >
-              {{ p }}
-            </button>
-            
-            <button 
-              @click="mainPage++" 
-              :disabled="mainPage === mainTotalPages"
-              class="px-3 py-1 border rounded bg-white hover:bg-gray-50 disabled:opacity-50 text-sm"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+              🗑️
+            </Button>
+          </template>
+
+          <template #footer>
+            <div v-if="totalQuestions > mainLimit" class="flex justify-between items-center px-2">
+              <div class="text-sm text-gray-600">
+                Halaman <span class="font-bold">{{ mainPage }}</span> dari <span class="font-bold">{{ mainTotalPages }}</span>
+              </div>
+              <div class="flex gap-1">
+                <Button 
+                  @click="mainPage--" 
+                  :disabled="mainPage === 1"
+                  variant="outline"
+                  size="sm"
+                >
+                  Prev
+                </Button>
+                
+                <Button 
+                  v-for="p in visibleMainPages" 
+                  :key="p"
+                  @click="mainPage = p"
+                  size="sm"
+                  :variant="mainPage === p ? 'primary' : 'outline'"
+                >
+                  {{ p }}
+                </Button>
+                
+                <Button 
+                  @click="mainPage++" 
+                  :disabled="mainPage === mainTotalPages"
+                  variant="outline"
+                  size="sm"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </template>
+        </Table>
       </div>
     </div>
   </div>
@@ -187,15 +218,14 @@
                   </option>
                 </select>
                 
-                <button 
+                <Button 
                   v-if="selectedSubject"
                   @click="selectAllBySubject"
-                  :disabled="loadingAllSubject"
-                  class="w-full sm:w-auto px-4 py-2.5 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg shadow-sm transition disabled:opacity-70 flex items-center justify-center gap-2 whitespace-nowrap"
+                  :loading="loadingAllSubject"
+                  variant="secondary"
                 >
-                  <span v-if="loadingAllSubject" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                  {{ loadingAllSubject ? 'Mengambil...' : 'Ambil SEMUA Soal' }}
-                </button>
+                  Ambil SEMUA Soal
+                </Button>
             </div>
          </div>
 
@@ -218,14 +248,13 @@
                     class="w-20 p-2 border border-blue-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 outline-none"
                     placeholder="Jml"
                 >
-                <button 
+                <Button 
                     @click="handleGetRandom"
-                    :disabled="loadingRandom"
-                    class="flex-1 sm:flex-none px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-sm transition disabled:opacity-70 flex items-center justify-center gap-2"
+                    :loading="loadingRandom"
+                    variant="primary"
                 >
-                    <span v-if="loadingRandom" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                    {{ loadingRandom ? 'Mengacak...' : 'Generate' }}
-                </button>
+                    Generate
+                </Button>
             </div>
          </div>
 
@@ -233,9 +262,12 @@
 
       <div class="flex-1 overflow-hidden flex flex-col relative">
          <div v-if="modalLoading" class="absolute inset-0 bg-white/80 z-10 flex items-center justify-center">
-            <div class="flex flex-col items-center">
-               <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-2"></div>
-               <span class="text-gray-600 font-medium">Memuat Soal...</span>
+            <div class="w-full max-w-lg space-y-3 px-8">
+              <div v-for="n in 4" :key="n" class="flex items-center gap-3 py-2">
+                <div class="w-4 h-4 bg-gray-300 rounded animate-pulse"></div>
+                <div class="flex-1 h-4 bg-gray-300 rounded animate-pulse"></div>
+                <div class="h-4 bg-gray-300 rounded w-16 animate-pulse"></div>
+              </div>
             </div>
          </div>
 
@@ -294,23 +326,25 @@
               Menampilkan {{ (modalPage - 1) * modalLimit + 1 }} - {{ Math.min(modalPage * modalLimit, modalTotalItems) }} dari <b>{{ modalTotalItems }}</b> soal
             </span>
             <div class="flex gap-2">
-               <button 
+               <Button 
                  @click="prevModalPage" 
                  :disabled="modalPage === 1"
-                 class="px-3 py-1.5 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 text-sm font-medium transition"
+                 variant="outline"
+                 size="sm"
                >
                  Previous
-               </button>
+               </Button>
                <span class="px-3 py-1.5 bg-white border border-gray-300 rounded text-sm font-bold text-blue-600">
                  {{ modalPage }}
                </span>
-               <button 
+               <Button 
                  @click="nextModalPage" 
                  :disabled="modalPage >= modalTotalPages"
-                 class="px-3 py-1.5 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 text-sm font-medium transition"
+                 variant="outline"
+                 size="sm"
                >
                  Next
-               </button>
+               </Button>
             </div>
          </div>
       </div>
@@ -321,17 +355,17 @@
            <span class="text-gray-600 ml-1">soal akan ditambahkan</span>
         </div>
         <div class="flex gap-3">
-          <button @click="closeAddSoalModal" class="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition">
+          <Button @click="closeAddSoalModal" variant="outline">
             Batal
-          </button>
-          <button 
+          </Button>
+          <Button 
             @click="handleAddSoal" 
-            :disabled="saveLoading"
-            class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition flex items-center gap-2"
+            :loading="saveLoading"
+            variant="primary"
+            class="shadow-md"
           >
-            <span v-if="saveLoading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
             {{ saveLoading ? savingText : 'Simpan Pilihan' }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -343,10 +377,12 @@ import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { deleteExam, addQuestions, removeQuestions, getExamById } from "../../provider/exam.provider";
 import { getPaginatedSubjects } from "../../provider/subject.provider";
-// IMPORT getRandomQuestions di sini
 import { getQuestionsBySubject, getQuestionsByExam, getRandomQuestions,getQuestionsByCreatorAndSubject } from "../../provider/question.provider";
 import { usePopup } from "../../hooks/usePopup";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
+import Button from "../../components/ui/button/Button.vue";
+import Table from "../../components/ui/table/Table.vue";
+
 const { showSuccess, showError, showConfirm } = usePopup();
 const { user } = useGetCurrentUser();
 const route = useRoute();
@@ -359,6 +395,12 @@ const totalQuestions = ref(0);
 const loading = ref(true);
 const tableLoading = ref(false); 
 const error = ref("");
+
+const questionHeaders = [
+  { key: 'no', label: 'No', class: 'w-16 text-center', tdClass: 'text-center text-gray-500' },
+  { key: 'question', label: 'Pertanyaan' },
+  { key: 'actions', label: 'Aksi', class: 'w-24 text-center', tdClass: 'text-center' },
+];
 
 const mainPage = ref(1);
 const mainLimit = 10;

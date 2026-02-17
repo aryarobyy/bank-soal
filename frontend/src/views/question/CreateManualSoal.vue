@@ -25,7 +25,7 @@
             </option>
             <option value="NEW_SUBJECT" class="font-bold text-blue-600">+ Buat Subjek Baru</option>
           </select>
-          <p v-if="subjects.length === 0" class="text-xs text-gray-400 mt-1">Memuat mata kuliah...</p>
+          <div v-if="subjects.length === 0" class="h-3 bg-gray-200 rounded w-28 animate-pulse mt-1"></div>
         </div>
 
         <div>

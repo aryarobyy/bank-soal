@@ -7,8 +7,14 @@
       </p>
     </div>
 
-    <div v-if="loadingStats" class="text-center py-10">
-      <p class="text-gray-500">Memuat data statistik...</p>
+    <div v-if="loadingStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div v-for="n in 5" :key="n" class="p-6 bg-white rounded-lg shadow-md flex items-center gap-5">
+        <div class="w-16 h-16 bg-gray-200 rounded-full animate-pulse"></div>
+        <div class="flex-1 space-y-2">
+          <div class="h-3 bg-gray-200 rounded w-24 animate-pulse"></div>
+          <div class="h-7 bg-gray-200 rounded w-16 animate-pulse"></div>
+        </div>
+      </div>
     </div>
     <div v-else-if="errorStats" class="text-center py-10 bg-red-50 p-4 rounded-lg">
       <p class="text-red-600">{{ errorStats }}</p>

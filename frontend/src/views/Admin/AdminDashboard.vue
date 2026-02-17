@@ -1,7 +1,25 @@
 <template>
   <div>
-    <div v-if="loading" class="text-center py-20">
-      <p class="text-gray-600 text-lg">Memuat data dasbor admin...</p>
+    <div v-if="loading" class="grid grid-cols-1 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-for="n in 4" :key="n" class="p-6 bg-white rounded-lg shadow-md flex items-center gap-5">
+          <div class="w-16 h-16 bg-gray-200 rounded-full animate-pulse"></div>
+          <div class="flex-1 space-y-2">
+            <div class="h-3 bg-gray-200 rounded w-24 animate-pulse"></div>
+            <div class="h-7 bg-gray-200 rounded w-16 animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+      <div class="p-6 bg-white rounded-lg shadow-md">
+        <div class="h-5 bg-gray-200 rounded w-48 animate-pulse mb-4"></div>
+        <div v-for="n in 3" :key="n" class="flex justify-between items-center p-3 bg-gray-50 rounded-md border mb-3">
+          <div class="space-y-2">
+            <div class="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
+            <div class="h-2 bg-gray-200 rounded w-40 animate-pulse"></div>
+          </div>
+          <div class="h-5 bg-gray-200 rounded-full w-16 animate-pulse"></div>
+        </div>
+      </div>
     </div>
 
     <div v-else-if="error" class="text-center py-20 bg-red-50 p-8 rounded-lg">

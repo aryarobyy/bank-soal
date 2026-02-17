@@ -29,7 +29,15 @@
     </div>
 
     <div class="overflow-x-auto">
-      <div v-if="loading" class="text-center p-10">Memuat daftar soal...</div>
+      <div v-if="loading" class="p-4 space-y-4">
+        <div v-for="n in 5" :key="n" class="flex items-center gap-4 py-3 border-b border-gray-100">
+          <div class="h-4 bg-gray-200 rounded w-10 animate-pulse"></div>
+          <div class="flex-1 h-4 bg-gray-200 rounded animate-pulse"></div>
+          <div class="h-4 bg-gray-200 rounded w-12 animate-pulse"></div>
+          <div class="h-5 bg-gray-200 rounded-full w-16 animate-pulse"></div>
+          <div class="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+        </div>
+      </div>
       
       <div v-else-if="soalList.length === 0" class="text-center p-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
         <p class="text-lg font-medium text-gray-600">Tidak ada soal ditemukan</p>

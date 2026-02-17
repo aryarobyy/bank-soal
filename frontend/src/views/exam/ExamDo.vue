@@ -3,9 +3,24 @@
     <div
       class="w-full max-w-5xl bg-white rounded-3xl shadow-lg p-6 sm:p-8 border border-gray-200"
     >
-      <div v-if="loading" class="text-center text-gray-500 py-10">
-        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        Memuat ujian...
+      <div v-if="loading" class="py-4 space-y-6">
+        <div class="flex justify-between items-center mb-4">
+          <div class="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
+          <div class="space-y-1 text-right">
+            <div class="h-3 bg-gray-200 rounded w-24 ml-auto animate-pulse"></div>
+            <div class="h-4 bg-gray-200 rounded w-16 ml-auto animate-pulse"></div>
+          </div>
+        </div>
+        <div class="bg-gray-50 rounded-2xl p-8 space-y-4">
+          <div class="h-5 bg-gray-200 rounded w-full animate-pulse"></div>
+          <div class="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <div v-for="n in 4" :key="n" class="h-12 bg-gray-200 rounded-xl animate-pulse"></div>
+          </div>
+        </div>
+        <div class="flex justify-center gap-2">
+          <div v-for="n in 8" :key="n" class="w-9 h-9 bg-gray-200 rounded-full animate-pulse"></div>
+        </div>
       </div>
 
       <div v-else-if="error" class="text-center text-red-500 py-10">

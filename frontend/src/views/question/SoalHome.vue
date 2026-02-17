@@ -1,6 +1,10 @@
 <template>
-  <div v-if="loading" class="text-center p-10">
-    <p>Memuat data bank soal...</p>
+  <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+    <div v-for="n in 6" :key="n" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-3">
+      <div class="h-5 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+      <div class="h-3 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+      <div class="h-3 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+    </div>
   </div>
   
   <SoalManagement

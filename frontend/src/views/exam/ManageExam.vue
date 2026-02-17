@@ -34,8 +34,16 @@
     <div class="bg-gray-50 rounded-lg p-4 border overflow-x-auto">
       <h3 class="font-semibold mb-3">Daftar Ujian {{ hasFullAccess ? '(Semua)' : '(Milik Anda)' }}</h3>
 
-      <div v-if="loading" class="text-center py-8 text-gray-500">
-         <i class="fas fa-spinner fa-spin mr-2"></i> Memuat data...
+      <div v-if="loading" class="py-4 space-y-4">
+        <div v-for="n in 5" :key="n" class="flex items-center gap-4 py-3 border-b border-gray-100 px-3">
+          <div class="flex-1 space-y-2">
+            <div class="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+            <div class="h-3 bg-gray-200 rounded w-64 animate-pulse"></div>
+          </div>
+          <div class="h-5 bg-gray-200 rounded w-20 animate-pulse"></div>
+          <div class="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
+          <div class="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+        </div>
       </div>
 
       <table v-else class="w-full min-w-[600px]">

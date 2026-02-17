@@ -21,8 +21,23 @@
       </div>
     </div>
 
-    <div v-if="loading" class="text-center py-10">
-      <p class="text-gray-500">Memuat data mahasiswa...</p>
+    <div v-if="loading" class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+        <Skeleton class="h-6 w-32" />
+        <Skeleton class="h-8 w-24" />
+      </div>
+      <div class="p-4">
+        <div class="space-y-4">
+          <div v-for="i in 5" :key="i" class="flex gap-4">
+            <Skeleton class="h-4 w-8" />
+            <Skeleton class="h-4 w-32" />
+            <Skeleton class="h-4 w-48" />
+            <Skeleton class="h-4 w-24" />
+            <Skeleton class="h-4 w-20" />
+            <Skeleton class="h-8 w-20 ml-auto" />
+          </div>
+        </div>
+      </div>
     </div>
     <div v-else-if="error" class="text-center py-10 bg-red-50 p-4 rounded-lg">
       <p class="text-red-600">{{ error }}</p>
@@ -331,6 +346,7 @@
 <script setup>
 
 import { ref, onMounted, computed, watch } from "vue";
+import Skeleton from "../../components/ui/Skeleton.vue";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import {
   getUsersByRole,

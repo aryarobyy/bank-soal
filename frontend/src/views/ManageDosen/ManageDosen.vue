@@ -2,106 +2,96 @@
   <div class="p-6 bg-gray-50 min-h-screen">
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-2xl font-bold text-gray-800">Manajemen Akun Dosen</h2>
-      <button
+      <Button
         @click="openAddModal"
-        class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition"
+        variant="primary"
+        icon="fas fa-plus"
       >
-        + Tambah Dosen
-      </button>
+        Tambah Dosen
+      </Button>
     </div>
 
-    <div v-if="loading" class="text-center py-10">
-      <p class="text-gray-500">Memuat data dosen...</p>
-    </div>
-    <div v-else-if="error" class="text-center py-10 bg-red-50 p-4 rounded-lg">
-      <p class="text-red-600">{{ error }}</p>
-    </div>
-    <div v-else class="bg-white shadow rounded-lg overflow-hidden overflow-x-auto">
-      <table class="min-w-full border-collapse">
-        <thead class="bg-gray-100 text-gray-700 text-sm">
-          <tr>
-            <th class="px-4 py-3 text-left">No</th>
-            <th class="px-4 py-3 text-left">Nama & Email</th> <th class="px-4 py-3 text-left">NIP</th>
-            <th class="px-4 py-3 text-left">Unit (Jurusan/Fakultas)</th>
-            <th class="px-4 py-3 text-left">Role</th>
-            <th class="px-4 py-3 text-left">Tanggal Dibuat</th>
-            <th class="px-4 py-3 text-left">Aksi</th>
-          </tr>
-        </thead>
-        <tbody class="text-gray-800 text-sm">
-          <tr
-            v-for="(dosen, index) in dosenList"
-            :key="dosen.id || dosen.ID || dosen._id"
-            class="border-t hover:bg-gray-50 transition"
+    <Table
+      :headers="tableHeaders"
+      :items="dosenList"
+      :loading="loading"
+      :empty-text="error || 'Belum ada data dosen'"
+    >
+      <template #cell-no="{ index }">
+        {{ (currentPage - 1) * itemsPerPage + index + 1 }}
+      </template>
+
+      <template #cell-name_email="{ item }">
+        <div class="font-medium text-gray-900">{{ item.name }}</div>
+        <div class="text-xs text-gray-500">{{ item.email }}</div>
+      </template>
+
+      <template #cell-nip="{ item }">
+        <span class="font-mono text-gray-600">{{ item.nip || '-' }}</span>
+      </template>
+
+      <template #cell-unit="{ item }">
+        <div class="text-gray-900">{{ item.major || '-' }}</div>
+        <div class="text-xs text-gray-500">{{ item.faculty || '-' }}</div>
+      </template>
+
+      <template #cell-role="{ item }">
+        <span 
+          :class="roleClass(item.role)" 
+          class="px-2 py-1 text-xs font-semibold rounded-full capitalize"
+        >
+          {{ item.role }}
+        </span>
+      </template>
+
+      <template #cell-created_at="{ value }">
+        {{ new Date(value).toLocaleDateString("id-ID") }}
+      </template>
+      <template #cell-actions="{ item }">
+        <div class="flex gap-2">
+          <Button
+            size="sm"
+            variant="warning"
+            @click="editDosen(item)"
           >
-            <td class="px-4 py-3">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-            
-            <td class="px-4 py-3">
-              <div class="font-medium text-gray-900">{{ dosen.name }}</div>
-              <div class="text-xs text-gray-500">{{ dosen.email }}</div>
-            </td>
+            Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="danger"
+            @click="hapusDosen(item)"
+          >
+            Hapus
+          </Button>
+        </div>
+      </template>
 
-            <td class="px-4 py-3 font-mono text-gray-600">{{ dosen.nip || '-' }}</td>
-
-            <td class="px-4 py-3">
-              <div class="text-gray-900">{{ dosen.major || '-' }}</div>
-              <div class="text-xs text-gray-500">{{ dosen.faculty || '-' }}</div>
-            </td>
-
-            <td class="px-4 py-3">
-              <span 
-                :class="roleClass(dosen.role)" 
-                class="px-2 py-1 text-xs font-semibold rounded-full capitalize"
-              >
-                {{ dosen.role }}
-              </span>
-            </td>
-            <td class="px-4 py-3">{{ new Date(dosen.created_at).toLocaleDateString("id-ID") }}</td>
-            <td class="px-4 py-3 whitespace-nowrap">
-              <button
-                @click="editDosen(dosen)"
-                class="px-3 py-1 bg-yellow-400 text-white rounded-md hover:bg-yellow-500 mr-2 transition"
-              >
-                Edit
-              </button>
-              <button
-                @click="hapusDosen(dosen)"
-                class="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
-              >
-                Hapus
-              </button>
-            </td>
-          </tr>
-          <tr v-if="dosenList.length === 0">
-            <td colspan="7" class="px-4 py-4 text-center text-gray-500">
-              Belum ada data dosen
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    
-    <div v-if="!loading && totalPages > 1" class="flex justify-between items-center mt-6">
-      <span class="text-sm text-gray-700">
-        Halaman <span class="font-semibold">{{ currentPage }}</span> dari <span class="font-semibold">{{ totalPages }}</span> (Total <span class="font-semibold">{{ totalItems }}</span> dosen)
-      </span>
-      <div class="flex gap-1">
-        <button
-          @click="prevPage"
-          :disabled="currentPage === 1"
-          class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          &lt; Sebelumnya
-        </button>
-        <button
-          @click="nextPage"
-          :disabled="currentPage === totalPages"
-          class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Berikutnya &gt;
-        </button>
-      </div>
-    </div>
+      <template #footer>
+        <div v-if="!loading && totalPages > 1" class="flex justify-between items-center">
+          <span class="text-sm text-gray-700">
+            Halaman <span class="font-semibold">{{ currentPage }}</span> dari <span class="font-semibold">{{ totalPages }}</span> (Total <span class="font-semibold">{{ totalItems }}</span> dosen)
+          </span>
+          <div class="flex gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              @click="prevPage"
+              :disabled="currentPage === 1"
+            >
+              &lt; Sebelumnya
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              @click="nextPage"
+              :disabled="currentPage === totalPages"
+            >
+              Berikutnya &gt;
+            </Button>
+          </div>
+        </div>
+      </template>
+    </Table>
 
     <div
       v-if="showModal"
@@ -241,18 +231,18 @@
           </template>
 
           <div class="flex justify-end gap-3 pt-2">
-            <button
-              type="button" @click="closeModal"
-              class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+            <Button
+              variant="secondary"
+              @click="closeModal"
             >
               Batal
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm"
+              variant="primary"
             >
               {{ editMode ? "Simpan" : "Tambah" }}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -270,6 +260,9 @@ import {
   changePassword,
 } from "../../provider/user.provider.js";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
+// Import Global Components
+import Button from "../../components/ui/button/Button.vue";
+import Table from "../../components/ui/table/Table.vue";
 
 import { usePopup } from "../../hooks/usePopup";
 
@@ -280,6 +273,17 @@ const loading = ref(true);
 const error = ref(null);
 const showModal = ref(false);
 const editMode = ref(false);
+
+// Table Headers Definition
+const tableHeaders = [
+  { key: 'no', label: 'No' },
+  { key: 'name_email', label: 'Nama & Email' },
+  { key: 'nip', label: 'NIP' },
+  { key: 'unit', label: 'Unit (Jurusan/Fakultas)' },
+  { key: 'role', label: 'Role' },
+  { key: 'created_at', label: 'Tanggal Dibuat' },
+  { key: 'actions', label: 'Aksi' },
+];
 
 const initialFormState = {
   id: null, name: "", email: "", password: "",

@@ -74,7 +74,16 @@
 
       <div v-if="activeTab === 'history'">
         
-        <div v-if="loadingHistory" class="text-center py-10 text-gray-500">Memuat riwayat...</div>
+        <div v-if="loadingHistory" class="space-y-4 py-4">
+          <div v-for="n in 3" :key="n" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="space-y-2 flex-1">
+              <div class="h-5 bg-gray-200 rounded w-48 animate-pulse"></div>
+              <div class="h-3 bg-gray-200 rounded w-36 animate-pulse"></div>
+              <div class="h-3 bg-gray-200 rounded w-28 animate-pulse"></div>
+            </div>
+            <div class="h-6 bg-gray-200 rounded-full w-20 animate-pulse"></div>
+          </div>
+        </div>
         
         <div v-else-if="historyList.length === 0" class="text-center py-16 bg-white rounded-xl shadow-sm">
           <i class="fas fa-history text-4xl text-gray-300 mb-4"></i>
