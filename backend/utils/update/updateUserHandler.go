@@ -233,7 +233,9 @@ func ValidateRoleTransitionRequirements(oldUser *model.User, data model.UpdateUs
 			}
 
 		case model.RoleSuperAdmin:
-			return fmt.Errorf("you cant access this")
+			if data.Username == nil || *data.Username == "" {
+				return fmt.Errorf("username is require for super admin")
+			}
 		}
 	}
 	return nil

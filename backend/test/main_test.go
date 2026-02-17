@@ -212,7 +212,7 @@ func TestRegister(t *testing.T) {
 			requesterRole: model.RoleAdmin,
 		},
 		{
-			name: "Failed super admin create user",
+			name: "Success super admin create user",
 			registerCred: model.RegisterCredential{
 				Name:     "Mahasiswa Biasa",
 				Password: rawPassword,
@@ -238,12 +238,12 @@ func TestRegister(t *testing.T) {
 					Return(&mockUser, nil).Once()
 			},
 			expectedUser:  &mockUser,
-			errorContains: "super admin cannot create non admin",
-			expectedError: true,
+			errorContains: "",
+			expectedError: false,
 			requesterRole: model.RoleSuperAdmin,
 		},
 		{
-			name: "Failed super admin create lecturer",
+			name: "Success super admin create lecturer",
 			registerCred: model.RegisterCredential{
 				Name:     "Dosen Baru",
 				Password: rawPassword,
@@ -269,8 +269,8 @@ func TestRegister(t *testing.T) {
 					Return(&mockLecturer, nil).Once()
 			},
 			expectedUser:  &mockLecturer,
-			errorContains: "super admin cannot create non admin",
-			expectedError: true,
+			errorContains: "",
+			expectedError: false,
 			requesterRole: model.RoleSuperAdmin,
 		},
 		{

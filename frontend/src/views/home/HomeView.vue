@@ -23,9 +23,9 @@
         </p>
         
         <div class="flex flex-col sm:flex-row justify-center gap-4">
-          <router-link to="/login" class="px-8 py-3.5 rounded-full bg-blue-600 text-white font-bold text-lg hover:bg-blue-700 transition shadow-lg hover:shadow-blue-500/30 transform hover:-translate-y-1">
+          <button v-on:click="onButtonClick" class="px-8 py-3.5 rounded-full bg-blue-600 text-white font-bold text-lg hover:bg-blue-700 transition shadow-lg hover:shadow-blue-500/30 transform hover:-translate-y-1">
             Mulai Sekarang
-          </router-link>
+          </button>
           <a href="#about" class="px-8 py-3.5 rounded-full bg-white text-slate-700 font-bold text-lg border border-slate-200 hover:bg-gray-50 transition">
             Pelajari Lebih Lanjut
           </a>
@@ -142,6 +142,9 @@ import { onMounted } from 'vue';
 
 import illustration1 from '../../assets/illustration-1.jpg';
 import illustration2 from '../../assets/illustration-2.jpg';
+import { useRouter } from 'vue-router';
+
+const router = useRouter()
 
 onMounted(() => {
   const observerOptions = {
@@ -161,6 +164,17 @@ onMounted(() => {
   const hiddenElements = document.querySelectorAll('.reveal');
   hiddenElements.forEach((el) => observer.observe(el));
 });
+
+const onButtonClick = () => {
+  const userId = localStorage.getItem('id')
+
+  if (userId == "") {
+    router.push("/login")
+  } else {
+    router.push("/dashboard")
+  }
+}
+
 </script>
 
 <style scoped>
