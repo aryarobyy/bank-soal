@@ -100,9 +100,8 @@ func sanitizeMap(v reflect.Value, sensitiveMap map[string]bool) interface{} {
 }
 
 func SanitizeUserResponse(user interface{}) interface{} {
-	//Data sensitif
 	sensitiveFields := []string{
-		"password", "Password", //bisa tambah refreshtoken
+		"password", "Password",
 		"salt", "Salt",
 		"verification_token", "VerificationToken",
 	}

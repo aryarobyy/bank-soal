@@ -11,9 +11,8 @@ func UserRoutes(r *gin.Engine, user *controller.UserController) {
 	routes := r.Group("/user")
 	{
 		routes.POST("/login", middleware.InputValidateJson([]string{"login_id", "password"}), user.Login)
-
-		routes.POST("/refresh", user.RefreshToken)
 		routes.GET("/id", user.GetById)
+		routes.GET("/profile", user.GetProfile)
 
 		usersAuth := routes.Group("")
 		usersAuth.Use(middleware.AuthMiddleware())

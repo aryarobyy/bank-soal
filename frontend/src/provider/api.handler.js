@@ -1,4 +1,3 @@
-// src/provider/api.handler.js
 import axios from "axios";
 import { API_BASE_URL } from "../core/constant";
 
@@ -14,33 +13,26 @@ ApiHandler.interceptors.request.use(
     if (token) config.headers["Authorization"] = `Bearer ${token}`;
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 ApiHandler.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (!error.response) return Promise.reject(error);
-    const originalRequest = error.config;
-    if (error.response.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      try {
-        const refreshResponse = await axios.post(
-          `${API_BASE_URL}/user/refresh`,
-          {},
-          { withCredentials: true }
-        );
-        const newAccessToken = refreshResponse.data.data;
-        localStorage.setItem("token", newAccessToken);
-        originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
-        return ApiHandler(originalRequest);
-      } catch (refreshError) {
-        console.error("Refresh token failed:", refreshError);
-        localStorage.removeItem("token");
-      }
+  (response) => {
+    const newToken = response.headers["x-new-access-token"];
+    if (newToken) {
+      localStorage.setItem("token", newToken);
     }
+    return response;
+  },
+  (error) => {
+    if (!error.response) return Promise.reject(error);
+
+    if (error.response.status === 401) {
+      localStorage.removeItem("token");
+    }
+
     return Promise.reject(error.response?.data?.error || error);
-  }
+  },
 );
 
 export default ApiHandler;

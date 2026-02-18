@@ -94,7 +94,7 @@ func (h *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	user, accessToken, refreshToken, err := h.service.Login(ctx, cred)
+	accessToken, refreshToken, err := h.service.Login(ctx, cred)
 	if err != nil {
 		helper.Error(c, http.StatusUnauthorized, err.Error())
 		return
@@ -104,8 +104,8 @@ func (h *UserController) Login(c *gin.Context) {
 		helper.Error(c, http.StatusInternalServerError, "failed to set cookie")
 		return
 	}
-	sanitizedUser := helper.SanitizeUserResponse(user)
-	helper.Success(c, sanitizedUser, "login successful", accessToken)
+
+	helper.Success(c, "login successful", accessToken)
 }
 
 func (h *UserController) GetById(c *gin.Context) {
@@ -126,6 +126,31 @@ func (h *UserController) GetById(c *gin.Context) {
 
 	userRes := response.UserResponse(*user)
 
+	helper.Success(c, userRes, "user found")
+}
+
+func (h *UserController) GetProfile(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	rawID, exists := c.Get("user_id")
+	if !exists {
+		helper.Error(c, http.StatusUnauthorized, "user_id not found in context")
+		return
+	}
+
+	id, ok := rawID.(int)
+	if !ok {
+		helper.Error(c, http.StatusBadRequest, "invalid user_id type")
+		return
+	}
+
+	user, err := h.service.GetById(ctx, id)
+	if err != nil {
+		helper.Error(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	userRes := response.UserResponse(*user)
 	helper.Success(c, userRes, "user found")
 }
 
@@ -516,24 +541,6 @@ func (h *UserController) ChangeRole(c *gin.Context) {
 
 	userRes := response.UserResponse(*user)
 	helper.Success(c, userRes, "user role updated successfully")
-}
-
-func (h *UserController) RefreshToken(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	refreshToken, err := c.Cookie("refresh_token")
-	if err != nil || refreshToken == "" {
-		helper.Error(c, http.StatusUnauthorized, "missing refresh token")
-		return
-	}
-
-	newAccessToken, err := h.service.RefreshToken(ctx, refreshToken)
-	if err != nil {
-		helper.Error(c, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	helper.Success(c, newAccessToken, "token refreshed")
 }
 
 func (h *UserController) BulkInsert(c *gin.Context) {

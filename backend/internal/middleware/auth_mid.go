@@ -23,16 +23,51 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		tokenString := strings.Split(authHeader, " ")[1]
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token format"})
+			return
+		}
+		tokenString := parts[1]
+
 		claims, err := helper.ParseAndValidateToken(tokenString)
-		if err != nil {
+		if err == nil {
+			c.Set("user", claims)
+			c.Set("user_id", claims.UserId)
+			c.Set("role", claims.Role)
+			c.Next()
+			return
+		}
+
+		expiredClaims, parseErr := helper.ParseTokenAllowExpired(tokenString)
+		if parseErr != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			return
 		}
 
-		c.Set("user", claims)
-		c.Set("user_id", claims.UserId)
-		c.Set("role", claims.Role)
+		refreshToken, cookieErr := c.Cookie("refresh_token")
+		if cookieErr != nil || refreshToken == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "session expired, please login again"})
+			return
+		}
+
+		_, refreshErr := helper.ValidateRefreshToken(refreshToken)
+		if refreshErr != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "session expired, please login again"})
+			return
+		}
+
+		newAccessToken, resignErr := helper.ReSignAccessToken(expiredClaims)
+		if resignErr != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "failed to refresh token"})
+			return
+		}
+
+		c.Header("X-New-Access-Token", newAccessToken)
+
+		c.Set("user", expiredClaims)
+		c.Set("user_id", expiredClaims.UserId)
+		c.Set("role", expiredClaims.Role)
 		c.Next()
 	}
 }

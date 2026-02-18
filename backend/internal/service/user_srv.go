@@ -18,8 +18,9 @@ import (
 
 type UserService interface {
 	Register(ctx context.Context, data model.RegisterCredential, requesterRole model.Role) error
-	Login(ctx context.Context, cred model.LoginCredential) (*model.User, string, string, error)
+	Login(ctx context.Context, cred model.LoginCredential) (string, string, error)
 	GetById(ctx context.Context, id int) (*model.User, error)
+	GetByToken(ctx context.Context, token string) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	Update(ctx context.Context, c *gin.Context, data model.UpdateUser, id int, requesterRole model.Role, currentId int) (*model.User, error)
 	Delete(ctx context.Context, id int, requesterRole model.Role) error
@@ -31,7 +32,6 @@ type UserService interface {
 	GetByRole(ctx context.Context, role string, limit int, offset int, requesterRole string) ([]model.User, int64, error)
 	ChangePassword(ctx context.Context, id int, newPassword string, role model.Role) error
 	ChangeRole(ctx context.Context, id int, user model.ChangeRoleCredential, userRole model.Role) error
-	RefreshToken(ctx context.Context, refreshToken string) (string, error)
 	BulkInsert(ctx context.Context, batchUser model.BulkUserCredential, prefix string, start int, end int) ([]model.BulkUserOutput, error)
 	JsonInput(ctx context.Context, file *multipart.FileHeader) error
 }
@@ -137,7 +137,7 @@ func (s *userService) Register(ctx context.Context, data model.RegisterCredentia
 	return nil
 }
 
-func (s *userService) Login(ctx context.Context, cred model.LoginCredential) (*model.User, string, string, error) {
+func (s *userService) Login(ctx context.Context, cred model.LoginCredential) (string, string, error) {
 	loginId := cred.LoginId
 	loginType := helper.DetectLoginType(loginId)
 
@@ -151,57 +151,57 @@ func (s *userService) Login(ctx context.Context, cred model.LoginCredential) (*m
 	}
 
 	if err := helper.ValidateFieldLengths(cred, rules); err != nil {
-		return nil, "", "", err
+		return "", "", err
 	}
 
 	switch loginType {
 	case "nip":
 		data, err = s.repo.GetByNip(ctx, loginId)
 		if err != nil {
-			return nil, "", "", fmt.Errorf("user not found")
+			return "", "", fmt.Errorf("user not found")
 		}
 		if data.Role != model.RoleLecturer {
-			return nil, "", "", fmt.Errorf("you cant login use nip %s", err)
+			return "", "", fmt.Errorf("you cant login use nip %s", err)
 		}
 	case "nim":
 		data, err = s.repo.GetByNim(ctx, loginId)
 		if err != nil {
-			return nil, "", "", fmt.Errorf("user not found")
+			return "", "", fmt.Errorf("user not found")
 		}
 		if data.Role != model.RoleUser {
-			return nil, "", "", fmt.Errorf("you cant login use nim %s", err)
+			return "", "", fmt.Errorf("you cant login use nim %s", err)
 		}
 	case "username":
 		data, err = s.repo.GetByUsn(ctx, loginId)
 		if err != nil {
-			return nil, "", "", fmt.Errorf("user not found")
+			return "", "", fmt.Errorf("user not found")
 		}
 		if data.Role != model.RoleAdmin && data.Role != model.RoleSuperAdmin {
-			return nil, "", "", fmt.Errorf("you cant login use username %s", err)
+			return "", "", fmt.Errorf("you cant login use username %s", err)
 		}
 	default:
-		return nil, "", "", fmt.Errorf("user not found")
+		return "", "", fmt.Errorf("user not found")
 	}
 
 	if err != nil || data == nil {
-		return nil, "", "", fmt.Errorf("user not found")
+		return "", "", fmt.Errorf("user not found")
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(data.Password), []byte(cred.Password)) != nil {
-		return nil, "", "", fmt.Errorf("wrong password")
+		return "", "", fmt.Errorf("wrong password")
 	}
 
 	accessToken, err := helper.GenerateAccessToken(data)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("failed to generate access token: %w", err)
+		return "", "", fmt.Errorf("failed to generate access token: %w", err)
 	}
 
 	refreshToken, err := helper.GenerateRefreshToken(data)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("failed to generate refresh token: %w", err)
+		return "", "", fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 
-	return data, accessToken, refreshToken, nil
+	return accessToken, refreshToken, nil
 }
 
 func (s *userService) GetById(ctx context.Context, id int) (*model.User, error) {
@@ -211,6 +211,33 @@ func (s *userService) GetById(ctx context.Context, id int) (*model.User, error) 
 	}
 
 	return data, nil
+}
+
+func (s *userService) GetByToken(ctx context.Context, token string) (*model.User, error) {
+	if token == "" {
+		return nil, fmt.Errorf("token cannot be null")
+	}
+
+	data, err := helper.ParseAndValidateToken(token)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	user := model.User{
+		Id:           data.UserId,
+		Role:         model.Role(data.Role),
+		Name:         data.Name,
+		Email:        data.Email,
+		Nim:          data.Nim,
+		Nip:          data.Nip,
+		ImgUrl:       *data.ImgUrl,
+		Major:        data.Major,
+		Username:     data.Username,
+		AcademicYear: *data.AcademicYear,
+		Faculty:      data.Faculty,
+	}
+
+	return &user, nil
 }
 
 func (s *userService) GetByEmail(ctx context.Context, email string) (*model.User, error) {
@@ -468,25 +495,6 @@ func (s *userService) ChangeRole(
 	}
 
 	return nil
-}
-
-func (s *userService) RefreshToken(ctx context.Context, refreshToken string) (string, error) {
-	userId, err := helper.ValidateRefreshToken(refreshToken)
-	if err != nil {
-		return "", fmt.Errorf("invalid or expired refresh token: %w", err)
-	}
-
-	user, err := s.repo.GetById(ctx, userId)
-	if err != nil {
-		return "", fmt.Errorf("user not found: %w", err)
-	}
-
-	newAccessToken, err := helper.GenerateAccessToken(user)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate new access token: %w", err)
-	}
-
-	return newAccessToken, nil
 }
 
 func (s *userService) BulkInsert(ctx context.Context, batchUser model.BulkUserCredential, prefix string, start int, end int) ([]model.BulkUserOutput, error) {

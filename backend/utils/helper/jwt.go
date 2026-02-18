@@ -13,10 +13,17 @@ import (
 )
 
 type ClaimsModel struct {
-	UserId int    `json:"id"`
-	Role   string `json:"role"`
-	Name   string `json:"name"`
-	Email  string `json:"email"`
+	UserId       int     `json:"id"`
+	Role         string  `json:"role"`
+	Name         string  `json:"name"`
+	Email        *string `json:"email"`
+	Nim          *string `json:"nim"`
+	Nip          *string `json:"nip"`
+	ImgUrl       *string `json:"img_url"`
+	Major        string  `json:"major"`
+	Username     *string `json:"username"`
+	AcademicYear *string `json:"academic_year"`
+	Faculty      string  `json:"faculty"`
 	jwt.RegisteredClaims
 }
 
@@ -58,20 +65,17 @@ func GenerateAccessToken(user *model.User) (string, error) {
 		return "", err
 	}
 
-	var userEmail string
-
-	if user.Email != nil {
-		userEmail = *user.Email
-	} else {
-		userEmail = ""
-	}
-
 	expireAt := time.Now().Add(duration)
 	claims := ClaimsModel{
-		UserId: user.Id,
-		Role:   string(user.Role),
-		Name:   user.Name,
-		Email:  userEmail,
+		UserId:       user.Id,
+		Role:         string(user.Role),
+		Name:         user.Name,
+		Email:        user.Email,
+		Major:        user.Major,
+		ImgUrl:       &user.ImgUrl,
+		Faculty:      user.Faculty,
+		Username:     user.Username,
+		AcademicYear: &user.AcademicYear,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(expireAt),
@@ -135,6 +139,55 @@ func ParseAndValidateToken(tokenString string) (*ClaimsModel, error) {
 	}
 
 	return claims, nil
+}
+
+func ParseTokenAllowExpired(tokenString string) (*ClaimsModel, error) {
+	secret := os.Getenv("JWT_SECRET")
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+	token, err := parser.ParseWithClaims(tokenString, &ClaimsModel{}, func(token *jwt.Token) (interface{}, error) {
+		if token.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Method.Alg())
+		}
+		return []byte(secret), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*ClaimsModel)
+	if !ok {
+		return nil, errors.New("invalid token claims")
+	}
+
+	return claims, nil
+}
+
+func ReSignAccessToken(oldClaims *ClaimsModel) (string, error) {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		return "", errors.New("JWT_SECRET is not set in environment")
+	}
+
+	expiryStr := os.Getenv("JWT_EXPIRED")
+	if expiryStr == "" {
+		expiryStr = "10m"
+	}
+
+	duration, err := ParseExpiry(expiryStr)
+	if err != nil {
+		return "", err
+	}
+
+	oldClaims.IssuedAt = jwt.NewNumericDate(time.Now())
+	oldClaims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(duration))
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, oldClaims)
+	ss, err := token.SignedString([]byte(secret))
+	if err != nil {
+		return "", err
+	}
+
+	return ss, nil
 }
 
 func ValidateRefreshToken(tokenStr string) (int, error) {
