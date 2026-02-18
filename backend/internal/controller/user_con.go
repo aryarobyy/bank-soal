@@ -105,7 +105,7 @@ func (h *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	helper.Success(c, "login successful", accessToken)
+	helper.Success(c, nil, "login successful", accessToken)
 }
 
 func (h *UserController) GetById(c *gin.Context) {
@@ -131,7 +131,7 @@ func (h *UserController) GetById(c *gin.Context) {
 
 func (h *UserController) GetProfile(c *gin.Context) {
 	ctx := c.Request.Context()
-
+	log.Println("dsksadkasdsa")
 	rawID, exists := c.Get("user_id")
 	if !exists {
 		helper.Error(c, http.StatusUnauthorized, "user_id not found in context")

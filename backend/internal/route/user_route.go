@@ -12,11 +12,11 @@ func UserRoutes(r *gin.Engine, user *controller.UserController) {
 	{
 		routes.POST("/login", middleware.InputValidateJson([]string{"login_id", "password"}), user.Login)
 		routes.GET("/id", user.GetById)
-		routes.GET("/profile", user.GetProfile)
 
 		usersAuth := routes.Group("")
 		usersAuth.Use(middleware.AuthMiddleware())
 		{
+			usersAuth.GET("/profile", user.GetProfile)
 			usersAuth.POST("/register", middleware.RoleGuard(model.RoleAdmin, model.RoleSuperAdmin), middleware.InputValidateJson([]string{"name", "password", "major", "faculty"}), user.Register)
 			usersAuth.GET("/email", user.GetByEmail)
 			usersAuth.GET("/nim", user.GetByNim)

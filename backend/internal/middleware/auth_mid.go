@@ -11,7 +11,6 @@ import (
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		if c.Request.Method == "OPTIONS" {
 			c.Next()
 			return
