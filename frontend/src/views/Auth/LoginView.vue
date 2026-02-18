@@ -1,61 +1,42 @@
 <template>
-  <div
-    class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4"
-  >
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
-      <div class="text-center mb-8">
-        
-        <img 
-          :src="logoImage" 
-          alt="Logo Latih.in" 
-          class="w-24 h-auto mb-4 mx-auto object-contain"
-        />
+	<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+		<div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+			<div class="text-center mb-8">
 
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">Login</h1>
-        <p class="text-gray-600">Masuk ke akun Anda</p>
-      </div>
+				<img :src="logoImage" alt="Logo Latih.in" class="w-24 h-auto mb-4 mx-auto object-contain" />
 
-      <form @submit.prevent="handleSubmit" class="space-y-5">
-        
-        <div v-for="field in fields" :key="field.name">
-          <label class="block text-sm font-medium text-gray-700 mb-2">{{
-            field.label
-          }}</label>
-          <div class="relative">
-            <Input
-              v-model="formData[field.name]"
-              :title="field.title"
-              :place-holder="field.placeholder"
-              :required="false" 
-              :id="field.id"
-              :icon="field.icon"
-              :type="field.type"
-            />
-          </div>
-        </div>
+				<h1 class="text-3xl font-bold text-gray-800 mb-2">Login</h1>
+				<p class="text-gray-600">Masuk ke akun Anda</p>
+			</div>
 
-        <Button
-          :text="isSubmitting ? 'Masuk...' : 'Masuk'"
-          :disabled="isSubmitting"
-          variant="modern"
-          size="medium"
-          class="w-full"
-          @click="handleSubmit"
-        />
-      </form>
+			<form @submit.prevent="handleSubmit" class="space-y-5">
 
-    </div>
+				<div v-for="field in fields" :key="field.name">
+					<label class="block text-sm font-medium text-gray-700 mb-2">{{
+						field.label
+					}}</label>
+					<div class="relative">
+						<Input v-model="formData[field.name]" :title="field.title" :place-holder="field.placeholder"
+							:required="false" :id="field.id" :icon="field.icon" :type="field.type" />
+					</div>
+				</div>
 
-    <Toast ref="toastRef" />
-  </div>
+				<Button :text="isSubmitting ? 'Masuk...' : 'Masuk'" :disabled="isSubmitting" variant="modern" size="medium"
+					class="w-full" @click="handleSubmit" />
+			</form>
+
+		</div>
+
+		<Toast ref="toastRef" />
+	</div>
 </template>
 
 <script setup>
 import { ref } from "vue";
-import { User, Lock } from "lucide-vue-next"; 
+import { User, Lock } from "lucide-vue-next";
 import Input from '../../components/ui/Input.vue'
 import Button from "../../components/ui/Button.vue";
-import { login } from "../../provider/user.provider";
+import { login, getProfile } from "../../provider/user.provider";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import Toast from "../../components/utils/Toast.vue";
 import { useRouter } from 'vue-router'
@@ -70,113 +51,121 @@ const toastRef = ref(null);
 const router = useRouter()
 
 const formData = ref({
-  login_id: "",
-  password: "",
+	login_id: "",
+	password: "",
 });
 
 const isSubmitting = ref(false);
 
 const fields = [
-  { 
-    id: 1, 
-    name: "login_id", 
-    title: "Login ID", 
-    type: "text", 
-    placeholder: "NIM / NIP / Username", 
-    icon: User, 
-  },
-  { 
-    id: 2, 
-    name: "password", 
-    title: "Password", 
-    type: "password", 
-    placeholder: "Minimal 6 karakter", 
-    icon: Lock, 
-  },
+	{
+		id: 1,
+		name: "login_id",
+		title: "Login ID",
+		type: "text",
+		placeholder: "NIM / NIP / Username",
+		icon: User,
+	},
+	{
+		id: 2,
+		name: "password",
+		title: "Password",
+		type: "password",
+		placeholder: "Minimal 6 karakter",
+		icon: Lock,
+	},
 ];
 
 
 const validateForm = () => {
-  const { login_id, password } = formData.value;
+	const { login_id, password } = formData.value;
 
-  if (!login_id && !password) {
-    toastRef.value.showToast("error", "Validasi Gagal", "Harap isi Login ID dan Password");
-    return false;
-  }
- 
-  if (!login_id) {
-    toastRef.value.showToast("error", "Validasi Gagal", "Login ID belum diisi");
-    return false;
-  }
+	if (!login_id && !password) {
+		toastRef.value.showToast("error", "Validasi Gagal", "Harap isi Login ID dan Password");
+		return false;
+	}
 
-  if (!password) {
-    toastRef.value.showToast("error", "Validasi Gagal", "Password belum diisi");
-    return false;
-  }
+	if (!login_id) {
+		toastRef.value.showToast("error", "Validasi Gagal", "Login ID belum diisi");
+		return false;
+	}
 
-  return true;
+	if (!password) {
+		toastRef.value.showToast("error", "Validasi Gagal", "Password belum diisi");
+		return false;
+	}
+
+	return true;
 };
 
 const handleSubmit = async () => {
 
-  if (!validateForm()) {
-    return; 
-  }
+	if (!validateForm()) {
+		return;
+	}
 
-  try {
-    isSubmitting.value = true;
-    
-    const data = await login(formData.value);
-    const userData = data.data.data;
+	try {
+		isSubmitting.value = true;
 
+		// 1. Login → dapat token saja
+		const data = await login(formData.value);
+		const token = data.data.token;
 
-    if (data.data.token && userData) {
+		if (!token) {
+			throw new Error('Token tidak ditemukan');
+		}
 
-      setToken(data.data.token);
-      setId(userData.id);
-      
-    
-      localStorage.setItem('user', JSON.stringify(userData)); 
-  
+		// 2. Simpan token dulu
+		setToken(token);
 
-  
-      if (setGlobalUser) {
-        setGlobalUser(userData);
-      }
-    }
+		// 3. Panggil getProfile() untuk dapat data user
+		const profileRes = await getProfile();
+		const userData = profileRes.data?.data || profileRes.data;
 
-    const userRole = userData.role;
-    let redirectPath = '/'; 
-    
-    if (userRole === 'lecturer') {
-      redirectPath = '/dosen/dashboard';
-    } else if (userRole === 'admin') {
-      redirectPath = '/admin/dashboard';
-    } else if (userRole === 'super_admin') {
-      redirectPath = '/superadmin/dashboard';
-    }else {
+		if (!userData) {
+			throw new Error('Gagal mengambil data profil');
+		}
 
-      redirectPath = '/dashboard'; 
-    }
+		// 4. Simpan data user ke localStorage & global state
+		setId(userData.id);
+		localStorage.setItem('user', JSON.stringify(userData));
 
-    toastRef.value.showToast(
-      "success",
-      "Login Berhasil",
-      "Selamat datang kembali!"
-    );
+		if (setGlobalUser) {
+			setGlobalUser(userData);
+		}
 
-    router.push(redirectPath);
+		// 5. Redirect berdasarkan role
+		const userRole = userData.role;
+		let redirectPath = '/';
 
-  } catch (error) {
-    console.log("Login error", error.response?.data);
-    
-    toastRef.value.showToast(
-      "error",
-      "Login Gagal",
-      "Login ID atau Password yang Anda masukkan salah" 
-    );
-  } finally {
-    isSubmitting.value = false;
-  }
+		if (userRole === 'lecturer') {
+			redirectPath = '/dosen/dashboard';
+		} else if (userRole === 'admin') {
+			redirectPath = '/admin/dashboard';
+		} else if (userRole === 'super_admin') {
+			redirectPath = '/superadmin/dashboard';
+		} else {
+			redirectPath = '/dashboard';
+		}
+
+		toastRef.value.showToast(
+			"success",
+			"Login Berhasil",
+			"Selamat datang kembali!"
+		);
+
+		router.push(redirectPath);
+
+	} catch (error) {
+		console.log("Login error", error);
+
+		toastRef.value.showToast(
+			"error",
+			"Login Gagal",
+			"Login ID atau Password yang Anda masukkan salah"
+		);
+	} finally {
+		isSubmitting.value = false;
+	}
 };
 </script>

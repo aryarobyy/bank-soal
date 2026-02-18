@@ -1,5 +1,5 @@
 import { ref, provide, inject, readonly } from "vue";
-import { getUserById } from "../provider/user.provider";
+import { getProfile } from "../provider/user.provider";
 import { useRouter } from "vue-router";
 
 const UserSymbol = Symbol('user')
@@ -20,22 +20,37 @@ export const provideUser = () => {
 
   const fetchUser = async () => {
     const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('id');
 
-    if (!token || !userId) {
+    if (!token) {
       user.value = null;
       router.push('/login');
       return; 
     }
 
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr && userStr !== 'undefined' && userStr !== 'null') {
+        const parsed = JSON.parse(userStr);
+        if (parsed && parsed.id) {
+          user.value = parsed;
+          return; 
+        }
+      }
+    } catch (e) {
+      console.warn("Gagal parse user dari localStorage:", e);
+    }
+
     loading.value = true;
     try {
-      const res = await getUserById(userId);
-      user.value = res.data || res; 
+      const res = await getProfile();
+      const userData = res.data?.data || res.data || res;
+      user.value = userData;
+      localStorage.setItem('user', JSON.stringify(userData));
     } catch (err) {
       console.error("Gagal mengambil data user:", err);
       error.value = err;
       user.value = null;
+      localStorage.clear();
       router.push('/login');
     } finally {
       loading.value = false;
