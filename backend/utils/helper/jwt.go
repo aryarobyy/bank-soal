@@ -13,10 +13,11 @@ import (
 )
 
 type ClaimsModel struct {
-	UserId int    `json:"id"`
-	Role   string `json:"role"`
-	Name   string `json:"name"`
-	Email  string `json:"email"`
+	UserId       int    `json:"id"`
+	Role         string `json:"role"`
+	Name         string `json:"name"`
+	Email        string `json:"email"`
+	TokenVersion int    `json:"token_version"`
 	jwt.RegisteredClaims
 }
 
@@ -68,10 +69,11 @@ func GenerateAccessToken(user *model.User) (string, error) {
 
 	expireAt := time.Now().Add(duration)
 	claims := ClaimsModel{
-		UserId: user.Id,
-		Role:   string(user.Role),
-		Name:   user.Name,
-		Email:  userEmail,
+		UserId:       user.Id,
+		Role:         string(user.Role),
+		Name:         user.Name,
+		Email:        userEmail,
+		TokenVersion: user.TokenVersion,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(expireAt),
@@ -105,10 +107,14 @@ func GenerateRefreshToken(user *model.User) (string, error) {
 	}
 
 	expireAt := time.Now().Add(duration)
-	claims := jwt.RegisteredClaims{
-		Subject:   strconv.Itoa(user.Id),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(expireAt),
+	claims := ClaimsModel{
+		UserId:       user.Id,
+		TokenVersion: user.TokenVersion,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   strconv.Itoa(user.Id),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(expireAt),
+		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -137,35 +143,35 @@ func ParseAndValidateToken(tokenString string) (*ClaimsModel, error) {
 	return claims, nil
 }
 
-func ValidateRefreshToken(tokenStr string) (int, error) {
+func ValidateRefreshToken(tokenStr string) (int, int, error) {
 	secret := os.Getenv("JWT_REFRESH_SECRET")
 	if secret == "" {
 		secret = os.Getenv("JWT_SECRET")
 	}
 
-	token, err := jwt.ParseWithClaims(tokenStr, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &ClaimsModel{}, func(t *jwt.Token) (interface{}, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Method.Alg())
 		}
 		return []byte(secret), nil
 	})
 	if err != nil {
-		return 0, fmt.Errorf("error parsing refresh token: %w", err)
+		return 0, 0, fmt.Errorf("error parsing refresh token: %w", err)
 	}
 
-	claims, ok := token.Claims.(*jwt.RegisteredClaims)
+	claims, ok := token.Claims.(*ClaimsModel)
 	if !ok || !token.Valid {
-		return 0, errors.New("invalid or expired refresh token")
+		return 0, 0, errors.New("invalid or expired refresh token")
 	}
 
 	if claims.Subject == "" {
-		return 0, errors.New("missing subject in refresh token")
+		return 0, 0, errors.New("missing subject in refresh token")
 	}
 
 	id, err := strconv.Atoi(claims.Subject)
 	if err != nil {
-		return 0, fmt.Errorf("invalid subject format: %w", err)
+		return 0, 0, fmt.Errorf("invalid subject format: %w", err)
 	}
 
-	return id, nil
+	return id, claims.TokenVersion, nil
 }

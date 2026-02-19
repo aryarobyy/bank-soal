@@ -5,13 +5,14 @@ import (
 	"latih.in-be/internal/controller"
 	"latih.in-be/internal/middleware"
 	"latih.in-be/internal/model"
+	"latih.in-be/internal/repository"
 )
 
-func QuestionRoutes(r *gin.Engine, question *controller.QuestionController) {
+func QuestionRoutes(r *gin.Engine, question *controller.QuestionController, userRepo repository.UserRepository) {
 	routes := r.Group("/question")
 	{
 		auth := routes.Group("")
-		auth.Use(middleware.AuthMiddleware())
+		auth.Use(middleware.AuthMiddleware(userRepo))
 		{
 			auth.POST("/",
 				middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer),

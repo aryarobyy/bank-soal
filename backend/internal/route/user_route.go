@@ -5,9 +5,10 @@ import (
 	"latih.in-be/internal/controller"
 	"latih.in-be/internal/middleware"
 	"latih.in-be/internal/model"
+	"latih.in-be/internal/repository"
 )
 
-func UserRoutes(r *gin.Engine, user *controller.UserController) {
+func UserRoutes(r *gin.Engine, user *controller.UserController, userRepo repository.UserRepository) {
 	routes := r.Group("/user")
 	{
 		routes.POST("/login", middleware.InputValidateJson([]string{"login_id", "password"}), user.Login)
@@ -16,7 +17,7 @@ func UserRoutes(r *gin.Engine, user *controller.UserController) {
 		routes.GET("/id", user.GetById)
 
 		usersAuth := routes.Group("")
-		usersAuth.Use(middleware.AuthMiddleware())
+		usersAuth.Use(middleware.AuthMiddleware(userRepo))
 		{
 			usersAuth.POST("/register", middleware.RoleGuard(model.RoleAdmin, model.RoleSuperAdmin), middleware.InputValidateJson([]string{"name", "password", "major", "faculty"}), user.Register)
 			usersAuth.GET("/email", user.GetByEmail)

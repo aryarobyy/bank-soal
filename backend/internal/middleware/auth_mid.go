@@ -6,10 +6,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"latih.in-be/internal/model"
+	"latih.in-be/internal/repository"
 	"latih.in-be/utils/helper"
 )
 
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(userRepo repository.UserRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		if c.Request.Method == "OPTIONS" {
@@ -30,7 +31,17 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("user", claims)
+		user, err := userRepo.GetById(c.Request.Context(), claims.UserId)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+			return
+		}
+
+		if user.TokenVersion != claims.TokenVersion {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "session expired, please login again"})
+			return
+		}
+
 		c.Set("user_id", claims.UserId)
 		c.Set("role", claims.Role)
 		c.Next()

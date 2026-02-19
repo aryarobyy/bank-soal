@@ -5,13 +5,14 @@ import (
 	"latih.in-be/internal/controller"
 	"latih.in-be/internal/middleware"
 	"latih.in-be/internal/model"
+	"latih.in-be/internal/repository"
 )
 
-func OptionRoutes(r *gin.Engine, option *controller.OptionController) {
+func OptionRoutes(r *gin.Engine, option *controller.OptionController, userRepo repository.UserRepository) {
 	routes := r.Group("/option")
 	{
 		auth := routes.Group("")
-		auth.Use(middleware.AuthMiddleware())
+		auth.Use(middleware.AuthMiddleware(userRepo))
 		{
 			auth.POST("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer), middleware.InputValidateJson([]string{
 				"question_id", "option_label",
