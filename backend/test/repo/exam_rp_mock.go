@@ -76,3 +76,14 @@ func (m *ExamRepoMock) CheckQuestion(ctx context.Context, examId int, questionId
 
 	return args.Get(0).(bool), args.Error(1)
 }
+
+func (m *ExamRepoMock) GetByCreator(ctx context.Context, creatorId int, limit int, offset int) ([]model.Exam, error) {
+	args := m.Called(ctx, creatorId, limit, offset)
+
+	var zero []model.Exam
+	if args.Get(0) == nil {
+		return zero, args.Error(1)
+	}
+
+	return args.Get(0).([]model.Exam), args.Error(1)
+}

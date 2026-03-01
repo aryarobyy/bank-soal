@@ -32,7 +32,6 @@ func AuthMiddleware(userRepo repository.UserRepository) gin.HandlerFunc {
 
 		claims, err := helper.ParseAndValidateToken(tokenString)
 		if err == nil {
-			c.Set("user", claims)
 			c.Set("user_id", claims.UserId)
 			c.Set("role", claims.Role)
 			c.Next()
@@ -45,19 +44,19 @@ func AuthMiddleware(userRepo repository.UserRepository) gin.HandlerFunc {
 			return
 		}
 
-		user, err := userRepo.GetById(c.Request.Context(), claims.UserId)
+		user, err := userRepo.GetById(c.Request.Context(), expiredClaims.UserId)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
 			return
 		}
 
-		if user.TokenVersion != claims.TokenVersion {
+		if user.TokenVersion != expiredClaims.TokenVersion {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "session expired, please login again"})
 			return
 		}
 
-		c.Set("user_id", claims.UserId)
-		c.Set("role", claims.Role)
+		c.Set("user_id", expiredClaims.UserId)
+		c.Set("role", expiredClaims.Role)
 		c.Next()
 	}
 }

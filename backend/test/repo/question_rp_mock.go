@@ -107,8 +107,8 @@ func (m *QuestionRepoMock) GetByExamId(ctx context.Context, examId int) ([]model
 	return args.Get(0).([]model.Question), args.Error(1)
 }
 
-func (m *QuestionRepoMock) GetRandomQuestionBySubject(ctx context.Context, total int, subjectId int) ([]model.Question, error) {
-	args := m.Called(ctx, total, subjectId)
+func (m *QuestionRepoMock) GetRandomQuestionBySubject(ctx context.Context, total int, subjectId int, creatorId *int) ([]model.Question, error) {
+	args := m.Called(ctx, total, subjectId, creatorId)
 
 	var zero []model.Question
 	if args.Get(0) == nil {
@@ -118,8 +118,8 @@ func (m *QuestionRepoMock) GetRandomQuestionBySubject(ctx context.Context, total
 	return args.Get(0).([]model.Question), args.Error(1)
 }
 
-func (m *QuestionRepoMock) GetRandomQuestion(ctx context.Context, total int) ([]model.Question, error) {
-	args := m.Called(ctx, total)
+func (m *QuestionRepoMock) GetRandomQuestion(ctx context.Context, total int, creatorId *int) ([]model.Question, error) {
+	args := m.Called(ctx, total, creatorId)
 
 	var zero []model.Question
 	if args.Get(0) == nil {
@@ -127,4 +127,26 @@ func (m *QuestionRepoMock) GetRandomQuestion(ctx context.Context, total int) ([]
 	}
 
 	return args.Get(0).([]model.Question), args.Error(1)
+}
+
+func (m *QuestionRepoMock) GetByCreatorNSubject(ctx context.Context, creatorId int, subjectId int, limit int, offset int) ([]model.Question, int64, error) {
+	args := m.Called(ctx, creatorId, subjectId, limit, offset)
+
+	var zero []model.Question
+	if args.Get(0) == nil {
+		return zero, 0, args.Error(2)
+	}
+
+	return args.Get(0).([]model.Question), args.Get(1).(int64), args.Error(2)
+}
+
+func (m *QuestionRepoMock) GetByCreatorNDifficult(ctx context.Context, creatorId int, diff string, limit int, offset int) ([]model.Question, int64, error) {
+	args := m.Called(ctx, creatorId, diff, limit, offset)
+
+	var zero []model.Question
+	if args.Get(0) == nil {
+		return zero, 0, args.Error(2)
+	}
+
+	return args.Get(0).([]model.Question), args.Get(1).(int64), args.Error(2)
 }

@@ -241,21 +241,12 @@ func (s *userService) GetByToken(ctx context.Context, token string) (*model.User
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
-	user := model.User{
-		Id:           data.UserId,
-		Role:         model.Role(data.Role),
-		Name:         data.Name,
-		Email:        data.Email,
-		Nim:          data.Nim,
-		Nip:          data.Nip,
-		ImgUrl:       *data.ImgUrl,
-		Major:        data.Major,
-		Username:     data.Username,
-		AcademicYear: *data.AcademicYear,
-		Faculty:      data.Faculty,
+	user, err := s.repo.GetById(ctx, data.UserId)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
-	return &user, nil
+	return user, nil
 }
 
 func (s *userService) GetByEmail(ctx context.Context, email string) (*model.User, error) {

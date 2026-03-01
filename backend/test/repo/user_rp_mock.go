@@ -89,8 +89,8 @@ func (m *UserRepoMock) ChangePassword(ctx context.Context, id int, password stri
 	return args.Error(0)
 }
 
-func (m *UserRepoMock) ChangeRole(ctx context.Context, id int, role model.Role) error {
-	args := m.Called(ctx, id, role)
+func (m *UserRepoMock) ChangeRole(ctx context.Context, id int, data model.User) error {
+	args := m.Called(ctx, id, data)
 	return args.Error(0)
 }
 
