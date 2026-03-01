@@ -77,6 +77,9 @@ func (s *questionService) Create(ctx context.Context, c *gin.Context, data *mode
 	if len(data.Options) == 0 {
 		return fmt.Errorf("options can't be null")
 	}
+	if data.Score < 0 {
+		return fmt.Errorf("score cannot be negative")
+	}
 
 	switch data.Difficulty {
 	case model.DifficultyEasy:
@@ -290,6 +293,10 @@ func (s *questionService) CreateFromJson(ctx context.Context, file *multipart.Fi
 	}
 
 	for i, q := range questions {
+		if q.Score < 0 {
+			return fmt.Errorf("score cannot be negative at index %d", i)
+		}
+
 		correctCount := 0
 		for _, opt := range q.Options {
 			if opt.IsCorrect {

@@ -11,6 +11,9 @@ func SessionResponse(data model.ExamSession) model.SessionResponse {
 		FinishedAt: data.FinishedAt,
 		Status:     data.Status,
 		CurrentNo:  data.CurrentNo,
+		MaxScore:   data.MaxScore,
+		Percentage: data.Percentage,
+		IsPassed:   data.IsPassed,
 	}
 	{
 		s := float64(data.Score)

@@ -79,7 +79,8 @@
           <div 
             v-for="session in recentSessions" 
             :key="session.id" 
-            class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:bg-gray-50 transition"
+            class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:bg-gray-50 transition cursor-pointer"
+            @click="openRecentSession(session)"
           >
             <div class="flex items-center gap-4 overflow-hidden w-full">
               <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -97,6 +98,12 @@
                 </p>
               </div>
             </div>
+            <span
+              v-if="session.status === 'in_progress'"
+              class="text-xs font-semibold text-blue-600 whitespace-nowrap"
+            >
+              Lanjutkan ->
+            </span>
             </div>
         </div>
       </div>
@@ -128,6 +135,16 @@ const goToProfile = () => {
     router.push({ name: 'Profile', params: { id: user.value.id } });
   }
 };
+const openRecentSession = (session) => {
+  if (!session?.exam_id) return;
+
+  if (session.status === "in_progress") {
+    router.push(`/exam/start?id=${session.exam_id}&session_id=${session.id}`);
+    return;
+  }
+
+  router.push(`/exam/view?id=${session.exam_id}`);
+};
 
 const formatDate = (dateString) => {
   if (!dateString || dateString.startsWith('0001')) return "-";
@@ -158,6 +175,11 @@ const fetchDashboardData = async () => {
     }
 
     sessionData.sort((a, b) => {
+        const aInProgress = a.status === "in_progress" ? 1 : 0;
+        const bInProgress = b.status === "in_progress" ? 1 : 0;
+        if (aInProgress !== bInProgress) {
+          return bInProgress - aInProgress;
+        }
         return new Date(b.started_at) - new Date(a.started_at);
     });
 

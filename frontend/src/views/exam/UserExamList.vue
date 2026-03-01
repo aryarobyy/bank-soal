@@ -109,6 +109,12 @@
             
             <template v-if="session.status === 'finished' || session.status === 'submitted'">
               <div class="text-right">
+                <p class="text-xs text-gray-400 uppercase font-semibold">Nilai</p>
+                <p class="text-lg font-bold text-green-600">
+                  {{ formatSessionScore(session) }}
+                </p>
+              </div>
+              <div class="text-right">
                 <p class="text-xs text-gray-400 uppercase font-semibold">Status</p>
                 <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-gray-200 text-gray-700">
                   Selesai
@@ -239,6 +245,13 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString("id-ID", { day: 'nu
 const formatDateFull = (d) => {
   if (!d || d.startsWith("0001")) return "Sedang Berjalan";
   return new Date(d).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+
+const formatSessionScore = (session) => {
+  const score = Number(session?.score ?? 0);
+  const maxScore = Number(session?.max_score ?? 0);
+  if (maxScore > 0) return `${score} / ${maxScore}`;
+  return `${score}`;
 };
 
 
