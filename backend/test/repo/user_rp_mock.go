@@ -99,6 +99,11 @@ func (m *UserRepoMock) BulkInsert(ctx context.Context, users []model.User) ([]mo
 	return GetReturn[[]model.User](args)
 }
 
+func (m *UserRepoMock) IncrementTokenVersion(ctx context.Context, id int) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 type TokenGenerator interface {
 	Generate(user *model.User) (string, error)
 }

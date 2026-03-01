@@ -88,7 +88,7 @@ func NewApp(db *gorm.DB) *App {
 
 	router.Use(middleware.RateLimiter(store, nil))
 
-	setupRoutes(router, controllers)
+	setupRoutes(router, controllers, userRepo)
 
 	return &App{
 		Router: router,
@@ -96,19 +96,19 @@ func NewApp(db *gorm.DB) *App {
 	}
 }
 
-func setupRoutes(r *gin.Engine, ctrl *Controllers) {
+func setupRoutes(r *gin.Engine, ctrl *Controllers, userRepo repository.UserRepository) {
 	r.Static("/storages/images/user", "./storages/images/user")
 	r.Static("/storages/images/question", "./storages/images/question")
 	r.Static("/files", "./storages/files")
-	route.UserRoutes(r, ctrl.User)
-	route.ExamRoutes(r, ctrl.Exam)
-	route.QuestionRoutes(r, ctrl.Question)
+	route.UserRoutes(r, ctrl.User, userRepo)
+	route.ExamRoutes(r, ctrl.Exam, userRepo)
+	route.QuestionRoutes(r, ctrl.Question, userRepo)
 	// route.OptionRoutes(r, ctrl.Option)
 	// route.ExamScoreRoutes(r, ctrl.ExamScore)
-	route.ExamSessionRoutes(r, ctrl.ExamSession)
-	route.SubjectRoutes(r, ctrl.Subject)
-	route.XlsPathRoutes(r, ctrl.XlsPath)
-	route.UserAnswerRoutes(r, ctrl.UserAnswer)
+	route.ExamSessionRoutes(r, ctrl.ExamSession, userRepo)
+	route.SubjectRoutes(r, ctrl.Subject, userRepo)
+	route.XlsPathRoutes(r, ctrl.XlsPath, userRepo)
+	route.UserAnswerRoutes(r, ctrl.UserAnswer, userRepo)
 }
 
 func (a *App) Run(addr string) error {

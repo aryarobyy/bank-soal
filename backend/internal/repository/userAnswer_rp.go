@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"gorm.io/gorm"
 	"latih.in-be/internal/model"
@@ -134,7 +134,7 @@ func (r *userAnswerRepository) GetByExamSessionId(ctx context.Context, examSessi
 		return nil, 0, err
 	}
 
-	log.Printf("Total records found for exam_session_id %d: %d", examSessionId, total)
+	fmt.Printf("Total records found for exam_session_id %d: %d", examSessionId, total)
 
 	if err := query.
 		Preload("ExamSession").

@@ -5,13 +5,14 @@ import (
 	"latih.in-be/internal/controller"
 	"latih.in-be/internal/middleware"
 	"latih.in-be/internal/model"
+	"latih.in-be/internal/repository"
 )
 
-func XlsPathRoutes(r *gin.Engine, xlspath *controller.XlsPathController) {
+func XlsPathRoutes(r *gin.Engine, xlspath *controller.XlsPathController, userRepo repository.UserRepository) {
 	routes := r.Group("/xlspath")
 	{
 		auth := routes.Group("")
-		auth.Use(middleware.AuthMiddleware())
+		auth.Use(middleware.AuthMiddleware(userRepo))
 		{
 			auth.GET("/", middleware.RoleGuard(model.RoleAdmin), xlspath.GetMany)
 			auth.GET("/id", middleware.RoleGuard(model.RoleAdmin), xlspath.GetById)

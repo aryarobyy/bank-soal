@@ -23,6 +23,7 @@ type UserRepository interface {
 	ChangePassword(ctx context.Context, id int, password string) error
 	ChangeRole(ctx context.Context, id int, data model.User) error
 	BulkInsert(ctx context.Context, users []model.User) ([]model.User, error)
+	IncrementTokenVersion(ctx context.Context, id int) error
 }
 
 type userRepository struct {
@@ -321,4 +322,13 @@ func (r *userRepository) BulkInsert(ctx context.Context, users []model.User) ([]
 	}
 
 	return users, nil
+}
+
+func (r *userRepository) IncrementTokenVersion(ctx context.Context, id int) error {
+	return r.db.
+		WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ?", id).
+		UpdateColumn("token_version", gorm.Expr("token_version + 1")).
+		Error
 }

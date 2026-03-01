@@ -16,6 +16,7 @@ type User struct {
 	AcademicYear string  `json:"academic_year,omitempty" validate:"len=4"`
 	Faculty      string  `json:"faculty,omitempty"`
 	Status       Status  `json:"status" validate:"oneof=passed not_passed"`
+	TokenVersion int     `json:"-" gorm:"default:0"`
 
 	CreatedAt time.Time `json:"created_at" gorm:"index"`
 	UpdatedAt time.Time `json:"updated_at"`

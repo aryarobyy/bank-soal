@@ -5,16 +5,17 @@ import (
 	"latih.in-be/internal/controller"
 	"latih.in-be/internal/middleware"
 	"latih.in-be/internal/model"
+	"latih.in-be/internal/repository"
 )
 
-func ExamRoutes(r *gin.Engine, exam *controller.ExamController) {
+func ExamRoutes(r *gin.Engine, exam *controller.ExamController, userRepo repository.UserRepository) {
 	routes := r.Group("/exam")
 	{
 		routes.OPTIONS("/*path", func(c *gin.Context) {
 			c.Status(204)
 		})
 		auth := routes.Group("")
-		auth.Use(middleware.AuthMiddleware())
+		auth.Use(middleware.AuthMiddleware(userRepo))
 		{
 			auth.POST("/", middleware.RoleGuard(model.RoleAdmin, model.RoleLecturer),
 				middleware.InputValidateJson([]string{"title", "creator_id", "long_time", "started_at", "finished_at"}),

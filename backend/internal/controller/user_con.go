@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -441,7 +440,6 @@ func (h *UserController) GetByRole(c *gin.Context) {
 		helper.Error(c, http.StatusUnauthorized, "role not found in context")
 		return
 	}
-	log.Printf("role: %s", currRole)
 
 	userRole, ok := currRole.(string)
 	if !ok {

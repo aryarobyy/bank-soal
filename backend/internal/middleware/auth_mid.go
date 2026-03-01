@@ -6,10 +6,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"latih.in-be/internal/model"
+	"latih.in-be/internal/repository"
 	"latih.in-be/utils/helper"
 )
 
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(userRepo repository.UserRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method == "OPTIONS" {
 			c.Next()
@@ -44,29 +45,19 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		refreshToken, cookieErr := c.Cookie("refresh_token")
-		if cookieErr != nil || refreshToken == "" {
+		user, err := userRepo.GetById(c.Request.Context(), claims.UserId)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+			return
+		}
+
+		if user.TokenVersion != claims.TokenVersion {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "session expired, please login again"})
 			return
 		}
 
-		_, refreshErr := helper.ValidateRefreshToken(refreshToken)
-		if refreshErr != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "session expired, please login again"})
-			return
-		}
-
-		newAccessToken, resignErr := helper.ReSignAccessToken(expiredClaims)
-		if resignErr != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "failed to refresh token"})
-			return
-		}
-
-		c.Header("X-New-Access-Token", newAccessToken)
-
-		c.Set("user", expiredClaims)
-		c.Set("user_id", expiredClaims.UserId)
-		c.Set("role", expiredClaims.Role)
+		c.Set("user_id", claims.UserId)
+		c.Set("role", claims.Role)
 		c.Next()
 	}
 }

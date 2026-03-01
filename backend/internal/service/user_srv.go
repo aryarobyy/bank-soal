@@ -191,6 +191,24 @@ func (s *userService) Login(ctx context.Context, cred model.LoginCredential) (st
 		return "", "", fmt.Errorf("wrong password")
 	}
 
+	if err := s.repo.IncrementTokenVersion(ctx, data.Id); err != nil {
+		return "", "", fmt.Errorf("failed to update session: %w", err)
+	}
+
+	data, err = s.repo.GetById(ctx, data.Id)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to fetch user: %w", err)
+	}
+
+	if err := s.repo.IncrementTokenVersion(ctx, data.Id); err != nil {
+		return "", "", fmt.Errorf("failed to update session: %w", err)
+	}
+
+	data, err = s.repo.GetById(ctx, data.Id)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to fetch user: %w", err)
+	}
+
 	accessToken, err := helper.GenerateAccessToken(data)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate access token: %w", err)
@@ -495,6 +513,30 @@ func (s *userService) ChangeRole(
 	}
 
 	return nil
+}
+
+func (s *userService) RefreshToken(ctx context.Context, refreshToken string) (string, error) {
+	userId, tokenVersion, err := helper.ValidateRefreshToken(refreshToken)
+	if err != nil {
+		return "", fmt.Errorf("invalid or expired refresh token: %w", err)
+	}
+
+	user, err := s.repo.GetById(ctx, userId)
+	if err != nil {
+		return "", fmt.Errorf("user not found: %w", err)
+	}
+
+	// Validate token version - reject if user has logged in elsewhere
+	if user.TokenVersion != tokenVersion {
+		return "", fmt.Errorf("session expired, please login again")
+	}
+
+	newAccessToken, err := helper.GenerateAccessToken(user)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate new access token: %w", err)
+	}
+
+	return newAccessToken, nil
 }
 
 func (s *userService) BulkInsert(ctx context.Context, batchUser model.BulkUserCredential, prefix string, start int, end int) ([]model.BulkUserOutput, error) {
