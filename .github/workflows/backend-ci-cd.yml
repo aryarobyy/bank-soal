@@ -55,4 +55,5 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            chmod +x /home/bob/app/app 
             sudo systemctl restart bank-soal
