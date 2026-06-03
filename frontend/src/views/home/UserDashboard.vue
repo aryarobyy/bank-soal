@@ -20,7 +20,7 @@
     </div>
 
     <div class="p-6 max-w-3xl mx-auto">
-      <router-link to="/ujian" class="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 shadow-lg shadow-blue-200/50 mb-8 flex items-center justify-between hover:shadow-xl transition-all active:scale-[0.98]">
+      <router-link to="/user/ujian" class="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 shadow-lg shadow-blue-200/50 mb-8 flex items-center justify-between hover:shadow-xl transition-all active:scale-[0.98]">
          <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1px); background-size: 16px 16px;"></div>
          
          <div class="relative z-10">
@@ -111,7 +111,9 @@
 
   </div>
 
-  <HomeView v-else />
+  <div v-else class="min-h-screen bg-[#fafafa] flex items-center justify-center">
+    <div class="animate-pulse text-gray-400 text-sm">Memuat dashboard...</div>
+  </div>
 </template>
 
 <script setup>
@@ -120,7 +122,7 @@ import { useRouter } from "vue-router";
 import { useGetCurrentUser } from "../../hooks/useGetCurrentUser";
 import { getExamSessionByUser } from "../../provider/examsession.provider";
 import { getAllExam } from "../../provider/exam.provider"; 
-import HomeView from './HomeView.vue'; 
+
 
 const router = useRouter();
 const { user } = useGetCurrentUser();
@@ -129,7 +131,7 @@ const loading = ref(true);
 const recentSessions = ref([]);
 const examMap = ref({}); 
 
-const goToHistory = () => { router.push('/ujian'); };
+const goToHistory = () => { router.push('/user/ujian'); };
 const goToProfile = () => {
   if (user.value) {
     router.push({ name: 'Profile', params: { id: user.value.id } });
@@ -143,7 +145,7 @@ const openRecentSession = (session) => {
     return;
   }
 
-  router.push(`/exam/view?id=${session.exam_id}`);
+  router.push(`/user/exam/view?id=${session.exam_id}`);
 };
 
 const formatDate = (dateString) => {

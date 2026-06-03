@@ -23,7 +23,6 @@ export const provideUser = () => {
 
     if (!token) {
       user.value = null;
-      router.push('/login');
       return; 
     }
 
@@ -51,7 +50,7 @@ export const provideUser = () => {
       error.value = err;
       user.value = null;
       localStorage.clear();
-      router.push('/login');
+      router.push('/landing');
     } finally {
       loading.value = false;
     }

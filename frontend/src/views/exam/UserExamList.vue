@@ -232,7 +232,7 @@ const getExamTitle = (examId) => {
 };
 
 const resetFilter = () => { searchQuery.value = ""; selectedDifficulty.value = ""; };
-const goToDetail = (id) => { router.push(`/exam/view?id=${id}`); };
+const goToDetail = (id) => { router.push(`/user/exam/view?id=${id}`); };
 
 const difficultyBadge = (diff) => {
   if (diff === 'easy') return 'bg-green-100 text-green-700';

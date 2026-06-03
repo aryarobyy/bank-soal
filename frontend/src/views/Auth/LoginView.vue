@@ -145,7 +145,7 @@ const handleSubmit = async () => {
 		} else if (userRole === 'super_admin') {
 			redirectPath = '/superadmin/dashboard';
 		} else {
-			redirectPath = '/dashboard';
+			redirectPath = '/user/dashboard';
 		}
 
 		toastRef.value.showToast(

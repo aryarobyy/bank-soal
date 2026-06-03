@@ -2,17 +2,17 @@
   <nav class="bg-white shadow-sm border-b border-gray-200 relative z-50">
     <div class="px-6 py-3 flex justify-between items-center">
       
-      <RouterLink to="/dashboard" class="text-3xl font-bold no-underline text-blue-600">
+      <RouterLink :to="user ? '/user/dashboard' : '/landing'" class="text-3xl font-bold no-underline text-blue-600">
         Latih.in
       </RouterLink>
 
       <ul class="hidden md:flex items-center space-x-6">
         <template v-if="user">
           <li>
-            <RouterLink to="/dashboard" :class="linkClass('/dashboard')">Dashboard</RouterLink>
+            <RouterLink to="/user/dashboard" :class="linkClass('/user/dashboard')">Dashboard</RouterLink>
           </li>
           <li v-if="user.role === 'user'">
-            <RouterLink to="/ujian" :class="linkClass('/ujian')">Ujian</RouterLink>
+            <RouterLink to="/user/ujian" :class="linkClass('/user/ujian')">Ujian</RouterLink>
           </li>
    
           <div class="relative" ref="dropdownRef">
@@ -26,7 +26,7 @@
               <div v-if="isDropdownOpen" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
                 <ul class="py-1">
                   <li>
-                    <RouterLink :to="`/profile/${user.id}`" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click="closeDropdown">
+                    <RouterLink :to="`/user/profile/${user.id}`" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" @click="closeDropdown">
                       Lihat Profil
                     </RouterLink>
                   </li>
@@ -63,12 +63,12 @@
         <ul class="flex flex-col p-4 space-y-2">
           <template v-if="user">
             <li>
-              <RouterLink to="/" :class="mobileLinkClass('/')" @click="closeMobileMenu">
+              <RouterLink to="/user/dashboard" :class="mobileLinkClass('/user/dashboard')" @click="closeMobileMenu">
                 Dashboard
               </RouterLink>
             </li>
             <li v-if="user.role === 'user'">
-              <RouterLink to="/ujian" :class="mobileLinkClass('/ujian')" @click="closeMobileMenu">
+              <RouterLink to="/user/ujian" :class="mobileLinkClass('/user/ujian')" @click="closeMobileMenu">
                 Ujian
               </RouterLink>
             </li>
@@ -81,7 +81,7 @@
             </li>
             
             <li>
-              <RouterLink :to="`/profile/${user.id}`" class="block px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-blue-50 hover:text-blue-600" @click="closeMobileMenu">
+              <RouterLink :to="`/user/profile/${user.id}`" class="block px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-blue-50 hover:text-blue-600" @click="closeMobileMenu">
                 Lihat Profil
               </RouterLink>
             </li>

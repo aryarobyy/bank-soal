@@ -94,9 +94,13 @@ const routes = [
 
   {
     path: '/',
+    redirect: '/landing',
+  },
+  {
+    path: '/user',
     component: UserLayout,
     meta: { requiresAuth: true, role: 'user' },
-    redirect: '/dashboard',
+    redirect: '/user/dashboard',
     children: [
     
       
@@ -114,7 +118,7 @@ const routes = [
       { path: 'profile/:id', name: 'Profile', component: Profile },
       { path: 'update-profile', name: 'UpdateProfile', component: UpdateProfile },
       { 
-        path: '/dashboard', 
+        path: 'dashboard', 
         name: 'Dashboard', 
         component: UserDashboard 
       },
@@ -242,13 +246,13 @@ router.beforeEach((to, from, next) => {
  
   if (token && !user) {
     localStorage.clear();
-    return next({ name: 'Login' });
+    return next({ name: 'LandingPage' });
   }
 
   
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!token) {
-      next({ name: 'Login' });
+      next({ name: 'LandingPage' });
     } else {
    
       if (to.meta.role && user && to.meta.role !== user.role) {

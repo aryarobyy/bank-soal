@@ -1,6 +1,5 @@
 <template>
   <div class="font-sans bg-gray-50 text-slate-800 overflow-x-hidden">
-    <Navbar />
 
     <section class="relative pt-40 pb-24 text-center bg-white overflow-hidden">
       <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
@@ -166,12 +165,12 @@ onMounted(() => {
 });
 
 const onButtonClick = () => {
-  const userId = localStorage.getItem('id')
+  const token = localStorage.getItem('token')
 
-  if (userId == "") {
+  if (!token) {
     router.push("/login")
   } else {
-    router.push("/dashboard")
+    router.push("/user/dashboard")
   }
 }
 
