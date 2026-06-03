@@ -8,7 +8,7 @@ import (
 	"latih.in-be/internal/repository"
 )
 
-func ExamRoutes(r *gin.Engine, exam *controller.ExamController, userRepo repository.UserRepository) {
+func ExamRoutes(r *gin.RouterGroup, exam *controller.ExamController, userRepo repository.UserRepository) {
 	routes := r.Group("/exam")
 	{
 		routes.OPTIONS("/*path", func(c *gin.Context) {

@@ -8,7 +8,7 @@ import (
 	"latih.in-be/internal/repository"
 )
 
-func XlsPathRoutes(r *gin.Engine, xlspath *controller.XlsPathController, userRepo repository.UserRepository) {
+func XlsPathRoutes(r *gin.RouterGroup, xlspath *controller.XlsPathController, userRepo repository.UserRepository) {
 	routes := r.Group("/xlspath")
 	{
 		auth := routes.Group("")

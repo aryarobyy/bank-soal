@@ -8,7 +8,7 @@ import (
 	"latih.in-be/internal/repository"
 )
 
-func SubjectRoutes(r *gin.Engine, subject *controller.SubjectController, userRepo repository.UserRepository) {
+func SubjectRoutes(r *gin.RouterGroup, subject *controller.SubjectController, userRepo repository.UserRepository) {
 	routes := r.Group("/subject")
 	{
 		auth := routes.Group("")

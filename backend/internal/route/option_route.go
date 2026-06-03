@@ -8,7 +8,7 @@ import (
 	"latih.in-be/internal/repository"
 )
 
-func OptionRoutes(r *gin.Engine, option *controller.OptionController, userRepo repository.UserRepository) {
+func OptionRoutes(r *gin.RouterGroup, option *controller.OptionController, userRepo repository.UserRepository) {
 	routes := r.Group("/option")
 	{
 		auth := routes.Group("")

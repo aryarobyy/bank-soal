@@ -8,7 +8,7 @@ import (
 	"latih.in-be/internal/repository"
 )
 
-func UserRoutes(r *gin.Engine, user *controller.UserController, userRepo repository.UserRepository) {
+func UserRoutes(r *gin.RouterGroup, user *controller.UserController, userRepo repository.UserRepository) {
 	routes := r.Group("/user")
 	{
 		routes.POST("/login", middleware.InputValidateJson([]string{"login_id", "password"}), user.Login)

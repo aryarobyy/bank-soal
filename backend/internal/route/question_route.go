@@ -8,7 +8,7 @@ import (
 	"latih.in-be/internal/repository"
 )
 
-func QuestionRoutes(r *gin.Engine, question *controller.QuestionController, userRepo repository.UserRepository) {
+func QuestionRoutes(r *gin.RouterGroup, question *controller.QuestionController, userRepo repository.UserRepository) {
 	routes := r.Group("/question")
 	{
 		auth := routes.Group("")

@@ -8,7 +8,7 @@ import (
 	"latih.in-be/internal/repository"
 )
 
-func ExamSessionRoutes(r *gin.Engine, examSession *controller.ExamSessionController, userRepo repository.UserRepository) {
+func ExamSessionRoutes(r *gin.RouterGroup, examSession *controller.ExamSessionController, userRepo repository.UserRepository) {
 	routes := r.Group("/exam-session")
 	{
 		auth := routes.Group("")

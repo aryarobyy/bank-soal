@@ -100,15 +100,16 @@ func setupRoutes(r *gin.Engine, ctrl *Controllers, userRepo repository.UserRepos
 	r.Static("/storages/images/user", "./storages/images/user")
 	r.Static("/storages/images/question", "./storages/images/question")
 	r.Static("/files", "./storages/files")
-	route.UserRoutes(r, ctrl.User, userRepo)
-	route.ExamRoutes(r, ctrl.Exam, userRepo)
-	route.QuestionRoutes(r, ctrl.Question, userRepo)
-	// route.OptionRoutes(r, ctrl.Option)
-	// route.ExamScoreRoutes(r, ctrl.ExamScore)
-	route.ExamSessionRoutes(r, ctrl.ExamSession, userRepo)
-	route.SubjectRoutes(r, ctrl.Subject, userRepo)
-	route.XlsPathRoutes(r, ctrl.XlsPath, userRepo)
-	route.UserAnswerRoutes(r, ctrl.UserAnswer, userRepo)
+
+	api := r.Group("/api")
+
+	route.UserRoutes(api, ctrl.User, userRepo)
+	route.ExamRoutes(api, ctrl.Exam, userRepo)
+	route.QuestionRoutes(api, ctrl.Question, userRepo)
+	route.ExamSessionRoutes(api, ctrl.ExamSession, userRepo)
+	route.SubjectRoutes(api, ctrl.Subject, userRepo)
+	route.XlsPathRoutes(api, ctrl.XlsPath, userRepo)
+	route.UserAnswerRoutes(api, ctrl.UserAnswer, userRepo)
 }
 
 func (a *App) Run(addr string) error {
